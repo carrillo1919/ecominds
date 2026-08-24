@@ -19,7 +19,7 @@ async function cargar() {
     sigla: e.sigla,
     nombre: e.nombre,
     ambito: e.ambito,
-    activo: e.activo ? 'Si' : 'No'
+    activo: e.activo ? 'Sí' : 'No'
   }));
 }
 

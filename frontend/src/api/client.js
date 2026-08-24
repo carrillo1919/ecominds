@@ -6,13 +6,13 @@ async function request(path, options = {}) {
     ...options
   });
 
+  if (response.status === 204) {
+    return null;
+  }
+
   if (!response.ok) {
     const text = await response.text();
     throw new Error(text || `HTTP ${response.status}`);
-  }
-
-  if (response.status === 204) {
-    return null;
   }
 
   return response.json();

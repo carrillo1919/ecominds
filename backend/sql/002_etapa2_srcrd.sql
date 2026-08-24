@@ -157,7 +157,7 @@ CREATE POLICY "empresa_requisitos_write_staff"
 -- Datos demo
 insert into public.entes_reguladores (nombre, sigla, ambito, contacto, sitio_web, activo) values
   ('Servicio de Impuestos Nacionales', 'SIN', 'nacional', 'contacto@sin.gob', 'https://www.impuestos.gob.bo', true),
-  ('Ministerio de Trabajo, Empleo y Prevision Social', 'MTEPS', 'nacional', 'consultas@mteps.gob', 'https://www.mtilde.gob.bo', true),
+  ('Ministerio de Trabajo, Empleo y Prevision Social', 'MTEPS', 'nacional', 'consultas@mteps.gob', 'https://www.mteps.gob.bo', true),
   ('Gobierno Autonomo Municipal de La Paz', 'GAMLP', 'municipal', 'tramites@lapaz.bo', 'https://www.lapaz.bo', true)
 on conflict (sigla) do nothing;
 
