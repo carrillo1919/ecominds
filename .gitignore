@@ -1,0 +1,108 @@
+# ===========================
+# Logs y diagnósticos
+# ===========================
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+report.[0-9]*.[0-9]*.[0-9]*.[0-9]*.json
+
+# ===========================
+# Runtime
+# ===========================
+pids/
+*.pid
+*.seed
+*.pid.lock
+
+# ===========================
+# Cobertura de pruebas
+# ===========================
+coverage/
+*.lcov
+.nyc_output/
+
+# ===========================
+# Dependencias
+# ===========================
+node_modules/
+.npm
+.yarn-integrity
+.yarn/cache
+.yarn/unplugged
+.yarn/build-state.yml
+.yarn/install-state.gz
+.pnp.*
+
+# ===========================
+# Empaquetado
+# ===========================
+*.tgz
+
+# ===========================
+# Variables de entorno (solo ejemplos)
+# ===========================
+.env
+.env.local
+.env.*.local
+.env.development
+.env.test
+.env.production
+!.env.example
+
+# ===========================
+# Backend (Node.js + Sequelize)
+# ===========================
+backend/config/config.json
+backend/uploads/
+backend/tmp/
+backend/*.sqlite
+backend/*.sqlite3
+backend/.sequelizerc
+
+# ===========================
+# Frontend (Vue 3 + Vite + PWA)
+# ===========================
+frontend/dist/
+frontend/dist-ssr/
+frontend/dev-dist/
+frontend/coverage/
+frontend/*.local
+
+# ===========================
+# Cachés de herramientas
+# ===========================
+.cache/
+.parcel-cache/
+.eslintcache
+.stylelintcache
+.rpt2_cache/
+.rts2_cache_cjs/
+.rts2_cache_es/
+.rts2_cache_umd/
+
+# ===========================
+# Editores y SO
+# ===========================
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json.example
+.idea/
+.DS_Store
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# ===========================
+# Respaldos de base de datos
+# ===========================
+*.dump
+*.sql
