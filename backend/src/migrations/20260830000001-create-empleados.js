@@ -39,8 +39,16 @@ export async function up(queryInterface, Sequelize) {
   });
 
   await queryInterface.addIndex('Empleados', ['empresa_id'], { name: 'empleados_empresa_id_idx' });
-  await queryInterface.addIndex('Empleados', ['cedula'], { unique: true, name: 'empleados_cedula_unique' });
-  await queryInterface.addIndex('Empleados', ['email'], { unique: true, name: 'empleados_email_unique' });
+  await queryInterface.addIndex(
+    'Empleados',
+    ['empresa_id', 'cedula'],
+    { unique: true, name: 'empleados_empresa_cedula_unique' }
+  );
+  await queryInterface.addIndex(
+    'Empleados',
+    ['empresa_id', 'email'],
+    { unique: true, name: 'empleados_empresa_email_unique' }
+  );
 }
 
 export async function down(queryInterface) {

@@ -121,6 +121,7 @@ const documentosFiltrados = computed(() => {
 });
 
 const empleadosFiltrados = computed(() => {
+  if (!canSelectEmpresa.value) return empStore.empleadosActivos;
   if (!form.empresaId) return [];
   return empStore.empleadosActivos.filter((e) => e.empresaId === form.empresaId);
 });
@@ -157,6 +158,9 @@ const fechaCorta = (f) => f ? new Date(f + 'T00:00:00').toLocaleDateString('es-V
 
 onMounted(async () => {
   await cargarEmpresas();
+  if (!canSelectEmpresa.value) {
+    await empStore.fetchActivos();
+  }
   await recargar();
 });
 </script>
