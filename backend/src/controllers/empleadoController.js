@@ -78,10 +78,13 @@ const create = async (req, res, next) => {
     const { nombre, apellido, cedula, cargo, email, crearUsuario, passwordUsuario, rolUsuario } = req.body;
 
     const duplicado = await Empleado.findOne({
-      where: { [Op.or]: [{ cedula: String(cedula).trim() }, { email: String(email).trim().toLowerCase() }] },
+      where: {
+        empresaId,
+        [Op.or]: [{ cedula: String(cedula).trim() }, { email: String(email).trim().toLowerCase() }],
+      },
     });
     if (duplicado) {
-      return res.status(409).json({ message: 'Ya existe un empleado con esa cédula o correo' });
+      return res.status(409).json({ message: 'Ya existe un empleado con esa cédula o correo en esta empresa' });
     }
 
     let userId = null;
@@ -114,7 +117,10 @@ const create = async (req, res, next) => {
     });
 
     const result = await Empleado.findByPk(empleado.id, {
-      include: [{ model: User, as: 'usuario', attributes: ['id', 'email', 'rol', 'activo'] }],
+      include: [
+        { model: User, as: 'usuario', attributes: ['id', 'email', 'rol', 'activo'] },
+        { model: Empresa, as: 'empresa', attributes: ['id', 'nombre'] },
+      ],
     });
 
     return res.status(201).json({ message: 'Empleado registrado', empleado: result });
@@ -173,8 +179,19 @@ const update = async (req, res, next) => {
       else empleado[campo] = String(value).trim();
     });
 
+    // Solo admin/auditor puede cambiar de empresa
+    if (req.body.empresaId !== undefined && ['admin', 'auditor'].includes(req.user.rol)) {
+      empleado.empresaId = req.body.empresaId;
+    }
+
     await empleado.save();
-    return res.json({ message: 'Empleado actualizado', empleado });
+    const result = await Empleado.findByPk(empleado.id, {
+      include: [
+        { model: User, as: 'usuario', attributes: ['id', 'email', 'rol', 'activo'] },
+        { model: Empresa, as: 'empresa', attributes: ['id', 'nombre'] },
+      ],
+    });
+    return res.json({ message: 'Empleado actualizado', empleado: result });
   } catch (error) {
     return next(error);
   }

@@ -13,6 +13,7 @@ const AuditoriaItemModel = (sequelize, DataTypes) => {
       // Plan de acciones correctivas (CAPA).
       accionCorrectiva: { type: DataTypes.TEXT, allowNull: true },
       responsableAccion: { type: DataTypes.STRING, allowNull: true },
+      responsableAccionId: { type: DataTypes.UUID, allowNull: true, field: 'responsable_accion_id' },
       fechaCompromiso: { type: DataTypes.DATEONLY, allowNull: true },
     },
     {
@@ -27,6 +28,7 @@ const AuditoriaItemModel = (sequelize, DataTypes) => {
   AuditoriaItem.associate = (db) => {
     AuditoriaItem.belongsTo(db.Auditoria, { foreignKey: 'auditoriaId', as: 'auditoria' });
     AuditoriaItem.belongsTo(db.Requisito, { foreignKey: 'requisitoId', as: 'requisito' });
+    AuditoriaItem.belongsTo(db.Empleado, { foreignKey: 'responsableAccionId', as: 'responsableEmpleado' });
   };
 
   return AuditoriaItem;

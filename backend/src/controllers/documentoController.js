@@ -1,5 +1,5 @@
 import { Op } from 'sequelize';
-import { Documento, ArchivoAdjunto, Empleado } from '../models/index.js';
+import { Documento, ArchivoAdjunto, Empleado, Empresa } from '../models/index.js';
 import { registrarAccion } from '../services/documentoAuditoriaService.js';
 
 const ESTADOS = ['vigente', 'vencido', 'archivado'];
@@ -35,6 +35,7 @@ const getAll = async (req, res, next) => {
       order: [['fechaVencimiento', 'ASC']],
       include: [
         { model: Empleado, as: 'responsable', attributes: ['id', 'nombre', 'apellido', 'cargo'] },
+        { model: Empresa, as: 'empresa', attributes: ['id', 'nombre', 'rif'] },
       ],
     });
 
@@ -57,6 +58,7 @@ const getOne = async (req, res, next) => {
       where,
       include: [
         { model: Empleado, as: 'responsable', attributes: ['id', 'nombre', 'apellido', 'cargo'] },
+        { model: Empresa, as: 'empresa', attributes: ['id', 'nombre', 'rif'] },
         {
           model: ArchivoAdjunto,
           as: 'archivos',

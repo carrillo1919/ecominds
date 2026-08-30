@@ -6,6 +6,7 @@ import {
   Requisito,
   Empresa,
   User,
+  Empleado,
   sequelize,
 } from '../models/index.js';
 
@@ -22,7 +23,10 @@ const INCLUDES_BASE = [
 const INCLUDE_ITEMS = {
   model: AuditoriaItem,
   as: 'items',
-  include: [{ model: Requisito, as: 'requisito' }],
+  include: [
+    { model: Requisito, as: 'requisito' },
+    { model: Empleado, as: 'responsableEmpleado', attributes: ['id', 'nombre', 'apellido', 'cargo'] },
+  ],
 };
 
 const ordenarItems = (auditoria) => {
@@ -190,6 +194,21 @@ const saveItems = async (req, res, next) => {
       ['estado', 'observaciones', 'accionCorrectiva', 'responsableAccion', 'fechaCompromiso'].forEach((campo) => {
         if (entrada[campo] !== undefined) item[campo] = entrada[campo] || null;
       });
+
+      if (entrada.responsableAccionId !== undefined) {
+        if (entrada.responsableAccionId) {
+          const emp = await Empleado.findOne({
+            where: { id: entrada.responsableAccionId, empresaId: auditoria.empresaId, activo: true },
+            transaction,
+          });
+          if (!emp) {
+            await transaction.rollback();
+            return res.status(422).json({ message: 'El responsable no es un empleado activo de esta empresa' });
+          }
+        }
+        item.responsableAccionId = entrada.responsableAccionId || null;
+      }
+
       await item.save({ transaction });
     }
 

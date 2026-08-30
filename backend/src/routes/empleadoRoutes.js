@@ -28,6 +28,7 @@ router.post(
     body('apellido').trim().notEmpty().withMessage('El apellido es obligatorio'),
     body('cedula').trim().notEmpty().withMessage('La cédula es obligatoria'),
     body('email').isEmail().withMessage('Correo inválido'),
+    body('empresaId').optional({ values: 'falsy' }).isUUID().withMessage('empresaId inválido'),
   ],
   validate,
   controller.create,

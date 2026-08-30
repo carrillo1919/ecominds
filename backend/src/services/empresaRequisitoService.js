@@ -1,4 +1,10 @@
-import { EmpresaRequisito, Empresa, RequisitoLegal } from '../models/index.js';
+import { EmpresaRequisito, Empresa, RequisitoLegal, Empleado } from '../models/index.js';
+
+const validarResponsable = async (responsableId, empresaId) => {
+  if (!responsableId) return true;
+  const emp = await Empleado.findOne({ where: { id: responsableId, empresaId, activo: true } });
+  return Boolean(emp);
+};
 
 const assign = async ({ empresaId, requisitoId, responsableId, observaciones }) => {
   const empresa = await Empresa.findByPk(empresaId);
@@ -6,6 +12,13 @@ const assign = async ({ empresaId, requisitoId, responsableId, observaciones }) 
 
   const requisito = await RequisitoLegal.findByPk(requisitoId);
   if (!requisito) throw Object.assign(new Error('Requisito no encontrado'), { status: 404 });
+
+  if (responsableId && !(await validarResponsable(responsableId, empresaId))) {
+    throw Object.assign(
+      new Error('El responsable no es un empleado activo de esta empresa'),
+      { status: 422 }
+    );
+  }
 
   const [asignacion, creada] = await EmpresaRequisito.findOrCreate({
     where: { empresaId, requisitoId },

@@ -60,7 +60,7 @@ const requireEmpresa = async (req, res, next) => {
 
     if (!empleado) {
       return res.status(403).json({
-        message: 'No tiene un perfil de empleado activo en ninguna empresa',
+        message: 'Su usuario no tiene un perfil de empleado activo asignado a una empresa. Contacte al administrador.',
       });
     }
 
