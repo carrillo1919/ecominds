@@ -164,7 +164,12 @@ const update = async (req, res, next) => {
 
     const campos = ['nombre', 'apellido', 'cedula', 'cargo', 'email', 'activo'];
     campos.forEach((campo) => {
-      if (req.body[campo] !== undefined) empleado[campo] = req.body[campo];
+      if (req.body[campo] === undefined) return;
+      const value = req.body[campo];
+
+      if (campo === 'email') empleado.email = String(value).trim().toLowerCase();
+      else if (['nombre', 'apellido', 'cedula', 'cargo'].includes(campo)) empleado[campo] = String(value).trim();
+      else empleado[campo] = value;
     });
 
     await empleado.save();
