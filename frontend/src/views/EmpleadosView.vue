@@ -9,8 +9,8 @@ const toast = useToast();
 const store = useEmpleadosStore();
 const { isAdmin, isAuditor, isResponsable } = useAuthorization();
 
-const canEdit = computed(() => isAdmin.value || isResponsable.value);
-const canSelectEmpresa = computed(() => isAdmin.value || isAuditor.value);
+const canEdit = computed(() => isAdmin.value || isAuditor.value || isResponsable.value);
+const canSelectEmpresa = computed(() => isAdmin.value);
 
 const editandoId = ref(null);
 const guardando = ref(false);

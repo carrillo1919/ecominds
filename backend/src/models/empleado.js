@@ -5,16 +5,22 @@ const EmpleadoModel = (sequelize, DataTypes) => {
     userId: { type: DataTypes.UUID, allowNull: true, unique: true, field: 'user_id' },
     nombre: { type: DataTypes.STRING, allowNull: false },
     apellido: { type: DataTypes.STRING, allowNull: false },
-    cedula: { type: DataTypes.STRING, allowNull: false, unique: true },
+    cedula: { type: DataTypes.STRING, allowNull: false },
     cargo: { type: DataTypes.STRING, allowNull: true },
     email: {
       type: DataTypes.STRING,
       allowNull: false,
-      unique: true,
       validate: { isEmail: true },
     },
     activo: { type: DataTypes.BOOLEAN, allowNull: false, defaultValue: true },
-  }, { tableName: 'Empleados', timestamps: true });
+  }, {
+    tableName: 'Empleados',
+    timestamps: true,
+    indexes: [
+      { unique: true, fields: ['empresa_id', 'cedula'], name: 'empleados_empresa_cedula_unique' },
+      { unique: true, fields: ['empresa_id', 'email'], name: 'empleados_empresa_email_unique' },
+    ],
+  });
 
   Empleado.associate = (db) => {
     Empleado.belongsTo(db.Empresa, { foreignKey: 'empresaId', as: 'empresa' });

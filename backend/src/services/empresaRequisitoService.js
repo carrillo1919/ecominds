@@ -13,7 +13,9 @@ const assign = async ({ empresaId, requisitoId, responsableId, observaciones }) 
   const requisito = await RequisitoLegal.findByPk(requisitoId);
   if (!requisito) throw Object.assign(new Error('Requisito no encontrado'), { status: 404 });
 
-  if (responsableId && !(await validarResponsable(responsableId, empresaId))) {
+  const responsableIdNormalizado = responsableId || null;
+
+  if (responsableIdNormalizado && !(await validarResponsable(responsableIdNormalizado, empresaId))) {
     throw Object.assign(
       new Error('El responsable no es un empleado activo de esta empresa'),
       { status: 422 }
@@ -22,11 +24,11 @@ const assign = async ({ empresaId, requisitoId, responsableId, observaciones }) 
 
   const [asignacion, creada] = await EmpresaRequisito.findOrCreate({
     where: { empresaId, requisitoId },
-    defaults: { responsableId, observaciones },
+    defaults: { responsableId: responsableIdNormalizado, observaciones },
   });
 
   if (!creada) {
-    if (responsableId !== undefined) asignacion.responsableId = responsableId;
+    if (responsableId !== undefined) asignacion.responsableId = responsableIdNormalizado;
     if (observaciones !== undefined) asignacion.observaciones = observaciones;
     await asignacion.save();
   }
