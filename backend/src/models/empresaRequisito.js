@@ -11,7 +11,7 @@ const EmpresaRequisitoModel = (sequelize, DataTypes) => {
   EmpresaRequisito.associate = (db) => {
     EmpresaRequisito.belongsTo(db.Empresa, { foreignKey: 'empresaId', as: 'empresa' });
     EmpresaRequisito.belongsTo(db.RequisitoLegal, { foreignKey: 'requisitoId', as: 'requisito' });
-    EmpresaRequisito.belongsTo(db.User, { foreignKey: 'responsableId', as: 'responsable' });
+    EmpresaRequisito.belongsTo(db.Empleado, { foreignKey: 'responsableId', as: 'responsable' });
   };
 
   return EmpresaRequisito;

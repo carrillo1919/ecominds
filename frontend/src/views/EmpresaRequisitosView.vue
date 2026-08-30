@@ -29,7 +29,9 @@
             <div class="actions">
               <select v-model="a.responsableId" @change="updateResponsable(a)">
                 <option value="">Sin responsable</option>
-                <option v-for="u in usuarios" :key="u.id" :value="u.id">{{ u.nombre }}</option>
+                <option v-for="emp in empleadosEmpresa" :key="emp.id" :value="emp.id">
+                  {{ emp.apellido }}, {{ emp.nombre }}
+                </option>
               </select>
               <button class="btn btn-sm btn-danger" @click="remove(a.id)">Quitar</button>
             </div>
@@ -56,7 +58,9 @@
         <label>Responsable (opcional)</label>
         <select v-model="responsableAsignacion">
           <option value="">Sin responsable</option>
-          <option v-for="u in usuarios" :key="u.id" :value="u.id">{{ u.nombre }}</option>
+          <option v-for="emp in empleadosEmpresa" :key="emp.id" :value="emp.id">
+            {{ emp.apellido }}, {{ emp.nombre }}
+          </option>
         </select>
 
         <button
@@ -72,18 +76,18 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue';
+import { ref, computed, onMounted, watch } from 'vue';
 import { useAuthStore } from '../stores/auth.js';
 import * as api from '../api/empresaRequisitos.js';
 import * as empresasApi from '../api/empresas.js';
 import * as requisitosApi from '../api/requisitosLegales.js';
-import * as usersApi from '../api/users.js';
+import * as empleadosApi from '../api/empleados.js';
 
 const auth = useAuthStore();
 const canManage = computed(() => ['admin', 'auditor'].includes(auth.user?.rol));
 
 const empresas = ref([]);
-const usuarios = ref([]);
+const empleadosEmpresa = ref([]);
 const todasAsignadas = ref([]);
 const todosRequisitos = ref([]);
 const empresaSeleccionada = ref('');
@@ -105,20 +109,28 @@ const disponibles = computed(() =>
 
 async function loadBase() {
   try {
-    const [{ data: e }, { data: u }] = await Promise.all([
-      empresasApi.getEmpresas({ activo: true }),
-      canManage.value ? usersApi.getUsers() : Promise.resolve({ data: { users: [] } }),
-    ]);
+    const { data: e } = await empresasApi.getEmpresas({ activo: true });
     empresas.value = e.empresas || [];
-    usuarios.value = u.users || [];
   } catch (e) {
     error.value = e.response?.data?.message || 'Error al cargar datos iniciales';
   }
 }
 
+async function cargarEmpleadosEmpresa() {
+  empleadosEmpresa.value = [];
+  if (!empresaSeleccionada.value) return;
+  try {
+    const { data } = await empleadosApi.getEmpleadosActivos({ empresaId: empresaSeleccionada.value });
+    empleadosEmpresa.value = data.empleados || [];
+  } catch {
+    empleadosEmpresa.value = [];
+  }
+}
+
 async function onSelectEmpresa() {
   if (!empresaSeleccionada.value) return;
-  await loadAssignments();
+  responsableAsignacion.value = '';
+  await Promise.all([loadAssignments(), cargarEmpleadosEmpresa()]);
 }
 
 async function loadAssignments() {
