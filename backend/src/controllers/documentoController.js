@@ -137,8 +137,8 @@ const update = async (req, res, next) => {
     }
 
     if (titulo !== undefined) documento.titulo = String(titulo).trim();
-    if (descripcion !== undefined) documento.descripcion = descripcion;
-    if (fechaDocumento !== undefined) documento.fechaDocumento = fechaDocumento;
+    if (descripcion !== undefined) documento.descripcion = descripcion || null;
+    if (fechaDocumento !== undefined) documento.fechaDocumento = fechaDocumento || null;
     if (fechaVencimiento !== undefined) documento.fechaVencimiento = fechaVencimiento;
     if (responsableId !== undefined) documento.responsableId = responsableId || null;
     if (estado !== undefined && ESTADOS.includes(estado)) documento.estado = estado;
