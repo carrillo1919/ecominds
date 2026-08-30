@@ -24,6 +24,10 @@ const titulos = {
   auditorias: { titulo: 'Auditorias', desc: 'Ejecucion y seguimiento de auditorias' },
   'auditoria-detalle': { titulo: 'Auditoria', desc: 'Evaluacion, matriz de riesgo e informe' },
   estadisticas: { titulo: 'Tablero', desc: 'Indicadores de cumplimiento por periodo' },
+  empleados: { titulo: 'Empleados', desc: 'Gestion de empleados de la empresa' },
+  'empleado-detalle': { titulo: 'Empleado', desc: 'Detalle y acceso al sistema' },
+  documentos: { titulo: 'Documentos', desc: 'Documentos asignados a la empresa' },
+  'documento-detalle': { titulo: 'Documento', desc: 'Detalle y archivos adjuntos' },
 };
 
 const encabezado = computed(
@@ -128,6 +132,23 @@ const handleLogout = () => {
             <svg viewBox="0 0 24 24"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2" /></svg>
           </span>
           <span>Tablero</span>
+        </router-link>
+      </nav>
+
+      <p class="sidebar__section">Empleados y Documentos</p>
+      <nav class="sidebar__nav">
+        <router-link class="sidebar__link" :to="{ name: 'empleados' }">
+          <span class="sidebar__icon">
+            <svg viewBox="0 0 24 24"><circle cx="9" cy="7" r="3" /><path d="M3 21v-2a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v2" /><path d="M16 3.13a4 4 0 0 1 0 7.75" /><path d="M21 21v-2a4 4 0 0 0-3-3.87" /></svg>
+          </span>
+          <span>Empleados</span>
+        </router-link>
+
+        <router-link class="sidebar__link" :to="{ name: 'documentos' }">
+          <span class="sidebar__icon">
+            <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" /><path d="M14 2v6h6" /><path d="M9 13h6M9 17h4" /></svg>
+          </span>
+          <span>Documentos</span>
         </router-link>
       </nav>
 

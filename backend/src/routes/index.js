@@ -5,6 +5,8 @@ import userRoutes from './userRoutes.js';
 import empresaRoutes from './empresaRoutes.js';
 import requisitoRoutes from './requisitoRoutes.js';
 import auditoriaRoutes from './auditoriaRoutes.js';
+import empleadoRoutes from './empleadoRoutes.js';
+import documentoRoutes from './documentoRoutes.js';
 
 const router = express.Router();
 
@@ -18,5 +20,7 @@ router.use('/users', userRoutes);
 router.use('/empresas', empresaRoutes);
 router.use('/requisitos', requisitoRoutes);
 router.use('/auditorias', auditoriaRoutes);
+router.use('/empleados', empleadoRoutes);
+router.use('/documentos', documentoRoutes);
 
 export default router;

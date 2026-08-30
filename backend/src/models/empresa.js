@@ -25,6 +25,8 @@ const EmpresaModel = (sequelize, DataTypes) => {
     Empresa.belongsTo(db.User, { foreignKey: 'responsableId', as: 'responsableUsuario' });
     Empresa.hasMany(db.EmpresaRequisito, { foreignKey: 'empresaId', as: 'empresaRequisitos' });
     Empresa.hasMany(db.Auditoria, { foreignKey: 'empresaId', as: 'auditorias' });
+    Empresa.hasMany(db.Empleado, { foreignKey: 'empresaId', as: 'empleados' });
+    Empresa.hasMany(db.Documento, { foreignKey: 'empresaId', as: 'documentos' });
   };
 
   return Empresa;

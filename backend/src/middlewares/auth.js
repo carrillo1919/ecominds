@@ -1,5 +1,5 @@
 import jwt from 'jsonwebtoken';
-import { User } from '../models/index.js';
+import { User, Empleado } from '../models/index.js';
 
 const authenticate = async (req, res, next) => {
   try {
@@ -40,4 +40,36 @@ const authorize = (...allowedRoles) => {
   };
 };
 
-export { authenticate, authorize };
+/**
+ * Middleware que resuelve la empresa del usuario autenticado a través de su Empleado.
+ * Inyecta req.empresaId y req.empleado.
+ * Admins y auditores pueden operar sin empleado; en ese caso req.empresaId queda undefined
+ * y los controllers deben manejar el acceso global.
+ */
+const requireEmpresa = async (req, res, next) => {
+  try {
+    if (!req.user) return res.status(401).json({ message: 'No autenticado' });
+
+    if (['admin', 'auditor'].includes(req.user.rol)) {
+      return next();
+    }
+
+    const empleado = await Empleado.findOne({
+      where: { userId: req.user.id, activo: true },
+    });
+
+    if (!empleado) {
+      return res.status(403).json({
+        message: 'No tiene un perfil de empleado activo en ninguna empresa',
+      });
+    }
+
+    req.empleado = empleado;
+    req.empresaId = empleado.empresaId;
+    return next();
+  } catch (error) {
+    return next(error);
+  }
+};
+
+export { authenticate, authorize, requireEmpresa };
