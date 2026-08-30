@@ -2,7 +2,7 @@
 import { ref } from 'vue';
 import { useToast } from 'vue-toastification';
 import { useDocumentosStore } from '@/stores/documentos';
-import { getArchivoDownloadUrl } from '@/api/documentos';
+import api, { apiMessage } from '@/api/axios.js';
 
 const props = defineProps({
   documentoId: { type: String, required: true },
@@ -51,8 +51,22 @@ const handleDelete = async (archivoId) => {
   }
 };
 
-const downloadUrl = (archivoId) =>
-  getArchivoDownloadUrl(props.documentoId, archivoId);
+const handleDownload = async (archivoId, nombreArchivo) => {
+  try {
+    const response = await api.get(
+      `/documentos/${props.documentoId}/archivos/${archivoId}/download`,
+      { responseType: 'blob' },
+    );
+    const url = URL.createObjectURL(response.data);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = nombreArchivo || 'archivo';
+    link.click();
+    URL.revokeObjectURL(url);
+  } catch (err) {
+    toast.error(apiMessage(err, 'No se pudo descargar el archivo'));
+  }
+};
 </script>
 
 <template>
@@ -78,12 +92,11 @@ const downloadUrl = (archivoId) =>
       <li v-for="a in archivos" :key="a.id" class="archivo-item">
         <span class="archivo-nombre">{{ a.nombreArchivo }}</span>
         <span class="muted archivo-meta">{{ formatTamano(a.tamano) }}</span>
-        <a
-          :href="downloadUrl(a.id)"
+        <button
           class="btn-ghost btn-sm"
-          target="_blank"
-          rel="noopener"
-        >Descargar</a>
+          type="button"
+          @click="handleDownload(a.id, a.nombreArchivo)"
+        >Descargar</button>
         <button
           v-if="canDelete"
           class="btn-ghost btn-sm"
