@@ -61,8 +61,10 @@ const handleDownload = async (archivoId, nombreArchivo) => {
     const link = document.createElement('a');
     link.href = url;
     link.download = nombreArchivo || 'archivo';
+    document.body.appendChild(link);
     link.click();
-    URL.revokeObjectURL(url);
+    document.body.removeChild(link);
+    setTimeout(() => URL.revokeObjectURL(url), 10000);
   } catch (err) {
     toast.error(apiMessage(err, 'No se pudo descargar el archivo'));
   }
