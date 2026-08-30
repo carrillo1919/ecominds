@@ -1,4 +1,3 @@
-import bcrypt from 'bcryptjs';
 import { Op } from 'sequelize';
 import { Empleado, User, Empresa } from '../models/index.js';
 

@@ -150,6 +150,7 @@ onMounted(async () => {
         <ArchivoAdjuntoList
           :documento-id="documento.id"
           :archivos="archivos"
+          :can-upload="canEdit"
           :can-delete="canEdit"
           @archivo-subido="onArchivoSubido"
           @archivo-eliminado="onArchivoEliminado"

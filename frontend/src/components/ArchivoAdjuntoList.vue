@@ -7,6 +7,7 @@ import { getArchivoDownloadUrl } from '@/api/documentos';
 const props = defineProps({
   documentoId: { type: String, required: true },
   archivos: { type: Array, default: () => [] },
+  canUpload: { type: Boolean, default: false },
   canDelete: { type: Boolean, default: false },
 });
 
@@ -58,14 +59,14 @@ const downloadUrl = (archivoId) =>
   <div>
     <div class="archivos-header">
       <strong>Archivos adjuntos ({{ archivos.length }})</strong>
-      <label v-if="canDelete" class="btn-ghost btn-sm" style="cursor:pointer">
+      <label v-if="canUpload" class="btn-ghost btn-sm" style="cursor:pointer">
         {{ subiendo ? 'Subiendo...' : 'Adjuntar archivo' }}
         <input
           ref="fileInput"
           type="file"
           accept=".pdf,.jpg,.jpeg,.png,.gif,.webp"
           style="display:none"
-          :disabled="subiendo"
+          :disabled="subiendo || !canUpload"
           @change="handleUpload"
         />
       </label>
