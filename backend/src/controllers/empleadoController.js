@@ -168,8 +168,8 @@ const update = async (req, res, next) => {
       const value = req.body[campo];
 
       if (campo === 'email') empleado.email = String(value).trim().toLowerCase();
-      else if (['nombre', 'apellido', 'cedula', 'cargo'].includes(campo)) empleado[campo] = String(value).trim();
-      else empleado[campo] = value;
+      else if (campo === 'activo') empleado[campo] = value;
+      else empleado[campo] = String(value).trim();
     });
 
     await empleado.save();
