@@ -139,7 +139,7 @@ const update = async (req, res, next) => {
     if (titulo !== undefined) documento.titulo = String(titulo).trim();
     if (descripcion !== undefined) documento.descripcion = descripcion || null;
     if (fechaDocumento !== undefined) documento.fechaDocumento = fechaDocumento ? String(fechaDocumento).trim() : null;
-    if (fechaVencimiento !== undefined) documento.fechaVencimiento = fechaVencimiento;
+    if (fechaVencimiento !== undefined) documento.fechaVencimiento = fechaVencimiento ? String(fechaVencimiento).trim() : null;
     if (responsableId !== undefined) documento.responsableId = responsableId || null;
     if (estado !== undefined && ESTADOS.includes(estado)) documento.estado = estado;
 
