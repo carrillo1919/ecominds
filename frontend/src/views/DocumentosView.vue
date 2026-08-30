@@ -1,10 +1,11 @@
 <script setup>
-import { onMounted, reactive, ref, computed } from 'vue';
+import { onMounted, reactive, ref, computed, watch } from 'vue';
 import { useToast } from 'vue-toastification';
 import { useDocumentosStore } from '@/stores/documentos';
 import { useEmpleadosStore } from '@/stores/empleados';
 import { useAuthorization } from '@/composables/useAuthorization';
 import EstadoDocumentoBadge from '@/components/EstadoDocumentoBadge.vue';
+import * as empresasApi from '@/api/empresas';
 
 const toast = useToast();
 const docStore = useDocumentosStore();
@@ -12,11 +13,15 @@ const empStore = useEmpleadosStore();
 const { isAdmin, isAuditor, isResponsable } = useAuthorization();
 
 const canEdit = computed(() => isAdmin.value || isAuditor.value || isResponsable.value);
+const canSelectEmpresa = computed(() => isAdmin.value || isAuditor.value);
 
 const mostrarForm = ref(false);
 const editandoId = ref(null);
 const guardando = ref(false);
 const filtroEstado = ref('');
+const empresas = ref([]);
+const empresaFiltro = ref('');
+const archivo = ref(null);
 
 const form = reactive({
   titulo: '',
@@ -24,11 +29,13 @@ const form = reactive({
   fechaDocumento: '',
   fechaVencimiento: '',
   responsableId: '',
+  empresaId: '',
 });
 
 const limpiar = () => {
   editandoId.value = null;
   mostrarForm.value = false;
+  archivo.value = null;
   Object.keys(form).forEach((k) => { form[k] = ''; });
 };
 
@@ -40,6 +47,8 @@ const editar = (doc) => {
   form.fechaDocumento = doc.fechaDocumento || '';
   form.fechaVencimiento = doc.fechaVencimiento || '';
   form.responsableId = doc.responsableId || '';
+  form.empresaId = doc.empresaId || '';
+  archivo.value = null;
 };
 
 const guardar = async () => {
@@ -47,22 +56,50 @@ const guardar = async () => {
     toast.error('Título y fecha de vencimiento son obligatorios');
     return;
   }
+  if (canSelectEmpresa.value && !editandoId.value && !form.empresaId.trim()) {
+    toast.error('Seleccione la empresa');
+    return;
+  }
   guardando.value = true;
-  const payload = { ...form, responsableId: form.responsableId || null };
+  const payload = {
+    ...form,
+    responsableId: form.responsableId || null,
+    empresaId: canSelectEmpresa.value ? form.empresaId || null : undefined,
+  };
+
   let result;
   if (editandoId.value) {
     result = await docStore.update(editandoId.value, payload);
   } else {
     result = await docStore.create(payload);
+    if (result.ok && archivo.value && result.documento?.id) {
+      const uploadResult = await docStore.uploadArchivo(result.documento.id, archivo.value);
+      if (!uploadResult.ok) {
+        toast.warning(`Documento creado, pero no se pudo adjuntar el archivo: ${uploadResult.message}`);
+      } else {
+        result.documento.archivos = [uploadResult.archivo];
+      }
+    }
   }
   guardando.value = false;
   if (result.ok) {
     toast.success(result.message);
     limpiar();
-    await docStore.fetchAll();
+    await recargar();
   } else {
     toast.error(result.message);
   }
+};
+
+const onFileChange = (event) => {
+  const file = event.target.files[0];
+  if (file && !['application/pdf', 'image/jpeg', 'image/png', 'image/gif', 'image/webp'].includes(file.type)) {
+    toast.error('Solo se permiten PDF e imágenes');
+    event.target.value = '';
+    archivo.value = null;
+    return;
+  }
+  archivo.value = file || null;
 };
 
 const archivar = async (doc) => {
@@ -73,15 +110,54 @@ const archivar = async (doc) => {
 };
 
 const documentosFiltrados = computed(() => {
-  if (!filtroEstado.value) return docStore.documentos;
-  return docStore.documentos.filter((d) => d.estadoEfectivo === filtroEstado.value);
+  let docs = docStore.documentos;
+  if (empresaFiltro.value) {
+    docs = docs.filter((d) => d.empresaId === empresaFiltro.value);
+  }
+  if (filtroEstado.value) {
+    docs = docs.filter((d) => d.estadoEfectivo === filtroEstado.value);
+  }
+  return docs;
 });
+
+const empleadosFiltrados = computed(() => {
+  if (!form.empresaId) return [];
+  return empStore.empleadosActivos.filter((e) => e.empresaId === form.empresaId);
+});
+
+const recargar = async () => {
+  const params = {};
+  if (empresaFiltro.value) params.empresaId = empresaFiltro.value;
+  await docStore.fetchAll(params);
+};
+
+const cargarEmpresas = async () => {
+  if (!canSelectEmpresa.value) return;
+  try {
+    const { data } = await empresasApi.getEmpresas({ activo: true });
+    empresas.value = data.empresas || [];
+  } catch {
+    empresas.value = [];
+  }
+};
+
+watch(empresaFiltro, recargar);
+
+watch(
+  () => form.empresaId,
+  async (nuevaEmpresa) => {
+    form.responsableId = '';
+    if (nuevaEmpresa) {
+      await empStore.fetchActivos({ empresaId: nuevaEmpresa });
+    }
+  }
+);
 
 const fechaCorta = (f) => f ? new Date(f + 'T00:00:00').toLocaleDateString('es-VE') : '-';
 
 onMounted(async () => {
-  await docStore.fetchAll();
-  await empStore.fetchActivos();
+  await cargarEmpresas();
+  await recargar();
 });
 </script>
 
@@ -100,18 +176,30 @@ onMounted(async () => {
     <div v-if="mostrarForm && canEdit" class="card">
       <h2>{{ editandoId ? 'Editar documento' : 'Registrar documento' }}</h2>
       <div class="form-grid">
+        <label v-if="canSelectEmpresa && !editandoId">
+          Empresa *
+          <select v-model="form.empresaId">
+            <option value="">Seleccione...</option>
+            <option v-for="e in empresas" :key="e.id" :value="e.id">{{ e.nombre }}</option>
+          </select>
+        </label>
         <label>Título *<input v-model="form.titulo" type="text" /></label>
         <label>
           Responsable
           <select v-model="form.responsableId">
             <option value="">— Sin responsable —</option>
-            <option v-for="emp in empStore.empleadosActivos" :key="emp.id" :value="emp.id">
+            <option v-for="emp in empleadosFiltrados" :key="emp.id" :value="emp.id">
               {{ emp.apellido }}, {{ emp.nombre }}
             </option>
           </select>
         </label>
         <label>Fecha del documento<input v-model="form.fechaDocumento" type="date" /></label>
         <label>Fecha de vencimiento *<input v-model="form.fechaVencimiento" type="date" /></label>
+        <label v-if="!editandoId" style="grid-column: 1 / -1">
+          Adjuntar archivo (PDF o imagen)
+          <input type="file" accept=".pdf,.jpg,.jpeg,.png,.gif,.webp" @change="onFileChange" />
+          <span v-if="archivo" class="muted">Archivo seleccionado: {{ archivo.name }}</span>
+        </label>
         <label style="grid-column: 1 / -1">
           Descripción
           <textarea v-model="form.descripcion" rows="3"></textarea>
@@ -127,8 +215,15 @@ onMounted(async () => {
 
     <div class="card">
       <div class="filter-bar">
+        <label v-if="canSelectEmpresa">
+          Empresa:
+          <select v-model="empresaFiltro">
+            <option value="">Todas</option>
+            <option v-for="e in empresas" :key="e.id" :value="e.id">{{ e.nombre }}</option>
+          </select>
+        </label>
         <label>
-          Filtrar por estado:
+          Estado:
           <select v-model="filtroEstado">
             <option value="">Todos</option>
             <option value="vigente">Vigente</option>
