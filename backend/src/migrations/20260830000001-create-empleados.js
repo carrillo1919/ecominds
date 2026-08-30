@@ -22,9 +22,9 @@ export async function up(queryInterface, Sequelize) {
     },
     nombre: { type: Sequelize.STRING, allowNull: false },
     apellido: { type: Sequelize.STRING, allowNull: false },
-    cedula: { type: Sequelize.STRING, allowNull: false },
+    cedula: { type: Sequelize.STRING, allowNull: false, unique: true },
     cargo: { type: Sequelize.STRING, allowNull: true },
-    email: { type: Sequelize.STRING, allowNull: false },
+    email: { type: Sequelize.STRING, allowNull: false, unique: true },
     activo: { type: Sequelize.BOOLEAN, allowNull: false, defaultValue: true },
     createdAt: {
       type: Sequelize.DATE,
