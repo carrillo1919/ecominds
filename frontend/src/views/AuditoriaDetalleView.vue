@@ -1,10 +1,11 @@
 <script setup>
-import { computed, onMounted, ref } from 'vue';
+import { computed, onMounted, ref, watch } from 'vue';
 import { useRoute } from 'vue-router';
 import { useToast } from 'vue-toastification';
 import api, { apiMessage } from '@/api/axios';
 import { useAuthorization } from '@/composables/useAuthorization';
 import { ESTADOS, calcularResultado, fechaCorta, riesgoClase } from '@/utils/riesgo';
+import * as empleadosApi from '@/api/empleados';
 
 const route = useRoute();
 const toast = useToast();
@@ -15,6 +16,7 @@ const cargando = ref(false);
 const guardando = ref(false);
 const error = ref('');
 const filtroBloque = ref('');
+const empleadosEmpresa = ref([]);
 
 const editable = computed(() => canAuditar.value && auditoria.value?.estado === 'borrador');
 
@@ -37,12 +39,23 @@ const resumenBloques = computed(() =>
   })
 );
 
+const cargarEmpleados = async () => {
+  if (!auditoria.value?.empresaId) return;
+  try {
+    const { data } = await empleadosApi.getEmpleadosActivos({ empresaId: auditoria.value.empresaId });
+    empleadosEmpresa.value = data.empleados || [];
+  } catch {
+    empleadosEmpresa.value = [];
+  }
+};
+
 const cargar = async () => {
   cargando.value = true;
   error.value = '';
   try {
     const { data } = await api.get(`/auditorias/${route.params.id}`);
     auditoria.value = data.auditoria;
+    await cargarEmpleados();
   } catch (e) {
     error.value = apiMessage(e, 'No se pudo cargar la auditoria');
   } finally {
@@ -66,7 +79,10 @@ const guardar = async () => {
         estado: i.estado,
         observaciones: i.observaciones,
         accionCorrectiva: i.accionCorrectiva,
-        responsableAccion: i.responsableAccion,
+        responsableAccion: i.responsableEmpleado
+          ? `${i.responsableEmpleado.apellido}, ${i.responsableEmpleado.nombre}`
+          : i.responsableAccion,
+        responsableAccionId: i.responsableAccionId,
         fechaCompromiso: i.fechaCompromiso,
       })),
     });
@@ -243,12 +259,15 @@ onMounted(cargar);
                     :disabled="!editable || item.estado !== 'no_cumple'"
                     :placeholder="item.estado === 'no_cumple' ? 'Accion correctiva' : 'Solo para No cumple'"
                   ></textarea>
-                  <input
-                    v-model="item.responsableAccion"
-                    type="text"
-                    placeholder="Responsable"
+                  <select
+                    v-model="item.responsableAccionId"
                     :disabled="!editable || item.estado !== 'no_cumple'"
-                  />
+                  >
+                    <option value="">— Seleccione responsable —</option>
+                    <option v-for="emp in empleadosEmpresa" :key="emp.id" :value="emp.id">
+                      {{ emp.apellido }}, {{ emp.nombre }}
+                    </option>
+                  </select>
                   <input
                     v-model="item.fechaCompromiso"
                     type="date"
