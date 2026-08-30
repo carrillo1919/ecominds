@@ -43,14 +43,14 @@ const authorize = (...allowedRoles) => {
 /**
  * Middleware que resuelve la empresa del usuario autenticado a través de su Empleado.
  * Inyecta req.empresaId y req.empleado.
- * Los admins pueden operar sin empleado; en ese caso req.empresaId queda undefined
+ * Admins y auditores pueden operar sin empleado; en ese caso req.empresaId queda undefined
  * y los controllers deben manejar el acceso global.
  */
 const requireEmpresa = async (req, res, next) => {
   try {
     if (!req.user) return res.status(401).json({ message: 'No autenticado' });
 
-    if (req.user.rol === 'admin') {
+    if (['admin', 'auditor'].includes(req.user.rol)) {
       return next();
     }
 
