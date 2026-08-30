@@ -15,8 +15,10 @@ const upload = multer({
   fileFilter(_req, file, cb) {
     const permitidos = ['application/pdf', 'image/jpeg', 'image/png', 'image/gif', 'image/webp'];
     if (permitidos.includes(file.mimetype)) return cb(null, true);
-    return cb(new Error('Tipo de archivo no permitido. Solo PDF e imágenes.'));
-  },
+    const err = new Error('Tipo de archivo no permitido. Solo PDF e imágenes.');
+    err.status = 415;
+    return cb(err);
+  }
 });
 
 router.use(authenticate);
