@@ -3,16 +3,19 @@ import { onMounted, reactive, ref, computed } from 'vue';
 import { useToast } from 'vue-toastification';
 import { useEmpleadosStore } from '@/stores/empleados';
 import { useAuthorization } from '@/composables/useAuthorization';
+import * as empresasApi from '@/api/empresas';
 
 const toast = useToast();
 const store = useEmpleadosStore();
-const { isAdmin, isResponsable } = useAuthorization();
+const { isAdmin, isAuditor, isResponsable } = useAuthorization();
 
 const canEdit = computed(() => isAdmin.value || isResponsable.value);
+const canSelectEmpresa = computed(() => isAdmin.value || isAuditor.value);
 
 const editandoId = ref(null);
 const guardando = ref(false);
 const mostrarForm = ref(false);
+const empresas = ref([]);
 
 const form = reactive({
   nombre: '',
@@ -20,6 +23,7 @@ const form = reactive({
   cedula: '',
   cargo: '',
   email: '',
+  empresaId: '',
 });
 
 const limpiar = () => {
@@ -36,6 +40,7 @@ const editar = (emp) => {
   form.cedula = emp.cedula || '';
   form.cargo = emp.cargo || '';
   form.email = emp.email || '';
+  form.empresaId = emp.empresaId || '';
 };
 
 const guardar = async () => {
@@ -43,12 +48,18 @@ const guardar = async () => {
     toast.error('Nombre, apellido, cédula y correo son obligatorios');
     return;
   }
+  if (canSelectEmpresa.value && !form.empresaId.trim()) {
+    toast.error('Seleccione la empresa a la que pertenece el empleado');
+    return;
+  }
   guardando.value = true;
+  const payload = { ...form };
+  if (!canSelectEmpresa.value) delete payload.empresaId;
   let result;
   if (editandoId.value) {
-    result = await store.update(editandoId.value, { ...form });
+    result = await store.update(editandoId.value, payload);
   } else {
-    result = await store.create({ ...form });
+    result = await store.create(payload);
   }
   guardando.value = false;
   if (result.ok) {
@@ -76,7 +87,20 @@ const reactivar = async (emp) => {
   else toast.error(result.message);
 };
 
-onMounted(() => store.fetchAll());
+const cargarEmpresas = async () => {
+  if (!canSelectEmpresa.value) return;
+  try {
+    const { data } = await empresasApi.getEmpresas({ activo: true });
+    empresas.value = data.empresas || [];
+  } catch {
+    empresas.value = [];
+  }
+};
+
+onMounted(async () => {
+  await store.fetchAll();
+  await cargarEmpresas();
+});
 </script>
 
 <template>
@@ -94,6 +118,13 @@ onMounted(() => store.fetchAll());
     <div v-if="mostrarForm && canEdit" class="card">
       <h2>{{ editandoId ? 'Editar empleado' : 'Registrar empleado' }}</h2>
       <div class="form-grid">
+        <label v-if="canSelectEmpresa">
+          Empresa *
+          <select v-model="form.empresaId">
+            <option value="">Seleccione...</option>
+            <option v-for="e in empresas" :key="e.id" :value="e.id">{{ e.nombre }}</option>
+          </select>
+        </label>
         <label>Nombre *<input v-model="form.nombre" type="text" /></label>
         <label>Apellido *<input v-model="form.apellido" type="text" /></label>
         <label>Cédula *<input v-model="form.cedula" type="text" /></label>
