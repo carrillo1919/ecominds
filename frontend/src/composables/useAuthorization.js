@@ -16,6 +16,8 @@ export function useAuthorization() {
     isLector: computed(() => auth.rol === 'lector'),
     canGestionarUsuarios: computed(() => auth.rol === 'admin'),
     canAuditar: computed(() => ['admin', 'auditor'].includes(auth.rol)),
+    canGestionarEmpleados: computed(() => ['admin', 'responsable'].includes(auth.rol)),
+    canGestionarDocumentos: computed(() => ['admin', 'auditor', 'responsable'].includes(auth.rol)),
   };
 }
 

@@ -30,6 +30,10 @@ const routes = [
       { path: 'auditorias', name: 'auditorias', component: () => import('@/views/AuditoriasView.vue'), meta: { requiresAuth: true } },
       { path: 'auditorias/:id', name: 'auditoria-detalle', component: () => import('@/views/AuditoriaDetalleView.vue'), meta: { requiresAuth: true } },
       { path: 'estadisticas', name: 'estadisticas', component: () => import('@/views/EstadisticasView.vue'), meta: { requiresAuth: true } },
+      { path: 'empleados', name: 'empleados', component: () => import('@/views/EmpleadosView.vue'), meta: { requiresAuth: true } },
+      { path: 'empleados/:id', name: 'empleado-detalle', component: () => import('@/views/EmpleadoDetalleView.vue'), meta: { requiresAuth: true, roles: ['admin'] } },
+      { path: 'documentos', name: 'documentos', component: () => import('@/views/DocumentosView.vue'), meta: { requiresAuth: true } },
+      { path: 'documentos/:id', name: 'documento-detalle', component: () => import('@/views/DocumentoDetalleView.vue'), meta: { requiresAuth: true } },
     ],
   },
 
