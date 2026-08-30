@@ -138,8 +138,12 @@ const update = async (req, res, next) => {
 
     if (titulo !== undefined) documento.titulo = String(titulo).trim();
     if (descripcion !== undefined) documento.descripcion = descripcion || null;
-    if (fechaDocumento !== undefined) documento.fechaDocumento = fechaDocumento ? String(fechaDocumento).trim() : null;
-    if (fechaVencimiento !== undefined) documento.fechaVencimiento = fechaVencimiento ? String(fechaVencimiento).trim() : null;
+    if (fechaDocumento !== undefined) documento.fechaDocumento = fechaDocumento ? String(fechaDocumento).trim() || null : null;
+    if (fechaVencimiento !== undefined) {
+      const fechaVencimientoNorm = fechaVencimiento ? String(fechaVencimiento).trim() || null : null;
+      if (!fechaVencimientoNorm) return res.status(422).json({ message: 'fechaVencimiento es requerido' });
+      documento.fechaVencimiento = fechaVencimientoNorm;
+    }
     if (responsableId !== undefined) documento.responsableId = responsableId || null;
     if (estado !== undefined && ESTADOS.includes(estado)) documento.estado = estado;
 
