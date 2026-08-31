@@ -116,8 +116,8 @@ const onSubmit = async () => {
 }
 
 .login-logo {
-  width: 120px;
-  height: 120px;
+  width: 150px;
+  height: 150px;
   object-fit: contain;
   margin: 0 auto 1rem;
 }

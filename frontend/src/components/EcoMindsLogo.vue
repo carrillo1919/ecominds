@@ -12,7 +12,7 @@
 defineProps({
   src: {
     type: String,
-    default: '/icons/icono.png'
+    default: '/icons/icono_hoja.png'
   },
   size: {
     type: [String, Number],

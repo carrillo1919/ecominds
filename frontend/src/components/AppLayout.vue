@@ -53,7 +53,7 @@ const handleLogout = () => {
     <aside class="sidebar">
       <router-link class="sidebar__brand" :to="{ name: 'dashboard' }">
         <span class="sidebar__logo">
-          <EcoMindsLogo size="24" />
+          <EcoMindsLogo size="35" />
         </span>
         <span class="sidebar__brand-text">
           <strong>EcoMinds</strong>
@@ -179,7 +179,7 @@ const handleLogout = () => {
   <div v-else class="auth-shell">
     <router-link class="auth-shell__header" :to="{ name: 'login' }">
       <span class="sidebar__logo">
-        <EcoMindsLogo size="24" />
+        <EcoMindsLogo size="35" />
       </span>
       <span class="sidebar__brand-text">
         <strong>EcoMinds</strong>
@@ -382,5 +382,31 @@ const handleLogout = () => {
   .btn-logout span {
     display: none;
   }
+}
+
+.sidebar__brand {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.85rem 1rem;
+  text-decoration: none;
+}
+
+.sidebar__logo {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  background: #ffffff;
+  border-radius: 0.5rem;
+  padding: 0.35rem;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+  flex-shrink: 0;
+}
+
+.sidebar__logo svg {
+  width: 100%;
+  height: 100%;
 }
 </style>
