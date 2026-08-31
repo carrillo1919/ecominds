@@ -54,6 +54,8 @@ Si no configura SMTP, los correos no se envían: el contenido (incluido el enlac
 
 ### Endpoints
 
+Todas las rutas del API se registran en `backend/src/routes/index.js` y se montan bajo `/api` desde `backend/src/app.js`.
+
 | Método | Ruta | Acceso |
 | --- | --- | --- |
 | GET | `/api/health` | público |
@@ -65,6 +67,14 @@ Si no configura SMTP, los correos no se envían: el contenido (incluido el enlac
 | GET | `/api/users/me` | autenticado |
 | GET | `/api/users` | solo `admin` |
 | PATCH | `/api/users/:id/rol` | solo `admin` |
+| GET/POST/PUT | `/api/empresas` | lectura: todos, escritura: admin/auditor |
+| GET/POST/PUT/PATCH/DELETE | `/api/entes-reguladores` | lectura: autenticado, escritura: admin/auditor |
+| GET/POST/PUT/PATCH/DELETE | `/api/requisitos-legales` | lectura: autenticado, escritura: admin/auditor |
+| GET/POST/PUT/DELETE | `/api/empresa-requisitos` | lectura: autenticado, escritura: admin/auditor |
+| GET/POST/PUT/DELETE | `/api/requisitos` | todos (lectura), admin (configuración) |
+| GET/POST/PATCH/PUT/DELETE | `/api/auditorias` | ver módulo de auditoría |
+| GET/POST/PUT/DELETE | `/api/empleados` | ver módulo de empleados |
+| GET/POST/PUT/DELETE | `/api/documentos` | ver módulo de documentos |
 
 ### Usuarios demo (creados por `npm run seed`, ya verificados)
 
@@ -86,9 +96,41 @@ cp .env.example .env    # VITE_API_URL=http://localhost:3000/api
 npm run dev             # http://localhost:5173
 ```
 
-Rutas: `/login`, `/register`, `/verify-email`, `/forgot-password`, `/reset-password` (públicas) y `/dashboard`, `/usuarios` (protegidas; `/usuarios` requiere rol `admin`).
+Rutas públicas: `/app/login`, `/app/register`, `/app/verify-email`, `/app/forgot-password`, `/app/reset-password` y `/` (landing). Rutas protegidas bajo `/app/*` (ej. `/app/dashboard`, `/app/usuarios`). `/app/usuarios` requiere rol `admin`.
 
-El token se guarda en `localStorage`; un interceptor de Axios lo adjunta en cada petición y, ante un `401`, cierra la sesión y redirige al login. El guardia `beforeEach` del router valida `meta.requiresAuth` y `meta.roles`.
+El token se guarda en `localStorage`; un interceptor de Axios lo adjunta en cada petición y, ante un `401`, cierra la sesión y redirige al login. El guardia `beforeEach` del router valida `meta.requiresAuth` y `meta.roles`. Todas las vistas usan lazy loading, excepto `LoginView` (carga inmediata para el primer render).
+
+### Estructura de carpetas del frontend
+
+```text
+frontend/src/
+├── api/              # Clientes Axios por dominio
+├── assets/           # Estilos, imágenes, fuentes
+├── components/
+│   ├── ui/           # Componentes base reutilizables (BaseButton, BaseInput, BaseTable, etc.)
+│   ├── auditoria/    # Componentes de dominio (AuditRiskMatrix, AuditItemRow)
+│   └── landing/      # Componentes de la landing page
+├── composables/      # Lógica reutilizable (useAuthorization)
+├── router/           # Configuración de rutas
+├── stores/           # Stores Pinia por dominio
+├── utils/            # Utilidades (riesgo, validadores)
+└── views/            # Vistas organizadas por dominio
+    ├── auth/
+    ├── administracion/
+    ├── cumplimiento/
+    ├── auditoria/
+    ├── empleados/
+    ├── documentos/
+    └── sistema/
+```
+
+### Convenciones
+
+- **Vistas y componentes**: `PascalCase.vue`.
+- **Stores, composables y archivos JS**: `camelCase.js`.
+- **Alias `@`**: apunta a `frontend/src` (configurado en `vite.config.js`).
+- **Lazy loading por defecto** en el router; solo `LoginView` se carga de forma eager.
+- **Estado centralizado** en Pinia: las vistas leen del store, disparan acciones y renderizan.
 
 ## 3. Producción
 
@@ -164,5 +206,28 @@ LOPCYMAT/COVENIN 2226), T-01, T-05 y D-05; editables desde la pantalla Requisito
 
 ### Pantallas
 
-`/empresas`, `/requisitos`, `/auditorias`, `/auditorias/:id` (checklist + matriz de riesgo en vivo
-+ descarga PDF) y `/estadisticas` (tablero por periodo).
+`/app/empresas`, `/app/requisitos`, `/app/auditorias`, `/app/auditorias/:id` (checklist + matriz de riesgo en vivo
++ descarga PDF) y `/app/estadisticas` (tablero por periodo).
+
+## Notas para desarrolladores
+
+### Cómo agregar una nueva vista
+
+1. Cree el componente `.vue` en `frontend/src/views/<dominio>/`.
+2. Registre la ruta en `frontend/src/router/index.js` usando lazy loading: `component: () => import('@/views/<dominio>/NuevaView.vue')`.
+3. Si la vista requiere datos, cree o extienda el store correspondiente en `frontend/src/stores/`.
+4. Use los componentes base de `frontend/src/components/ui/` para mantener consistencia.
+
+### Cómo agregar un nuevo componente reutilizable
+
+- Componentes base de UI: `frontend/src/components/ui/NombreComponente.vue`.
+- Componentes de dominio: `frontend/src/components/<dominio>/NombreComponente.vue`.
+- Expona props claras, use slots para contenido variable y mantenga el componente sin lógica de negocio acoplada.
+
+### Cómo agregar un nuevo endpoint
+
+1. Cree o extienda el controller en `backend/src/controllers/`.
+2. Defina las rutas en el archivo de router correspondiente en `backend/src/routes/`.
+3. Importe y monte el router en `backend/src/routes/index.js` bajo el prefijo adecuado.
+4. Aplique los middlewares `authenticate` y `authorize` según el acceso requerido.
+5. Actualice este `README.md` con el nuevo endpoint.
