@@ -7,6 +7,7 @@ const EmpleadoModel = (sequelize, DataTypes) => {
     apellido: { type: DataTypes.STRING, allowNull: false },
     cedula: { type: DataTypes.STRING, allowNull: false },
     cargo: { type: DataTypes.STRING, allowNull: true },
+    telefono: { type: DataTypes.STRING, allowNull: true },
     email: {
       type: DataTypes.STRING,
       allowNull: false,
