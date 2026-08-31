@@ -117,6 +117,7 @@ const guardar = async () => {
         toast.success('Empleado registrado');
         form.responsableId = data.empleado?.id || '';
         await api.put(`/empresas/${empresaId}`, { responsableId: form.responsableId });
+        await cargarEmpleados(empresaId);
         limpiarEmpleado();
         mostrarFormEmpleado.value = false;
       } catch (e) {
@@ -124,6 +125,7 @@ const guardar = async () => {
         // Conservar la empresa creada y cambiar a modo edición para permitir reintentar
         // sin duplicar la empresa
         editandoId.value = empresaId;
+        await cargarEmpleados(empresaId);
         await cargar();
         guardando.value = false;
         return;
@@ -168,10 +170,10 @@ const guardarEmpleado = async () => {
       empresaId: editandoId.value,
     });
     toast.success('Empleado registrado');
+    await cargarEmpleados(editandoId.value);
     form.responsableId = data.empleado?.id || '';
     limpiarEmpleado();
     mostrarFormEmpleado.value = false;
-    await cargarEmpleados(editandoId.value);
   } catch (e) {
     toast.error(apiMessage(e, 'No se pudo registrar el empleado'));
   } finally {
@@ -208,6 +210,26 @@ onMounted(async () => {
             </option>
           </select>
         </label>
+        <label v-if="editandoId" style="display:flex;align-items:flex-end">
+          <button
+            v-if="!mostrarFormEmpleado"
+            class="btn-ghost"
+            type="button"
+            @click="mostrarFormEmpleado = true"
+            style="height:fit-content;white-space:nowrap"
+          >
+            + Nuevo empleado responsable
+          </button>
+          <button
+            v-else
+            class="btn-ghost"
+            type="button"
+            @click="mostrarFormEmpleado = false"
+            style="height:fit-content;white-space:nowrap"
+          >
+            Ocultar formulario
+          </button>
+        </label>
       </div>
 
       <div v-if="mostrarFormEmpleado" class="card" style="margin-top: 1rem; background: #f9fafb">
@@ -226,12 +248,6 @@ onMounted(async () => {
           </button>
           <button v-if="editandoId" class="btn-ghost" type="button" @click="mostrarFormEmpleado = false">Cancelar</button>
         </div>
-      </div>
-
-      <div v-if="editandoId" class="actions-row" style="margin-top: 1rem">
-        <button v-if="!mostrarFormEmpleado" class="btn-ghost" type="button" @click="mostrarFormEmpleado = true">
-          + Nuevo empleado responsable
-        </button>
       </div>
 
       <div class="actions-row">
