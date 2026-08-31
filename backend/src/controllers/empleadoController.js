@@ -1,16 +1,9 @@
 import { Op } from 'sequelize';
 import { Empleado, User, Empresa } from '../models/index.js';
+import { resolveEmpresaWhere } from '../utils/authorization.js';
 
-// admin y auditor ven todas las empresas; los demás solo la suya
-const resolveWhere = (req) => {
-  if (['admin', 'auditor'].includes(req.user.rol) && req.query.empresaId) {
-    return { empresaId: req.query.empresaId };
-  }
-  if (['admin', 'auditor'].includes(req.user.rol)) {
-    return {};
-  }
-  return { empresaId: req.empresaId };
-};
+// Reutiliza helper centralizado de autorización por tenant.
+const resolveWhere = (req) => resolveEmpresaWhere(req);
 
 // GET /api/empleados
 const getAll = async (req, res, next) => {

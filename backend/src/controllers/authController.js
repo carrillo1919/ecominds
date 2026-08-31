@@ -1,17 +1,35 @@
+import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { Op } from 'sequelize';
 
 import { User } from '../models/index.js';
-import { generateToken, resetTokenExpiry } from '../utils/tokens.js';
+import {
+  generateToken,
+  resetTokenExpiry,
+  signAccessToken,
+  signRefreshToken,
+  ACCESS_TOKEN_TTL_MS,
+  REFRESH_TOKEN_TTL_MS,
+} from '../utils/tokens.js';
+import { cookieOptions, COOKIE_NAMES } from '../config/security.js';
 import {
   sendVerificationEmail,
   sendResetPasswordEmail,
 } from '../services/emailService.js';
+import { logSecurityEvent } from '../utils/logger.js';
 
-const signToken = (user) =>
-  jwt.sign({ sub: user.id, rol: user.rol }, process.env.JWT_SECRET, {
-    expiresIn: process.env.JWT_EXPIRES_IN || '24h',
-  });
+const setAuthCookies = (res, accessToken, refreshToken) => {
+  res.cookie(COOKIE_NAMES.accessToken, accessToken, cookieOptions(ACCESS_TOKEN_TTL_MS));
+  res.cookie(COOKIE_NAMES.refreshToken, refreshToken, cookieOptions(REFRESH_TOKEN_TTL_MS));
+};
+
+const clearAuthCookies = (res) => {
+  res.clearCookie(COOKIE_NAMES.accessToken, { path: '/', httpOnly: true });
+  res.clearCookie(COOKIE_NAMES.refreshToken, { path: '/', httpOnly: true });
+};
+
+const hashRefreshToken = (token) => bcrypt.hashSync(token, 10);
+const compareRefreshToken = (token, hash) => bcrypt.compareSync(token, hash);
 
 // POST /api/auth/register
 const register = async (req, res, next) => {
@@ -57,18 +75,30 @@ const login = async (req, res, next) => {
     });
 
     if (!user || !(await user.comparePassword(password))) {
+      logSecurityEvent('login_failed', { ip: req.ip, userAgent: req.headers['user-agent'] });
       return res.status(401).json({ message: 'Credenciales invalidas' });
     }
 
     if (!user.activo) {
+      logSecurityEvent('login_denied_inactive', { userId: user.id });
       return res.status(403).json({ message: 'Su usuario esta desactivado. Contacte al administrador.' });
     }
 
     if (!user.verified) {
+      logSecurityEvent('login_denied_unverified', { userId: user.id });
       return res.status(403).json({ message: 'Debe verificar su correo antes de iniciar sesion' });
     }
 
-    return res.json({ token: signToken(user), user: user.toPublicJSON() });
+    const accessToken = signAccessToken(user);
+    const refreshToken = signRefreshToken(user);
+
+    user.refreshTokenHash = hashRefreshToken(refreshToken);
+    await user.save();
+
+    setAuthCookies(res, accessToken, refreshToken);
+    logSecurityEvent('login_success', { userId: user.id, rol: user.rol });
+
+    return res.json({ user: user.toPublicJSON() });
   } catch (error) {
     return next(error);
   }
@@ -117,7 +147,8 @@ const forgotPassword = async (req, res, next) => {
     user.resetPasswordExpires = resetTokenExpiry();
     await user.save();
 
-    await emailService.sendResetPasswordEmail(user, token);
+    await sendResetPasswordEmail(user, token);
+    logSecurityEvent('password_reset_requested', { userId: user.id });
 
     return res.json(genericResponse);
   } catch (error) {
@@ -146,10 +177,80 @@ const resetPassword = async (req, res, next) => {
     user.resetPasswordExpires = null;
     await user.save();
 
+    logSecurityEvent('password_reset_completed', { userId: user.id });
+
     return res.json({ message: 'Contrasena actualizada correctamente. Ya puede iniciar sesion.' });
   } catch (error) {
     return next(error);
   }
 };
 
-export { register, login, verifyEmail, forgotPassword, resetPassword };
+// POST /api/auth/refresh
+const refresh = async (req, res, next) => {
+  try {
+    const refreshToken = req.cookies?.[COOKIE_NAMES.refreshToken];
+    if (!refreshToken) {
+      return res.status(401).json({ message: 'Sesion no proporcionada' });
+    }
+
+    let payload;
+    try {
+      payload = jwt.verify(refreshToken, process.env.JWT_REFRESH_SECRET);
+    } catch {
+      clearAuthCookies(res);
+      return res.status(401).json({ message: 'Sesion invalida' });
+    }
+
+    if (payload.type !== 'refresh') {
+      clearAuthCookies(res);
+      return res.status(401).json({ message: 'Token invalido' });
+    }
+
+    const user = await User.scope('withSecrets').findByPk(payload.sub);
+    if (!user || !user.activo || !user.refreshTokenHash || !compareRefreshToken(refreshToken, user.refreshTokenHash)) {
+      clearAuthCookies(res);
+      return res.status(401).json({ message: 'Sesion invalida' });
+    }
+
+    const newAccessToken = signAccessToken(user);
+    const newRefreshToken = signRefreshToken(user);
+
+    user.refreshTokenHash = hashRefreshToken(newRefreshToken);
+    await user.save();
+
+    setAuthCookies(res, newAccessToken, newRefreshToken);
+    logSecurityEvent('token_refreshed', { userId: user.id });
+
+    return res.json({ user: user.toPublicJSON() });
+  } catch (error) {
+    return next(error);
+  }
+};
+
+// POST /api/auth/logout
+const logout = async (req, res, next) => {
+  try {
+    const refreshToken = req.cookies?.[COOKIE_NAMES.refreshToken];
+    if (refreshToken) {
+      try {
+        const payload = jwt.verify(refreshToken, process.env.JWT_REFRESH_SECRET);
+        const user = await User.scope('withSecrets').findByPk(payload.sub);
+        if (user) {
+          user.refreshTokenHash = null;
+          await user.save();
+        }
+      } catch {
+        // Ignorar errores de token invalido; igualmente limpiamos cookies.
+      }
+    }
+
+    clearAuthCookies(res);
+    logSecurityEvent('logout', { userId: req.user?.id });
+
+    return res.json({ message: 'Sesion cerrada' });
+  } catch (error) {
+    return next(error);
+  }
+};
+
+export { register, login, verifyEmail, forgotPassword, resetPassword, refresh, logout };

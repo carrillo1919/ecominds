@@ -1,5 +1,7 @@
 import { Documento, ArchivoAdjunto, Empleado, Empresa, EmpresaRequisito, RequisitoLegal, EnteRegulador } from '../models/index.js';
 import { registrarAccion } from '../services/documentoAuditoriaService.js';
+import { resolveEmpresaWhere } from '../utils/authorization.js';
+import { logSecurityEvent } from '../utils/logger.js';
 
 const ESTADOS = ['vigente', 'vencido', 'archivado'];
 
@@ -10,16 +12,8 @@ const estadoEfectivo = (doc) => {
   return doc.fechaVencimiento < hoy ? 'vencido' : 'vigente';
 };
 
-// admin y auditor ven todas las empresas; demás solo la suya
-const resolveWhere = (req) => {
-  if (['admin', 'auditor'].includes(req.user.rol) && req.query.empresaId) {
-    return { empresaId: req.query.empresaId };
-  }
-  if (['admin', 'auditor'].includes(req.user.rol)) {
-    return {};
-  }
-  return { empresaId: req.empresaId };
-};
+// Reutiliza helper centralizado de autorización por tenant.
+const resolveWhere = (req) => resolveEmpresaWhere(req);
 
 // GET /api/documentos
 const getAll = async (req, res, next) => {
@@ -212,6 +206,8 @@ const remove = async (req, res, next) => {
       accion: 'eliminado',
       detalle: { titulo: documento.titulo },
     });
+
+    logSecurityEvent('documento_archivado', { documentoId: documento.id, userId: req.user.id });
 
     return res.json({ message: 'Documento archivado', documento });
   } catch (error) {

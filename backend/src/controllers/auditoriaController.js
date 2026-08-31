@@ -14,6 +14,8 @@ import {
   calcularResultado,
   nivelPorPorcentaje,
 } from '../services/riesgoService.js';
+import { resolveEmpresaWhere, puedeAccederEmpresa } from '../utils/authorization.js';
+import { logSecurityEvent } from '../utils/logger.js';
 
 const INCLUDES_BASE = [
   { model: Empresa, as: 'empresa', attributes: ['id', 'nombre', 'rif', 'sector'] },
@@ -67,8 +69,10 @@ const recalcular = async (auditoriaId, transaction) => {
 // GET /api/auditorias
 const getAll = async (req, res, next) => {
   try {
-    const where = {};
-    if (req.query.empresaId) where.empresaId = req.query.empresaId;
+    const where = resolveEmpresaWhere(req);
+    if (req.query.empresaId && ['admin', 'auditor'].includes(req.user.rol)) {
+      where.empresaId = req.query.empresaId;
+    }
     if (req.query.estado) where.estado = req.query.estado;
     if (req.query.desde || req.query.hasta) {
       where.fecha = {};
@@ -91,7 +95,8 @@ const getAll = async (req, res, next) => {
 // GET /api/auditorias/:id
 const getOne = async (req, res, next) => {
   try {
-    const auditoria = await Auditoria.findByPk(req.params.id, { include: [...INCLUDES_BASE, INCLUDE_ITEMS] });
+    const where = { id: req.params.id, ...resolveEmpresaWhere(req) };
+    const auditoria = await Auditoria.findOne({ where, include: [...INCLUDES_BASE, INCLUDE_ITEMS] });
     if (!auditoria) return res.status(404).json({ message: 'Auditoria no encontrada' });
     return res.json({ auditoria: ordenarItems(auditoria) });
   } catch (error) {
@@ -105,7 +110,8 @@ const create = async (req, res, next) => {
   try {
     const { empresaId, fecha, fechaProximaAuditoria, alcance } = req.body;
 
-    const empresa = await Empresa.findByPk(empresaId, { transaction });
+    const empresaWhere = { id: empresaId, ...resolveEmpresaWhere(req) };
+    const empresa = await Empresa.findOne({ where: empresaWhere, transaction });
     if (!empresa) {
       await transaction.rollback();
       return res.status(404).json({ message: 'Empresa no encontrada' });
@@ -140,6 +146,8 @@ const create = async (req, res, next) => {
     await recalcular(auditoria.id, transaction);
     await transaction.commit();
 
+    logSecurityEvent('auditoria_creada', { auditoriaId: auditoria.id, empresaId, userId: req.user.id });
+
     const creada = await Auditoria.findByPk(auditoria.id, { include: [...INCLUDES_BASE, INCLUDE_ITEMS] });
     return res.status(201).json({ message: 'Auditoria creada', auditoria: ordenarItems(creada) });
   } catch (error) {
@@ -151,7 +159,8 @@ const create = async (req, res, next) => {
 // PATCH /api/auditorias/:id  (cabecera)
 const update = async (req, res, next) => {
   try {
-    const auditoria = await Auditoria.findByPk(req.params.id);
+    const where = { id: req.params.id, ...resolveEmpresaWhere(req) };
+    const auditoria = await Auditoria.findOne({ where });
     if (!auditoria) return res.status(404).json({ message: 'Auditoria no encontrada' });
     if (auditoria.estado === 'finalizada') {
       return res.status(409).json({ message: 'La auditoria esta finalizada y no puede modificarse' });
@@ -172,7 +181,8 @@ const update = async (req, res, next) => {
 const saveItems = async (req, res, next) => {
   const transaction = await sequelize.transaction();
   try {
-    const auditoria = await Auditoria.findByPk(req.params.id, { transaction });
+    const where = { id: req.params.id, ...resolveEmpresaWhere(req) };
+    const auditoria = await Auditoria.findOne({ where, transaction });
     if (!auditoria) {
       await transaction.rollback();
       return res.status(404).json({ message: 'Auditoria no encontrada' });
@@ -225,7 +235,8 @@ const saveItems = async (req, res, next) => {
 // POST /api/auditorias/:id/finalizar
 const finalizar = async (req, res, next) => {
   try {
-    const auditoria = await Auditoria.findByPk(req.params.id, { include: [INCLUDE_ITEMS] });
+    const where = { id: req.params.id, ...resolveEmpresaWhere(req) };
+    const auditoria = await Auditoria.findOne({ where, include: [INCLUDE_ITEMS] });
     if (!auditoria) return res.status(404).json({ message: 'Auditoria no encontrada' });
     if (auditoria.estado === 'finalizada') {
       return res.status(409).json({ message: 'La auditoria ya fue finalizada' });
@@ -252,6 +263,8 @@ const finalizar = async (req, res, next) => {
     finalizada.finalizadaEn = new Date();
     await finalizada.save();
 
+    logSecurityEvent('auditoria_finalizada', { auditoriaId: auditoria.id, userId: req.user.id });
+
     const completa = await Auditoria.findByPk(auditoria.id, { include: [...INCLUDES_BASE, INCLUDE_ITEMS] });
     return res.json({ message: 'Auditoria finalizada', auditoria: ordenarItems(completa) });
   } catch (error) {
@@ -262,13 +275,15 @@ const finalizar = async (req, res, next) => {
 // DELETE /api/auditorias/:id  (solo borradores)
 const remove = async (req, res, next) => {
   try {
-    const auditoria = await Auditoria.findByPk(req.params.id);
+    const where = { id: req.params.id, ...resolveEmpresaWhere(req) };
+    const auditoria = await Auditoria.findOne({ where });
     if (!auditoria) return res.status(404).json({ message: 'Auditoria no encontrada' });
     if (auditoria.estado === 'finalizada') {
       return res.status(409).json({ message: 'No se puede eliminar una auditoria finalizada' });
     }
 
     await auditoria.destroy();
+    logSecurityEvent('auditoria_eliminada', { auditoriaId: auditoria.id, userId: req.user.id });
     return res.json({ message: 'Auditoria eliminada' });
   } catch (error) {
     return next(error);
@@ -278,8 +293,10 @@ const remove = async (req, res, next) => {
 // GET /api/auditorias/estadisticas  (RF-06.2: KPIs por periodo)
 const estadisticas = async (req, res, next) => {
   try {
-    const where = { estado: 'finalizada' };
-    if (req.query.empresaId) where.empresaId = req.query.empresaId;
+    const where = { estado: 'finalizada', ...resolveEmpresaWhere(req) };
+    if (req.query.empresaId && ['admin', 'auditor'].includes(req.user.rol)) {
+      where.empresaId = req.query.empresaId;
+    }
     if (req.query.desde || req.query.hasta) {
       where.fecha = {};
       if (req.query.desde) where.fecha[Op.gte] = req.query.desde;
@@ -368,10 +385,13 @@ const proximas = async (req, res, next) => {
     const hoy = new Date();
     const limite = new Date(hoy.getTime() + dias * 24 * 60 * 60 * 1000);
 
+    const where = {
+      ...resolveEmpresaWhere(req),
+      fechaProximaAuditoria: { [Op.ne]: null, [Op.lte]: limite.toISOString().slice(0, 10) },
+    };
+
     const auditorias = await Auditoria.findAll({
-      where: {
-        fechaProximaAuditoria: { [Op.ne]: null, [Op.lte]: limite.toISOString().slice(0, 10) },
-      },
+      where,
       include: INCLUDES_BASE,
       order: [['fechaProximaAuditoria', 'ASC']],
     });

@@ -22,6 +22,7 @@ const UserModel = (sequelize, DataTypes) => {
     verificationToken: DataTypes.STRING,
     resetPasswordToken: DataTypes.STRING,
     resetPasswordExpires: DataTypes.DATE,
+    refreshTokenHash: DataTypes.STRING,
     activo: { type: DataTypes.BOOLEAN, allowNull: false, defaultValue: true },
   }, {
     tableName: 'Users',
@@ -33,6 +34,7 @@ const UserModel = (sequelize, DataTypes) => {
           'verificationToken',
           'resetPasswordToken',
           'resetPasswordExpires',
+          'refreshTokenHash',
         ],
       },
     },

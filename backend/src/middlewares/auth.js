@@ -1,12 +1,12 @@
 import jwt from 'jsonwebtoken';
 import { User, Empleado } from '../models/index.js';
+import { COOKIE_NAMES } from '../config/security.js';
 
 const authenticate = async (req, res, next) => {
   try {
-    const header = req.headers.authorization || '';
-    const [scheme, token] = header.split(' ');
+    const token = req.cookies?.[COOKIE_NAMES.accessToken];
 
-    if (scheme !== 'Bearer' || !token) {
+    if (!token) {
       return res.status(401).json({ message: 'Token no proporcionado' });
     }
 

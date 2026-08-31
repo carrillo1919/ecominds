@@ -1,11 +1,14 @@
 import { Auditoria, AuditoriaItem, Requisito, Empresa, User } from '../models/index.js';
 import { calcularResultado } from '../services/riesgoService.js';
 import { construirInforme } from '../services/pdfService.js';
+import { resolveEmpresaWhere } from '../utils/authorization.js';
 
 // GET /api/auditorias/:id/informe.pdf  (RF-06.1)
 const informePdf = async (req, res, next) => {
   try {
-    const auditoria = await Auditoria.findByPk(req.params.id, {
+    const where = { id: req.params.id, ...resolveEmpresaWhere(req) };
+    const auditoria = await Auditoria.findOne({
+      where,
       include: [
         { model: Empresa, as: 'empresa' },
         { model: User, as: 'auditor', attributes: ['id', 'nombre', 'apellido', 'email'] },

@@ -1,10 +1,15 @@
 import { EmpresaRequisito, Empresa, RequisitoLegal, EnteRegulador } from '../models/index.js';
 import * as service from '../services/empresaRequisitoService.js';
+import { resolveEmpresaWhere, puedeAccederEmpresa } from '../utils/authorization.js';
 
 const getByEmpresa = async (req, res, next) => {
   try {
+    const empresaId = req.params.empresaId;
+    if (!puedeAccederEmpresa(req, empresaId)) {
+      return res.status(403).json({ message: 'No tiene permisos para acceder a esta empresa' });
+    }
     const asignaciones = await EmpresaRequisito.findAll({
-      where: { empresaId: req.params.empresaId },
+      where: { empresaId },
       include: [
         { model: RequisitoLegal, as: 'requisito', include: [{ model: EnteRegulador, as: 'ente', attributes: ['id', 'nombre', 'sigla'] }] },
       ],
@@ -16,6 +21,9 @@ const getByEmpresa = async (req, res, next) => {
 
 const assign = async (req, res, next) => {
   try {
+    if (!puedeAccederEmpresa(req, req.body.empresaId)) {
+      return res.status(403).json({ message: 'No tiene permisos para asignar requisitos a esta empresa' });
+    }
     const asignacion = await service.assign(req.body);
     return res.status(201).json({ message: 'Requisito asignado', asignacion });
   } catch (error) { return next(error); }
@@ -23,6 +31,9 @@ const assign = async (req, res, next) => {
 
 const bulkAssign = async (req, res, next) => {
   try {
+    if (!puedeAccederEmpresa(req, req.body.empresaId)) {
+      return res.status(403).json({ message: 'No tiene permisos para asignar requisitos a esta empresa' });
+    }
     const asignaciones = await service.bulkAssign(req.body);
     return res.status(201).json({ message: 'Requisitos asignados', asignaciones });
   } catch (error) { return next(error); }
@@ -30,7 +41,8 @@ const bulkAssign = async (req, res, next) => {
 
 const update = async (req, res, next) => {
   try {
-    const asignacion = await EmpresaRequisito.findByPk(req.params.id);
+    const where = { id: req.params.id, ...resolveEmpresaWhere(req, { empresaIdField: 'empresaId' }) };
+    const asignacion = await EmpresaRequisito.findOne({ where });
     if (!asignacion) return res.status(404).json({ message: 'Asignación no encontrada' });
 
     if (req.body.observaciones !== undefined) asignacion.observaciones = req.body.observaciones;
@@ -47,7 +59,8 @@ const update = async (req, res, next) => {
 
 const remove = async (req, res, next) => {
   try {
-    const asignacion = await EmpresaRequisito.findByPk(req.params.id);
+    const where = { id: req.params.id, ...resolveEmpresaWhere(req, { empresaIdField: 'empresaId' }) };
+    const asignacion = await EmpresaRequisito.findOne({ where });
     if (!asignacion) return res.status(404).json({ message: 'Asignación no encontrada' });
     await asignacion.destroy();
     return res.json({ message: 'Asignación eliminada' });

@@ -1,4 +1,5 @@
 import { User } from '../models/index.js';
+import { logSecurityEvent } from '../utils/logger.js';
 
 // GET /api/users/me
 const me = async (req, res) => res.json({ user: req.user.toPublicJSON() });
@@ -24,8 +25,16 @@ const updateRol = async (req, res, next) => {
       return res.status(400).json({ message: 'No puede cambiar su propio rol' });
     }
 
+    const rolAnterior = user.rol;
     user.rol = rol;
     await user.save();
+
+    logSecurityEvent('rol_changed', {
+      userId: user.id,
+      adminId: req.user.id,
+      rolAnterior,
+      rolNuevo: rol,
+    });
 
     return res.json({ message: 'Rol actualizado', user: user.toPublicJSON() });
   } catch (error) {

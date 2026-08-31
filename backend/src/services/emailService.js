@@ -1,4 +1,5 @@
 import { Resend } from 'resend';
+import logger from '../utils/logger.js';
 
 const FRONTEND_URL = () =>
   (process.env.FRONTEND_URL || 'http://localhost:5173').replace(/\/$/, '');
@@ -18,24 +19,20 @@ const getResend = () => {
 
 const verifyResendConnection = async () => {
   if (!process.env.RESEND_API_KEY) {
-    console.warn('[resend] RESEND_API_KEY no configurada');
+    logger.warn('[resend] RESEND_API_KEY no configurada');
     return false;
   }
 
   // Las claves restringidas solo tienen permiso para enviar correos.
   getResend();
 
-  console.log('[resend] Cliente configurado correctamente');
+  logger.info('[resend] Cliente configurado correctamente');
   return true;
 };
 
 const send = async ({ to, subject, html }) => {
   if (!process.env.RESEND_API_KEY) {
-    console.warn('[emailService] RESEND_API_KEY no configurada', {
-      to,
-      subject,
-    });
-
+    logger.warn('[emailService] RESEND_API_KEY no configurada');
     return { skipped: true };
   }
 

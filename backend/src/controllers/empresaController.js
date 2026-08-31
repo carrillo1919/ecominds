@@ -1,9 +1,12 @@
 import { Empresa, Auditoria, Empleado } from '../models/index.js';
+import { resolveEmpresaWhere, puedeAccederEmpresa } from '../utils/authorization.js';
 
 // GET /api/empresas
 const getAll = async (req, res, next) => {
   try {
+    const where = resolveEmpresaWhere(req);
     const empresas = await Empresa.findAll({
+      where,
       order: [['nombre', 'ASC']],
       include: [
         {
@@ -36,7 +39,9 @@ const getAll = async (req, res, next) => {
 // GET /api/empresas/:id
 const getOne = async (req, res, next) => {
   try {
-    const empresa = await Empresa.findByPk(req.params.id, {
+    const where = { id: req.params.id, ...resolveEmpresaWhere(req) };
+    const empresa = await Empresa.findOne({
+      where,
       include: [
         {
           model: Empleado,
@@ -90,7 +95,8 @@ const create = async (req, res, next) => {
 // PUT /api/empresas/:id
 const update = async (req, res, next) => {
   try {
-    const empresa = await Empresa.findByPk(req.params.id);
+    const where = { id: req.params.id, ...resolveEmpresaWhere(req) };
+    const empresa = await Empresa.findOne({ where });
     if (!empresa) return res.status(404).json({ message: 'Empresa no encontrada' });
 
     const campos = ['nombre', 'rif', 'sector', 'actividad', 'direccion', 'telefono', 'email', 'activo'];
