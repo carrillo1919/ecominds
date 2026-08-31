@@ -1,8 +1,8 @@
-import dotenv from 'dotenv';
+const dotenv = require('dotenv');
 
 dotenv.config({ override: true });
 
-const config = {
+module.exports = {
   development: {
     use_env_variable: 'DATABASE_URL',
     dialect: 'postgres',
@@ -30,5 +30,3 @@ const config = {
     },
   },
 };
-
-export default config;

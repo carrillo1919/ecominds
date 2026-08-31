@@ -4,10 +4,10 @@ import { QueryTypes } from 'sequelize';
 const SALT_ROUNDS = 10;
 
 const usuarios = [
-  { nombre: 'Administrador', email: 'admin@srcd.local', password: 'Admin123!', rol: 'admin' },
-  { nombre: 'Auditor', email: 'auditor@srcd.local', password: 'Auditor123!', rol: 'auditor' },
-  { nombre: 'Responsable', email: 'responsable@srcd.local', password: 'Responsable123!', rol: 'responsable' },
-  { nombre: 'Lector', email: 'lector@srcd.local', password: 'Lector123!', rol: 'lector' },
+  { nombre: 'Administrador', email: 'carloscarrillo119@gmail.com', password: 'Cacn1911.', rol: 'admin' },
+  { nombre: 'Auditor', email: 'auditor@srcd.local', password: 'Cacn1911.', rol: 'auditor' },
+  { nombre: 'Responsable', email: 'responsable@srcd.local', password: 'Cacn1911.', rol: 'responsable' },
+  { nombre: 'Lector', email: 'lector@srcd.local', password: 'Cacn1911.', rol: 'lector' },
 ];
 
 export const up = async (queryInterface) => {
