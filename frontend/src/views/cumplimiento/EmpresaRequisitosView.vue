@@ -63,10 +63,10 @@
 
 <script setup>
 import { ref, computed, onMounted } from 'vue';
-import { useAuthStore } from '../stores/auth.js';
-import * as api from '../api/empresaRequisitos.js';
-import * as empresasApi from '../api/empresas.js';
-import * as requisitosApi from '../api/requisitosLegales.js';
+import { useAuthStore } from '@/stores/auth.js';
+import * as api from '@/api/empresaRequisitos.js';
+import * as empresasApi from '@/api/empresas.js';
+import * as requisitosApi from '@/api/requisitosLegales.js';
 
 const auth = useAuthStore();
 const canManage = computed(() => ['admin', 'auditor'].includes(auth.user?.rol));

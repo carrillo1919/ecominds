@@ -120,9 +120,9 @@
 
 <script setup>
 import { ref, computed, onMounted } from 'vue';
-import { useAuthStore } from '../stores/auth.js';
-import * as api from '../api/requisitosLegales.js';
-import * as entesApi from '../api/entesReguladores.js';
+import { useAuthStore } from '@/stores/auth.js';
+import * as api from '@/api/requisitosLegales.js';
+import * as entesApi from '@/api/entesReguladores.js';
 
 const auth = useAuthStore();
 const canManage = computed(() => ['admin', 'auditor'].includes(auth.user?.rol));

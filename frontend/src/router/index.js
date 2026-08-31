@@ -1,44 +1,41 @@
 import { createRouter, createWebHistory } from 'vue-router';
 import { setUnauthorizedHandler } from '@/api/axios';
 import { useAuthStore } from '@/stores/auth';
-import EntesReguladoresView from '@/views/EntesReguladoresView.vue';
-import RequisitosLegalesView from '@/views/RequisitosLegalesView.vue';
-import EmpresaRequisitosView from '@/views/EmpresaRequisitosView.vue';
-import LandingView from '@/views/LandingView.vue';
+import LoginView from '@/views/auth/LoginView.vue';
 
 const routes = [
-  { path: '/', name: 'landing', component: LandingView, meta: { public: true } },
+  { path: '/', name: 'landing', component: () => import('@/views/LandingView.vue'), meta: { public: true } },
 
   // Rutas públicas del sistema
-  { path: '/app/login', name: 'login', component: () => import('@/views/LoginView.vue'), meta: { public: true } },
-  { path: '/app/register', name: 'register', component: () => import('@/views/RegisterView.vue'), meta: { public: true } },
-  { path: '/app/verify-email', name: 'verify-email', component: () => import('@/views/VerifyEmailView.vue'), meta: { public: true } },
-  { path: '/app/forgot-password', name: 'forgot-password', component: () => import('@/views/ForgotPasswordView.vue'), meta: { public: true } },
-  { path: '/app/reset-password', name: 'reset-password', component: () => import('@/views/ResetPasswordView.vue'), meta: { public: true } },
+  { path: '/app/login', name: 'login', component: LoginView, meta: { public: true } },
+  { path: '/app/register', name: 'register', component: () => import('@/views/auth/RegisterView.vue'), meta: { public: true } },
+  { path: '/app/verify-email', name: 'verify-email', component: () => import('@/views/auth/VerifyEmailView.vue'), meta: { public: true } },
+  { path: '/app/forgot-password', name: 'forgot-password', component: () => import('@/views/auth/ForgotPasswordView.vue'), meta: { public: true } },
+  { path: '/app/reset-password', name: 'reset-password', component: () => import('@/views/auth/ResetPasswordView.vue'), meta: { public: true } },
 
   // Layout principal
   {
     path: '/app',
     component: () => import('@/components/AppLayout.vue'),
     children: [
-      { path: 'dashboard', name: 'dashboard', component: () => import('@/views/DashboardView.vue'), meta: { requiresAuth: true } },
-      { path: 'usuarios', name: 'usuarios', component: () => import('@/views/UsuariosView.vue'), meta: { requiresAuth: true, roles: ['admin'] } },
-      { path: 'empresas', name: 'empresas', component: () => import('@/views/EmpresasView.vue'), meta: { requiresAuth: true } },
-      { path: 'entes-reguladores', name: 'entes-reguladores', component: EntesReguladoresView, meta: { requiresAuth: true } },
-      { path: 'requisitos-legales', name: 'requisitos-legales', component: RequisitosLegalesView, meta: { requiresAuth: true } },
-      { path: 'empresa-requisitos', name: 'empresa-requisitos', component: EmpresaRequisitosView, meta: { requiresAuth: true } },
-      { path: 'requisitos', name: 'requisitos', component: () => import('@/views/RequisitosView.vue'), meta: { requiresAuth: true } },
-      { path: 'auditorias', name: 'auditorias', component: () => import('@/views/AuditoriasView.vue'), meta: { requiresAuth: true } },
-      { path: 'auditorias/:id', name: 'auditoria-detalle', component: () => import('@/views/AuditoriaDetalleView.vue'), meta: { requiresAuth: true } },
-      { path: 'estadisticas', name: 'estadisticas', component: () => import('@/views/EstadisticasView.vue'), meta: { requiresAuth: true } },
-      { path: 'empleados', name: 'empleados', component: () => import('@/views/EmpleadosView.vue'), meta: { requiresAuth: true } },
-      { path: 'empleados/:id', name: 'empleado-detalle', component: () => import('@/views/EmpleadoDetalleView.vue'), meta: { requiresAuth: true, roles: ['admin'] } },
-      { path: 'documentos', name: 'documentos', component: () => import('@/views/DocumentosView.vue'), meta: { requiresAuth: true } },
-      { path: 'documentos/:id', name: 'documento-detalle', component: () => import('@/views/DocumentoDetalleView.vue'), meta: { requiresAuth: true } },
+      { path: 'dashboard', name: 'dashboard', component: () => import('@/views/sistema/DashboardView.vue'), meta: { requiresAuth: true } },
+      { path: 'usuarios', name: 'usuarios', component: () => import('@/views/administracion/UsuariosView.vue'), meta: { requiresAuth: true, roles: ['admin'] } },
+      { path: 'empresas', name: 'empresas', component: () => import('@/views/administracion/EmpresasView.vue'), meta: { requiresAuth: true } },
+      { path: 'entes-reguladores', name: 'entes-reguladores', component: () => import('@/views/cumplimiento/EntesReguladoresView.vue'), meta: { requiresAuth: true } },
+      { path: 'requisitos-legales', name: 'requisitos-legales', component: () => import('@/views/cumplimiento/RequisitosLegalesView.vue'), meta: { requiresAuth: true } },
+      { path: 'empresa-requisitos', name: 'empresa-requisitos', component: () => import('@/views/cumplimiento/EmpresaRequisitosView.vue'), meta: { requiresAuth: true } },
+      { path: 'requisitos', name: 'requisitos', component: () => import('@/views/cumplimiento/RequisitosView.vue'), meta: { requiresAuth: true } },
+      { path: 'auditorias', name: 'auditorias', component: () => import('@/views/auditoria/AuditoriasView.vue'), meta: { requiresAuth: true } },
+      { path: 'auditorias/:id', name: 'auditoria-detalle', component: () => import('@/views/auditoria/AuditoriaDetalleView.vue'), meta: { requiresAuth: true } },
+      { path: 'estadisticas', name: 'estadisticas', component: () => import('@/views/auditoria/EstadisticasView.vue'), meta: { requiresAuth: true } },
+      { path: 'empleados', name: 'empleados', component: () => import('@/views/empleados/EmpleadosView.vue'), meta: { requiresAuth: true } },
+      { path: 'empleados/:id', name: 'empleado-detalle', component: () => import('@/views/empleados/EmpleadoDetalleView.vue'), meta: { requiresAuth: true, roles: ['admin'] } },
+      { path: 'documentos', name: 'documentos', component: () => import('@/views/documentos/DocumentosView.vue'), meta: { requiresAuth: true } },
+      { path: 'documentos/:id', name: 'documento-detalle', component: () => import('@/views/documentos/DocumentoDetalleView.vue'), meta: { requiresAuth: true } },
     ],
   },
 
-  { path: '/:pathMatch(.*)*', name: 'not-found', component: () => import('@/views/NotFoundView.vue'), meta: { public: true } },
+  { path: '/:pathMatch(.*)*', name: 'not-found', component: () => import('@/views/sistema/NotFoundView.vue'), meta: { public: true } },
 ];
 
 const router = createRouter({
