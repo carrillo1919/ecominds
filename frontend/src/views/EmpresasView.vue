@@ -69,6 +69,7 @@ const cargar = async () => {
 
 const editar = (empresa) => {
   editandoId.value = empresa.id;
+  mostrarFormEmpleado.value = false;
   Object.keys(form).forEach((k) => {
     form[k] = empresa[k] || '';
   });
