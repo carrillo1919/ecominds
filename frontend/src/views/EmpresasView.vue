@@ -208,6 +208,26 @@ onMounted(async () => {
             </option>
           </select>
         </label>
+        <label v-if="editandoId" style="display:flex;align-items:flex-end">
+          <button
+            v-if="!mostrarFormEmpleado"
+            class="btn-ghost"
+            type="button"
+            @click="mostrarFormEmpleado = true"
+            style="height:fit-content;white-space:nowrap"
+          >
+            + Nuevo empleado responsable
+          </button>
+          <button
+            v-else
+            class="btn-ghost"
+            type="button"
+            @click="mostrarFormEmpleado = false"
+            style="height:fit-content;white-space:nowrap"
+          >
+            Ocultar formulario
+          </button>
+        </label>
       </div>
 
       <div v-if="mostrarFormEmpleado" class="card" style="margin-top: 1rem; background: #f9fafb">
@@ -226,12 +246,6 @@ onMounted(async () => {
           </button>
           <button v-if="editandoId" class="btn-ghost" type="button" @click="mostrarFormEmpleado = false">Cancelar</button>
         </div>
-      </div>
-
-      <div v-if="editandoId" class="actions-row" style="margin-top: 1rem">
-        <button v-if="!mostrarFormEmpleado" class="btn-ghost" type="button" @click="mostrarFormEmpleado = true">
-          + Nuevo empleado responsable
-        </button>
       </div>
 
       <div class="actions-row">
