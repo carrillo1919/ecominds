@@ -5,6 +5,7 @@ import { useAuthStore } from '@/stores/auth';
 import { useAuthorization } from '@/composables/useAuthorization';
 import { roleLabel } from '@/utils/validators';
 import EcoMindsLogo from '@/components/EcoMindsLogo.vue';
+import menuConfig from '@/config/menu.json';
 
 const auth = useAuthStore();
 const route = useRoute();
@@ -14,22 +15,7 @@ const { canGestionarUsuarios } = useAuthorization();
 const collapsed = ref(false);
 const mobileOpen = ref(false);
 
-const titulos = {
-  dashboard: { titulo: 'Panel principal', desc: 'Resumen del sistema de cumplimiento' },
-  usuarios: { titulo: 'Usuarios', desc: 'Gestion de cuentas y roles' },
-  empresas: { titulo: 'Empresas', desc: 'Registro de empresas auditadas' },
-  'entes-reguladores': { titulo: 'Entes Reguladores', desc: 'Organismos que emiten normativa' },
-  'requisitos-legales': { titulo: 'Requisitos Legales', desc: 'Catalogo de obligaciones normativas' },
-  'empresa-requisitos': { titulo: 'Asignacion de Requisitos', desc: 'Vinculacion empresa - obligaciones' },
-  requisitos: { titulo: 'Checklist', desc: 'Checklist legal y requisitos criticos' },
-  auditorias: { titulo: 'Auditorias', desc: 'Ejecucion y seguimiento de auditorias' },
-  'auditoria-detalle': { titulo: 'Auditoria', desc: 'Evaluacion, matriz de riesgo e informe' },
-  estadisticas: { titulo: 'Tablero', desc: 'Indicadores de cumplimiento por periodo' },
-  empleados: { titulo: 'Empleados', desc: 'Gestion de empleados de la empresa' },
-  'empleado-detalle': { titulo: 'Empleado', desc: 'Detalle y acceso al sistema' },
-  documentos: { titulo: 'Documentos', desc: 'Documentos asignados a la empresa' },
-  'documento-detalle': { titulo: 'Documento', desc: 'Detalle y archivos adjuntos' },
-};
+const titulos = menuConfig.titles;
 
 const encabezado = computed(
   () => titulos[route.name] || { titulo: 'EcoMinds', desc: 'Auditoria Ambiental' },
@@ -44,6 +30,12 @@ const iniciales = computed(() => {
 watch(() => route.fullPath, () => {
   mobileOpen.value = false;
 });
+
+const hasPermission = (permission) => {
+  if (!permission) return true;
+  const permissions = { canGestionarUsuarios };
+  return !!permissions[permission];
+};
 
 const handleLogout = () => {
   auth.logout();
@@ -69,104 +61,71 @@ const handleLogout = () => {
         </span>
       </router-link>
 
-      <p class="sidebar__section">Principal</p>
-      <nav class="sidebar__nav">
-        <router-link class="sidebar__link" :to="{ name: 'dashboard' }">
-          <span class="sidebar__icon">
-            <svg viewBox="0 0 24 24"><path d="M3 10.5 12 3l9 7.5" /><path d="M5 9.5V21h14V9.5" /></svg>
-          </span>
-          <span>Inicio</span>
-        </router-link>
-
-        <router-link v-if="canGestionarUsuarios" class="sidebar__link" :to="{ name: 'usuarios' }">
-          <span class="sidebar__icon">
-            <svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.2" /><path d="M2.5 20c0-3.6 2.9-6 6.5-6s6.5 2.4 6.5 6" /><path d="M17 8.5a2.8 2.8 0 1 0 0-.1M18 20c0-2.4-.8-4-2-5" /></svg>
-          </span>
-          <span>Usuarios</span>
-        </router-link>
-      </nav>
-
-      <p class="sidebar__section">Cumplimiento</p>
-      <nav class="sidebar__nav">
-        <router-link class="sidebar__link" :to="{ name: 'empresas' }">
-          <span class="sidebar__icon">
-            <svg viewBox="0 0 24 24"><path d="M4 21V6l8-3 8 3v15" /><path d="M9 21v-6h6v6" /></svg>
-          </span>
-          <span>Empresas</span>
-        </router-link>
-
-        <router-link class="sidebar__link" :to="{ name: 'entes-reguladores' }">
-          <span class="sidebar__icon">
-            <svg viewBox="0 0 24 24"><path d="M12 2 2 7l10 5 10-5-10-5z" /><path d="M2 17l10 5 10-5" /><path d="M2 12l10 5 10-5" /></svg>
-          </span>
-          <span>Entes Reguladores</span>
-        </router-link>
-
-        <router-link class="sidebar__link" :to="{ name: 'requisitos-legales' }">
-          <span class="sidebar__icon">
-            <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" /><path d="M14 2v6h6" /><path d="M9 12h6M9 16h6" /></svg>
-          </span>
-          <span>Requisitos Legales</span>
-        </router-link>
-
-        <router-link class="sidebar__link" :to="{ name: 'empresa-requisitos' }">
-          <span class="sidebar__icon">
-            <svg viewBox="0 0 24 24"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2" /><rect x="8" y="2" width="8" height="4" rx="1" /></svg>
-          </span>
-          <span>Asignar Requisitos</span>
-        </router-link>
-
-        <router-link class="sidebar__link" :to="{ name: 'requisitos' }">
-          <span class="sidebar__icon">
-            <svg viewBox="0 0 24 24"><path d="M6 3h9l4 4v14H6z" /><path d="M9 12h6M9 16h4" /></svg>
-          </span>
-          <span>Requisitos</span>
-        </router-link>
-
-        <router-link class="sidebar__link" :to="{ name: 'auditorias' }">
-          <span class="sidebar__icon">
-            <svg viewBox="0 0 24 24"><path d="M9 11l2.5 2.5L16 8" /><rect x="4" y="4" width="16" height="16" rx="3" /></svg>
-          </span>
-          <span>Auditorias</span>
-        </router-link>
-
-        <router-link class="sidebar__link" :to="{ name: 'estadisticas' }">
-          <span class="sidebar__icon">
-            <svg viewBox="0 0 24 24"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2" /></svg>
-          </span>
-          <span>Tablero</span>
-        </router-link>
-      </nav>
-
-      <p class="sidebar__section">Empleados y Documentos</p>
-      <nav class="sidebar__nav">
-        <router-link class="sidebar__link" :to="{ name: 'empleados' }">
-          <span class="sidebar__icon">
-            <svg viewBox="0 0 24 24"><circle cx="9" cy="7" r="3" /><path d="M3 21v-2a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v2" /><path d="M16 3.13a4 4 0 0 1 0 7.75" /><path d="M21 21v-2a4 4 0 0 0-3-3.87" /></svg>
-          </span>
-          <span>Empleados</span>
-        </router-link>
-
-        <router-link class="sidebar__link" :to="{ name: 'documentos' }">
-          <span class="sidebar__icon">
-            <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" /><path d="M14 2v6h6" /><path d="M9 13h6M9 17h4" /></svg>
-          </span>
-          <span>Documentos</span>
-        </router-link>
-      </nav>
-
-      <div class="sidebar__footer">
-        <div class="sidebar__user">
-          <span class="avatar">{{ iniciales }}</span>
-          <span class="sidebar__user-info">
-            <strong>{{ auth.nombreCompleto }}</strong>
-            <span>{{ roleLabel(auth.rol) }}</span>
-          </span>
-        </div>
-        <button class="btn-ghost" type="button" style="margin-top: 0.6rem; width: 100%" @click="handleLogout">
-          Salir
-        </button>
+      <div
+        v-for="section in menuConfig.sections"
+        :key="section.title"
+        class="sidebar__section-group"
+      >
+        <p v-if="!collapsed" class="sidebar__section">{{ section.title }}</p>
+        <nav class="sidebar__nav">
+          <template v-for="item in section.items">
+            <router-link
+              v-if="hasPermission(item.permission)"
+              :key="item.name"
+              class="sidebar__link"
+              :to="{ name: item.name }"
+              :aria-label="item.label"
+            >
+              <span class="sidebar__icon">
+                <svg viewBox="0 0 24 24" v-html="item.icon"></svg>
+              </span>
+              <span class="sidebar__label">{{ item.label }}</span>
+              <span v-if="collapsed" class="sidebar__tooltip">{{ item.label }}</span>
+            </router-link>
+          </template>
+        </nav>
       </div>
+
+      <div
+        v-for="section in menuConfig.footerItems"
+        :key="section.title"
+        class="sidebar__section-group"
+      >
+        <p v-if="!collapsed" class="sidebar__section">{{ section.title }}</p>
+        <nav class="sidebar__nav">
+          <template v-for="item in section.items">
+            <router-link
+              v-if="hasPermission(item.permission)"
+              :key="item.name"
+              class="sidebar__link"
+              :to="{ name: item.name }"
+              :aria-label="item.label"
+            >
+              <span class="sidebar__icon">
+                <svg viewBox="0 0 24 24" v-html="item.icon"></svg>
+              </span>
+              <span class="sidebar__label">{{ item.label }}</span>
+              <span v-if="collapsed" class="sidebar__tooltip">{{ item.label }}</span>
+            </router-link>
+          </template>
+        </nav>
+      </div>
+
+      <nav class="sidebar__nav">
+        <template v-for="item in menuConfig.footerItems">
+          <router-link
+            v-if="hasPermission(item.permission)"
+            :key="item.name"
+            class="sidebar__link"
+            :to="{ name: item.name }"
+          >
+            <span class="sidebar__icon">
+              <svg viewBox="0 0 24 24" v-html="item.icon"></svg>
+            </span>
+            <span>{{ item.label }}</span>
+          </router-link>
+        </template>
+      </nav>
     </aside>
 
     <button class="sidebar-backdrop" type="button" aria-label="Cerrar menu" @click="mobileOpen = false"></button>
@@ -174,7 +133,7 @@ const handleLogout = () => {
     <div class="main-column">
       <header class="topbar">
         <button
-          class="icon-button"
+          class="icon-button menu-toggle"
           type="button"
           aria-label="Alternar menu lateral"
           @click="collapsed = !collapsed; mobileOpen = !mobileOpen"
@@ -187,8 +146,23 @@ const handleLogout = () => {
           <span>{{ encabezado.desc }}</span>
         </span>
 
-        <span class="topbar__spacer"></span>
-        <span class="badge-rol">{{ roleLabel(auth.rol) }}</span>
+        <div class="topbar__actions">
+          <div class="user-chip">
+            <span class="avatar">{{ iniciales }}</span>
+            <div class="user-chip__info">
+              <strong>{{ auth.nombreCompleto }}</strong>
+              <span class="user-chip__role">{{ roleLabel(auth.rol) }}</span>
+            </div>
+          </div>
+          <button class="btn-logout" type="button" @click="handleLogout">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+              <polyline points="16 17 21 12 16 7" />
+              <line x1="21" y1="12" x2="9" y2="12" />
+            </svg>
+            <span>Salir</span>
+          </button>
+        </div>
       </header>
 
       <main class="content">
@@ -222,3 +196,191 @@ const handleLogout = () => {
     </footer>
   </div>
 </template>
+
+<style scoped>
+.topbar {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.75rem 1.25rem;
+  min-height: 64px;
+}
+
+.topbar__title {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.2;
+}
+
+.topbar__title strong {
+  font-size: 1.1rem;
+  font-weight: 700;
+}
+
+.topbar__title span {
+  font-size: 0.75rem;
+  color: var(--on-surface-variant, #666);
+}
+
+.topbar__actions {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-left: auto;
+}
+
+.user-chip {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.35rem 0.75rem 0.35rem 0.35rem;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 999px;
+}
+
+.user-chip .avatar {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: var(--primary, #4caf50);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.85rem;
+  font-weight: 700;
+}
+
+.user-chip__info {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.1;
+}
+
+.user-chip__info strong {
+  font-size: 0.82rem;
+  font-weight: 600;
+}
+
+.user-chip__role {
+  font-size: 0.72rem;
+  color: var(--on-surface-variant, #9e9e9e);
+}
+
+.btn-logout {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.5rem 0.9rem;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 0.5rem;
+  background: rgba(255, 255, 255, 0.08);
+  color: inherit;
+  font-size: 0.85rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.2s, border-color 0.2s;
+}
+
+.btn-logout:hover {
+  background: rgba(244, 67, 54, 0.15);
+  border-color: rgba(244, 67, 54, 0.4);
+  color: #f44336;
+}
+
+.btn-logout svg {
+  width: 18px;
+  height: 18px;
+}
+
+.sidebar {
+  transition: width 0.25s ease;
+}
+
+.app-shell--auth.is-collapsed .sidebar {
+  width: 64px;
+}
+
+.sidebar__link {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.65rem 0.9rem;
+  border-radius: 0.5rem;
+}
+
+.sidebar__icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  flex-shrink: 0;
+}
+
+.sidebar__icon svg {
+  width: 100%;
+  height: 100%;
+}
+
+.app-shell--auth.is-collapsed .sidebar__label,
+.app-shell--auth.is-collapsed .sidebar__section {
+  display: none;
+}
+
+.sidebar__tooltip {
+  position: absolute;
+  left: calc(100% + 0.6rem);
+  top: 50%;
+  transform: translateY(-50%);
+  background: var(--surface, #1e293b);
+  color: var(--on-surface, #fff);
+  padding: 0.35rem 0.7rem;
+  border-radius: 0.4rem;
+  font-size: 0.8rem;
+  font-weight: 500;
+  white-space: nowrap;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  z-index: 100;
+  transition: opacity 0.15s ease, visibility 0.15s ease;
+}
+
+.sidebar__tooltip::before {
+  content: '';
+  position: absolute;
+  left: -5px;
+  top: 50%;
+  transform: translateY(-50%);
+  border-width: 5px;
+  border-style: solid;
+  border-color: transparent var(--surface, #1e293b) transparent transparent;
+}
+
+.sidebar__link:hover .sidebar__tooltip {
+  opacity: 1;
+  visibility: visible;
+}
+
+@media (max-width: 640px) {
+  .topbar__title span {
+    display: none;
+  }
+
+  .user-chip__info {
+    display: none;
+  }
+
+  .user-chip {
+    padding: 0.25rem;
+  }
+
+  .btn-logout span {
+    display: none;
+  }
+}
+</style>

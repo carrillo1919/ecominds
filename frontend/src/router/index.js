@@ -16,6 +16,7 @@ const routes = [
   {
     path: '/app',
     component: () => import('@/components/AppLayout.vue'),
+    redirect: { name: 'dashboard' },
     children: [
       { path: 'dashboard', name: 'dashboard', component: () => import('@/views/sistema/DashboardView.vue'), meta: { requiresAuth: true } },
       { path: 'usuarios', name: 'usuarios', component: () => import('@/views/administracion/UsuariosView.vue'), meta: { requiresAuth: true, roles: ['admin'] } },
@@ -23,7 +24,7 @@ const routes = [
       { path: 'entes-reguladores', name: 'entes-reguladores', component: () => import('@/views/cumplimiento/EntesReguladoresView.vue'), meta: { requiresAuth: true } },
       { path: 'requisitos-legales', name: 'requisitos-legales', component: () => import('@/views/cumplimiento/RequisitosLegalesView.vue'), meta: { requiresAuth: true } },
       { path: 'empresa-requisitos', name: 'empresa-requisitos', component: () => import('@/views/cumplimiento/EmpresaRequisitosView.vue'), meta: { requiresAuth: true } },
-      { path: 'requisitos', name: 'requisitos', component: () => import('@/views/cumplimiento/RequisitosView.vue'), meta: { requiresAuth: true } },
+      { path: 'checklist', name: 'checklist', component: () => import('@/views/cumplimiento/ChecklistView.vue'), meta: { requiresAuth: true } },
       { path: 'auditorias', name: 'auditorias', component: () => import('@/views/auditoria/AuditoriasView.vue'), meta: { requiresAuth: true } },
       { path: 'auditorias/:id', name: 'auditoria-detalle', component: () => import('@/views/auditoria/AuditoriaDetalleView.vue'), meta: { requiresAuth: true } },
       { path: 'estadisticas', name: 'estadisticas', component: () => import('@/views/auditoria/EstadisticasView.vue'), meta: { requiresAuth: true } },

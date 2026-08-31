@@ -1,0 +1,106 @@
+{
+  "titles": {
+    "dashboard": { "titulo": "Panel principal", "desc": "Resumen del sistema de cumplimiento" },
+    "usuarios": { "titulo": "Usuarios", "desc": "Gestion de cuentas y roles" },
+    "empresas": { "titulo": "Empresas", "desc": "Registro de empresas auditadas" },
+    "entes-reguladores": { "titulo": "Entes Reguladores", "desc": "Organismos que emiten normativa" },
+    "requisitos-legales": { "titulo": "Requisitos Legales", "desc": "Catalogo de obligaciones normativas" },
+    "empresa-requisitos": { "titulo": "Asignacion de Requisitos", "desc": "Vinculacion empresa - obligaciones" },
+    "checklist": { "titulo": "Checklist Auditoria", "desc": "Checklist legal y requisitos criticos" },
+    "auditorias": { "titulo": "Auditorias", "desc": "Ejecucion y seguimiento de auditorias" },
+    "auditoria-detalle": { "titulo": "Auditoria", "desc": "Evaluacion, matriz de riesgo e informe" },
+    "estadisticas": { "titulo": "Tablero", "desc": "Indicadores de cumplimiento por periodo" },
+    "empleados": { "titulo": "Empleados", "desc": "Gestion de empleados de la empresa" },
+    "empleado-detalle": { "titulo": "Empleado", "desc": "Detalle y acceso al sistema" },
+    "documentos": { "titulo": "Documentos", "desc": "Documentos asignados a la empresa" },
+    "documento-detalle": { "titulo": "Documento", "desc": "Detalle y archivos adjuntos" }
+  },
+  "sections": [
+    {
+      "title": "Principal",
+      "items": [
+        {
+          "name": "dashboard",
+          "label": "Inicio",
+          "icon": "<path d=\"M3 10.5 12 3l9 7.5\" /><path d=\"M5 9.5V21h14V9.5\" />"
+        }
+      ]
+    },
+    {
+      "title": "Cumplimiento",
+      "items": [
+
+            {
+          "name": "estadisticas",
+          "label": "Tablero",
+          "icon": "<path d=\"M4 20V10M10 20V4M16 20v-7M22 20H2\" />"
+        },
+          {
+          "name": "auditorias",
+          "label": "Auditorias",
+          "icon": "<path d=\"M9 11l2.5 2.5L16 8\" /><rect x=\"4\" y=\"4\" width=\"16\" height=\"16\" rx=\"3\" />"
+        },
+        
+      
+    
+        {
+          "name": "empresas",
+          "label": "Empresas",
+          "icon": "<path d=\"M4 21V6l8-3 8 3v15\" /><path d=\"M9 21v-6h6v6\" />"
+        },
+        
+        {
+      "name": "empleados",
+      "label": "Empleados",
+      "icon": "<circle cx=\"9\" cy=\"7\" r=\"3\" /><path d=\"M3 21v-2a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v2\" /><path d=\"M16 3.13a4 4 0 0 1 0 7.75\" /><path d=\"M21 21v-2a4 4 0 0 0-3-3.87\" />"
+    },
+    {
+      "name": "documentos",
+      "label": "Documentos",
+      "icon": "<path d=\"M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z\" /><path d=\"M14 2v6h6\" /><path d=\"M9 13h6M9 17h4\" />"
+    }
+      ]
+    },
+
+    {
+      "title": "registros de cumplimiento",
+      "items": [
+        {
+          "name": "entes-reguladores",
+          "label": "Entes Reguladores",
+          "icon": "<path d=\"M12 2 2 7l10 5 10-5-10-5z\" /><path d=\"M2 17l10 5 10-5\" /><path d=\"M2 12l10 5 10-5\" />"
+        },
+        {
+          "name": "requisitos-legales",
+          "label": "Requisitos Legales",
+          "icon": "<path d=\"M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z\" /><path d=\"M14 2v6h6\" /><path d=\"M9 12h6M9 16h6\" />"
+        },
+       
+        {
+          "name": "checklist",
+          "label": "Checklist Auditoria",
+          "icon": "<path d=\"M6 3h9l4 4v14H6z\" /><path d=\"M9 12h6M9 16h4\" />"
+        } ,
+     {
+          "name": "empresa-requisitos",
+          "label": "Asignar Requisitos",
+          "icon": "<path d=\"M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2\" /><rect x=\"8\" y=\"2\" width=\"8\" height=\"4\" rx=\"1\" />"
+        }
+       
+      ]
+    }
+  ],
+  "footerItems": [
+    {
+      "title": "Administracion",
+      "items": [
+          {
+          "name": "usuarios",
+          "label": "Usuarios",
+          "icon": "<circle cx=\"9\" cy=\"8\" r=\"3.2\" /><path d=\"M2.5 20c0-3.6 2.9-6 6.5-6s6.5 2.4 6.5 6\" /><path d=\"M17 8.5a2.8 2.8 0 1 0 0-.1M18 20c0-2.4-.8-4-2-5\" />",
+          "permission": "canGestionarUsuarios"
+        }
+      ]
+    }
+  ]
+}
