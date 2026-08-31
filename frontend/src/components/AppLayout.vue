@@ -4,6 +4,7 @@ import { useRoute, useRouter } from 'vue-router';
 import { useAuthStore } from '@/stores/auth';
 import { useAuthorization } from '@/composables/useAuthorization';
 import { roleLabel } from '@/utils/validators';
+import EcoMindsLogo from '@/components/EcoMindsLogo.vue';
 
 const auth = useAuthStore();
 const route = useRoute();
@@ -59,7 +60,9 @@ const handleLogout = () => {
   >
     <aside class="sidebar">
       <router-link class="sidebar__brand" :to="{ name: 'dashboard' }">
-        <span class="sidebar__logo">SR</span>
+        <span class="sidebar__logo">
+          <EcoMindsLogo size="24" />
+        </span>
         <span class="sidebar__brand-text">
           <strong>EcoMinds</strong>
           <span>Auditoria Ambiental</span>
@@ -201,7 +204,9 @@ const handleLogout = () => {
   <!-- Shell centrado para pantallas publicas (login, registro, recuperacion) -->
   <div v-else class="auth-shell">
     <router-link class="auth-shell__header" :to="{ name: 'login' }">
-      <span class="sidebar__logo">SR</span>
+      <span class="sidebar__logo">
+        <EcoMindsLogo size="24" />
+      </span>
       <span class="sidebar__brand-text">
         <strong>EcoMinds</strong>
         <span>Auditoria Ambiental</span>

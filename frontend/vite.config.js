@@ -6,10 +6,8 @@ import { VitePWA } from 'vite-plugin-pwa';
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), '');
 
-   
-
-  const previewPort = Number(env.PREVIEW_PORT  );
-  const previewHost = env.PREVIEW_HOST ;
+  const previewPort = Number(env.PREVIEW_PORT);
+  const previewHost = env.PREVIEW_HOST;
 
   return {
     plugins: [
@@ -17,20 +15,20 @@ export default defineConfig(({ mode }) => {
       VitePWA({
         registerType: 'autoUpdate',
         injectRegister: 'auto',
-        devOptions: { enabled: false },
-        includeAssets: ['favicon.png', 'icons/icon-192.png', 'icons/icon-512.png'],
+        devOptions: { enabled: true },
+        includeAssets: ['favicon.png', 'icons/*.png'],
         manifest: {
           name: 'EcoMinds Auditoria',
           short_name: 'EcoMinds',
           description:
             'Sistema de Registro y Control de Cumplimiento: auditorias, requisitos legales y evidencias.',
           lang: 'es',
-          start_url: '/',
-          scope: '/',
+          start_url: '/app/dashboard',
+          scope: '/app/',
           display: 'standalone',
           orientation: 'portrait-primary',
-          background_color: '#eef1f7',
-          theme_color: '#0b1a2e',
+          background_color: '#f7f9fb',
+          theme_color: '#004532',
           icons: [
             { src: '/icons/icon-192.png', sizes: '192x192', type: 'image/png', purpose: 'any' },
             { src: '/icons/icon-512.png', sizes: '512x512', type: 'image/png', purpose: 'any' },
@@ -39,18 +37,18 @@ export default defineConfig(({ mode }) => {
         },
         workbox: {
           globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2}'],
-          navigateFallback: '/index.html',
+          navigateFallback: '/app/index.html',
           navigateFallbackDenylist: [/^\/api\//],
           runtimeCaching: [
             {
               urlPattern: ({ request }) => request.mode === 'navigate',
               handler: 'NetworkFirst',
-              options: { cacheName: 'srcd-html', networkTimeoutSeconds: 5 },
+              options: { cacheName: 'ecominds-html', networkTimeoutSeconds: 5 },
             },
             {
               urlPattern: /^https:\/\/fonts\.(googleapis|gstatic)\.com\//,
               handler: 'StaleWhileRevalidate',
-              options: { cacheName: 'srcd-fonts' },
+              options: { cacheName: 'ecominds-fonts' },
             },
           ],
         },
@@ -61,7 +59,7 @@ export default defineConfig(({ mode }) => {
     },
     server: { port: 5173 },
     preview: {
-            allowedHosts: true, 
+      allowedHosts: true,
       port: previewPort,
       host: previewHost,
       strictPort: true,

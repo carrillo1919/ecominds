@@ -1,0 +1,148 @@
+{
+  "brand": {
+    "name": "ecominds",
+    "tagline": "Precisión Ambiental",
+    "logo": "/icons/icono.png"
+  },
+  "nav": [
+    { "label": "Servicios", "href": "#services" },
+    { "label": "Beneficios", "href": "#beneficios" },
+    { "label": "Testimonios", "href": "#testimonials" },
+    { "label": "Contacto", "href": "#contacto" }
+  ],
+  "hero": {
+    "eyebrow": "Precisión Ambiental",
+    "title": "Precisión Ambiental para un Futuro Sostenible",
+    "description": "Auditorías ambientales rigurosas y basadas en datos para líderes corporativos. Asegure el cumplimiento, optimice recursos y lidere en sostenibilidad con métricas exactas.",
+    "background": "/img/empresa.png",
+    "primaryCta": { "label": "Solicita tu Auditoría", "href": "#contacto" },
+    "secondaryCta": { "label": "Conoce Más", "href": "#services" }
+  },
+  "services": {
+    "title": "Servicios de Auditoría Especializada",
+    "description": "Metodologías comprobadas para evaluar y mejorar el desempeño ambiental de su organización con precisión científica.",
+    "items": [
+      {
+        "title": "Cumplimiento Normativo",
+        "description": "Análisis exhaustivo de regulaciones locales e internacionales para asegurar que su empresa opere dentro del marco legal, evitando sanciones y mitigando riesgos legales.",
+        "icon": "gavel",
+        "image": "/img/cumplimiento_normativo.png",
+        "iconImage": "/img/cumplimiento_normativo_icon.png",
+        "large": true
+      },
+      {
+        "title": "Huella de Carbono",
+        "description": "Medición precisa de emisiones GHG Scope 1, 2 y 3, con estrategias de reducción concretas.",
+        "icon": "cloud",
+        "image": "/img/huella_carbono.png",
+        "iconImage": "/img/huella_carbono_icon.png"
+      },
+      {
+        "title": "Gestión Hídrica",
+        "description": "Evaluación del uso de agua y calidad de efluentes para optimizar el consumo.",
+        "icon": "water_drop",
+        "image": "/img/gestion_hidrica.png",
+        "iconImage": "/img/gestion_hidrica_icon.png"
+      },
+      {
+        "title": "Auditoría de Residuos",
+        "description": "Mapeo del ciclo de vida de los materiales en su operación. Identificamos ineficiencias y diseñamos planes de economía circular para minimizar el impacto en vertederos.",
+        "icon": "recycling",
+        "image": "/img/auditoria_residuos.png",
+        "iconImage": "/img/auditoria_residuos_icon.png",
+        "medium": true
+      }
+    ]
+  },
+  "whoWeAre": {
+    "title": "Comprometidos con la Excelencia Ambiental",
+    "background": "/img/comprometidos.png",
+    "values": [
+      {
+        "title": "Misión",
+        "description": "Impulsar la sostenibilidad corporativa mediante auditorías ambientales precisas y basadas en datos.",
+        "image": "/img/mision.png",
+        "align": "left"
+      },
+      {
+        "title": "Visión",
+        "description": "Ser el referente global en consultoría ambiental para líderes comprometidos con el futuro del planeta.",
+        "image": "/img/vision.png",
+        "align": "right"
+      },
+      {
+        "title": "Objetivos",
+        "description": "Garantizar el cumplimiento normativo, optimizar el uso de recursos y fortalecer la reputación de marca de nuestros clientes.",
+        "image": "/img/objetivos.png",
+        "align": "center"
+      }
+    ]
+  },
+  "benefits": {
+    "eyebrow": "El Valor de ecominds",
+    "title": "Resultados Estratégicos para su Organización",
+    "description": "Nuestras auditorías no son solo un checklist; son herramientas de inteligencia de negocios diseñadas para impulsar el crecimiento sostenible.",
+    "featureImage": "/img/valor.png",
+    "badge": {
+      "icon": "monitoring",
+      "label": "Precisión de Datos",
+      "value": "99.9% Verificable"
+    },
+    "items": [
+      {
+        "title": "Mitigación de Riesgos",
+        "description": "Identifique proactivamente vulnerabilidades regulatorias y operativas antes de que se conviertan en pasivos financieros.",
+        "icon": "verified"
+      },
+      {
+        "title": "Eficiencia Operativa",
+        "description": "Descubra ineficiencias ocultas en el uso de recursos que, al optimizarse, reducen costos operativos significativamente.",
+        "icon": "speed"
+      },
+      {
+        "title": "Prestigio de Marca",
+        "description": "Respalde sus afirmaciones de sostenibilidad con datos auditados y rigurosos, generando confianza en inversores y clientes.",
+        "icon": "workspace_premium"
+      }
+    ]
+  },
+  "testimonials": {
+    "title": "Líderes que Confían en la Precisión",
+    "quoteIcon": "format_quote",
+    "items": [
+      {
+        "quote": "La profundidad del análisis de ecominds transformó nuestra estrategia ESG. Sus datos sobre gestión hídrica nos permitieron reducir el consumo en un 22% en el primer año.",
+        "name": "Elena Rojas",
+        "role": "Directora de Sostenibilidad, Industrias Apex",
+        "image": "/img/user1.png"
+      },
+      {
+        "quote": "Necesitábamos una auditoría de emisiones Scope 3 que resistiera el escrutinio de nuestros inversores. ecominds entregó un informe de nivel forense, claro y accionable.",
+        "name": "Carlos Mendoza",
+        "role": "VP de Operaciones, Logistics Global",
+        "image": "/img/user2.png"
+      }
+    ]
+  },
+  "contact": {
+    "title": "Comience su evaluación",
+    "description": "Complete el formulario para recibir un análisis preliminar sin compromiso.",
+    "background": "/img/contacto.png",
+    "submitLabel": "Solicitar Análisis",
+    "fields": [
+      { "name": "nombre", "label": "Nombre Completo", "type": "text", "placeholder": "Ej. Ana Martínez" },
+      { "name": "email", "label": "Correo Corporativo", "type": "email", "placeholder": "ana@empresa.com" },
+      { "name": "telefono", "label": "Número de Teléfono", "type": "tel", "placeholder": "+52 ..." },
+      { "name": "empresa", "label": "Empresa", "type": "text", "placeholder": "Su Empresa S.A." }
+    ]
+  },
+  "footer": {
+    "tagline": "Precisión Ambiental para Líderes Globales",
+    "links": [
+      { "label": "Política de Privacidad", "href": "#" },
+      { "label": "Términos de Servicio", "href": "#" },
+      { "label": "Estándares de Cumplimiento", "href": "#" },
+      { "label": "LinkedIn", "href": "#" }
+    ]
+  }
+}
