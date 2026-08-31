@@ -117,7 +117,6 @@ const guardar = async () => {
         toast.success('Empleado registrado');
         form.responsableId = data.empleado?.id || '';
         await api.put(`/empresas/${empresaId}`, { responsableId: form.responsableId });
-        await cargarEmpleados(empresaId);
         limpiarEmpleado();
         mostrarFormEmpleado.value = false;
       } catch (e) {
@@ -210,7 +209,7 @@ onMounted(async () => {
             </option>
           </select>
         </label>
-        <label v-if="editandoId" style="display:flex;align-items:flex-end">
+        <div v-if="editandoId" style="display:flex;align-items:flex-end">
           <button
             v-if="!mostrarFormEmpleado"
             class="btn-ghost"
@@ -229,7 +228,7 @@ onMounted(async () => {
           >
             Ocultar formulario
           </button>
-        </label>
+        </div>
       </div>
 
       <div v-if="mostrarFormEmpleado" class="card" style="margin-top: 1rem; background: #f9fafb">
