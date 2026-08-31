@@ -49,6 +49,9 @@ const cargar = async () => {
     form.fechaDocumento = data.documento.fechaDocumento || '';
     form.fechaVencimiento = data.documento.fechaVencimiento;
     form.responsableId = data.documento.responsableId || '';
+    if (documento.value?.empresaId) {
+      await empStore.fetchActivos({ empresaId: documento.value.empresaId });
+    }
   } catch {
     toast.error('No se pudo cargar el documento');
     router.push({ name: 'documentos' });
@@ -85,10 +88,7 @@ const onArchivoEliminado = (archivoId) => {
 
 const fechaCorta = (f) => f ? new Date(f + 'T00:00:00').toLocaleDateString('es-VE') : '-';
 
-onMounted(async () => {
-  await cargar();
-  await empStore.fetchActivos();
-});
+onMounted(cargar);
 </script>
 
 <template>
