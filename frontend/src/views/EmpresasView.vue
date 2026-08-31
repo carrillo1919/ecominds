@@ -1,5 +1,5 @@
 <script setup>
-import { onMounted, reactive, ref } from 'vue';
+import { onMounted, reactive, ref, computed } from 'vue';
 import { useToast } from 'vue-toastification';
 import api, { apiMessage } from '@/api/axios';
 import { useAuthorization } from '@/composables/useAuthorization';
@@ -34,6 +34,7 @@ const formEmpleado = reactive({
   apellido: '',
   cedula: '',
   cargo: '',
+  telefono: '',
   email: '',
 });
 
@@ -80,16 +81,45 @@ const guardar = async () => {
     return;
   }
 
+  // Validar empleado si se está creando junto a la empresa
+  if (mostrarFormEmpleado.value && !editandoId.value) {
+    if (!formEmpleado.nombre.trim() || !formEmpleado.apellido.trim() || !formEmpleado.cedula.trim() || !formEmpleado.email.trim()) {
+      toast.error('Para crear un responsable, complete nombre, apellido, cédula y correo');
+      return;
+    }
+  }
+
   guardando.value = true;
   try {
+    let empresaId = editandoId.value;
     const payload = { ...form, responsableId: form.responsableId || null };
+
     if (editandoId.value) {
       await api.put(`/empresas/${editandoId.value}`, payload);
       toast.success('Empresa actualizada');
     } else {
-      await api.post('/empresas', payload);
+      const { data } = await api.post('/empresas', payload);
+      empresaId = data.empresa?.id;
       toast.success('Empresa registrada');
     }
+
+    // Crear el empleado responsable si el form está visible y no existe empresa previa
+    if (mostrarFormEmpleado.value && !editandoId.value && empresaId) {
+      try {
+        const { data } = await empleadosApi.createEmpleado({
+          ...formEmpleado,
+          empresaId,
+        });
+        toast.success('Empleado registrado');
+        form.responsableId = data.empleado?.id || '';
+        await api.put(`/empresas/${empresaId}`, { responsableId: form.responsableId });
+        limpiarEmpleado();
+        mostrarFormEmpleado.value = false;
+      } catch (e) {
+        toast.error(apiMessage(e, 'Empresa creada, pero no se pudo registrar el empleado'));
+      }
+    }
+
     limpiar();
     await cargar();
   } catch (e) {
@@ -109,9 +139,19 @@ const cargarEmpleados = async (empresaId) => {
   }
 };
 
+const empleadosEmpresa = computed(() => {
+  if (!editandoId.value) return [];
+  return empleados.value;
+});
+
 const guardarEmpleado = async () => {
   if (!formEmpleado.nombre.trim() || !formEmpleado.apellido.trim() || !formEmpleado.cedula.trim() || !formEmpleado.email.trim()) {
     toast.error('Nombre, apellido, cédula y correo son obligatorios');
+    return;
+  }
+  // En modo crear empresa, el empleado se guarda junto con la empresa
+  if (!editandoId.value) {
+    toast.info('El empleado se guardará al registrar la empresa');
     return;
   }
   guardandoEmpleado.value = true;
@@ -156,38 +196,35 @@ onMounted(async () => {
           Responsable principal
           <select v-model="form.responsableId">
             <option value="">— Sin responsable —</option>
-            <option v-for="emp in empleados" :key="emp.id" :value="emp.id">
+            <option v-for="emp in empleadosEmpresa" :key="emp.id" :value="emp.id">
               {{ emp.apellido }}, {{ emp.nombre }}
             </option>
           </select>
         </label>
       </div>
 
-      <div v-if="editandoId && mostrarFormEmpleado" class="card" style="margin-top: 1rem; background: #f9fafb">
+      <div v-if="mostrarFormEmpleado" class="card" style="margin-top: 1rem; background: #f9fafb">
         <h3>Nuevo empleado como responsable</h3>
         <div class="form-grid">
           <label>Nombre *<input v-model="formEmpleado.nombre" type="text" /></label>
           <label>Apellido *<input v-model="formEmpleado.apellido" type="text" /></label>
           <label>Cédula *<input v-model="formEmpleado.cedula" type="text" /></label>
           <label>Cargo<input v-model="formEmpleado.cargo" type="text" /></label>
+          <label>Teléfono<input v-model="formEmpleado.telefono" type="text" /></label>
           <label>Correo *<input v-model="formEmpleado.email" type="email" /></label>
         </div>
         <div class="actions-row">
-          <button class="btn-primary" type="button" :disabled="guardandoEmpleado" @click="guardarEmpleado">
+          <button v-if="editandoId" class="btn-primary" type="button" :disabled="guardandoEmpleado" @click="guardarEmpleado">
             {{ guardandoEmpleado ? 'Guardando...' : 'Registrar empleado' }}
           </button>
           <button class="btn-ghost" type="button" @click="mostrarFormEmpleado = false">Cancelar</button>
         </div>
       </div>
 
-      <div v-if="editandoId" class="actions-row" style="margin-top: 1rem">
+      <div class="actions-row" style="margin-top: 1rem">
         <button v-if="!mostrarFormEmpleado" class="btn-ghost" type="button" @click="mostrarFormEmpleado = true">
           + Nuevo empleado responsable
         </button>
-      </div>
-
-      <div v-if="!editandoId" class="hint muted" style="margin-top: 0.5rem">
-        Para asignar un responsable, primero guarde la empresa y luego edítela.
       </div>
 
       <div class="actions-row">

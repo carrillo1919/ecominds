@@ -37,7 +37,7 @@ const getActivos = async (req, res, next) => {
     const empleados = await Empleado.findAll({
       where,
       order: [['apellido', 'ASC'], ['nombre', 'ASC']],
-      attributes: ['id', 'nombre', 'apellido', 'cargo', 'email'],
+      attributes: ['id', 'nombre', 'apellido', 'cargo', 'telefono', 'email'],
     });
     return res.json({ empleados });
   } catch (error) {
@@ -75,7 +75,7 @@ const create = async (req, res, next) => {
       empresaId = req.empresaId;
     }
 
-    const { nombre, apellido, cedula, cargo, email, crearUsuario, passwordUsuario, rolUsuario } = req.body;
+    const { nombre, apellido, cedula, cargo, telefono, email, crearUsuario, passwordUsuario, rolUsuario } = req.body;
 
     const duplicado = await Empleado.findOne({
       where: {
@@ -113,6 +113,7 @@ const create = async (req, res, next) => {
       apellido: String(apellido).trim(),
       cedula: String(cedula).trim(),
       cargo: cargo ? String(cargo).trim() : null,
+      telefono: telefono ? String(telefono).trim() : null,
       email: String(email).trim().toLowerCase(),
     });
 
@@ -168,14 +169,14 @@ const update = async (req, res, next) => {
     const empleado = await Empleado.findOne({ where });
     if (!empleado) return res.status(404).json({ message: 'Empleado no encontrado' });
 
-    const campos = ['nombre', 'apellido', 'cedula', 'cargo', 'email', 'activo'];
+    const campos = ['nombre', 'apellido', 'cedula', 'cargo', 'telefono', 'email', 'activo'];
     campos.forEach((campo) => {
       if (req.body[campo] === undefined) return;
       const value = req.body[campo];
 
       if (campo === 'email') empleado.email = String(value).trim().toLowerCase();
       else if (campo === 'activo') empleado[campo] = Boolean(value);
-      else if (campo === 'cargo') empleado.cargo = value ? String(value).trim() || null : null;
+      else if (campo === 'cargo' || campo === 'telefono') empleado[campo] = value ? String(value).trim() || null : null;
       else empleado[campo] = String(value).trim();
     });
 
