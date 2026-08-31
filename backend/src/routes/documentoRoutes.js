@@ -37,8 +37,8 @@ router.post(
   '/',
   authorize('admin', 'auditor', 'responsable'),
   [
-    body('titulo').trim().notEmpty().withMessage('El título es obligatorio'),
     body('empresaId').optional({ values: 'falsy' }).isUUID().withMessage('empresaId inválido'),
+    body('empresaRequisitoId').notEmpty().withMessage('Debe seleccionar un documento asignado').isUUID().withMessage('empresaRequisitoId inválido'),
     body('fechaVencimiento').isDate().withMessage('Fecha de vencimiento inválida'),
     body('responsableId').optional({ values: 'falsy' }).isUUID().withMessage('responsableId inválido'),
   ],
