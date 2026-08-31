@@ -249,3 +249,112 @@ git branch -D frontend-only
 
 https://github.com/ecominds04-design/ecominds-banckend.git  
 https://github.com/ecominds04-design/ecominds-frontend.git 
+
+
+
+
+
+Ejecuta estos comandos en **PowerShell** desde la carpeta del backend. Primero verificamos la conexión con el pooler, luego el estado de las migraciones.
+
+## 1. Verificar la conexión con Supabase
+
+```powershell
+cd c:\Users\tf carrillo\Documents\proyectos\ecoMinds\backend
+
+node -e "const {Client} = require('pg'); const c = new Client({connectionString: 'postgresql://postgres.fbrojwoojkqwheujvlyy:cV208v7xwZUPnxO0@aws-0-us-west-2.pooler.supabase.com:6543/postgres'}); c.connect().then(()=>{console.log('OK'); process.exit(0)}).catch(e=>{console.error(e.message); process.exit(1)})"
+```
+
+Si sale `OK`, la conexión funciona.
+
+---
+
+## 2. Ver qué migraciones faltan
+
+```powershell
+npx sequelize-cli db:migrate:status --config src/config/sequelize-cli.cjs --migrations-path src/migrations
+```
+
+Verás una tabla como esta:
+
+```
+┌──────────────────────────────────────────────┬───────────────┐
+│ Migration                                    │ Status        │
+├──────────────────────────────────────────────┼───────────────┤
+│ 20260101000000-create-users.js               │ down          │
+│ 20260201000000-create-auditoria-module.js    │ down          │
+│ ...                                          │ down          │
+└──────────────────────────────────────────────┴───────────────┘
+```
+
+Todo `down` significa que la base de datos está vacía y falta todo.
+
+---
+
+## 3. Aplicar todas las migraciones pendientes
+
+```powershell
+npx sequelize-cli db:migrate --config src/config/sequelize-cli.cjs --migrations-path src/migrations
+```
+
+Si falla en alguna, el error te dirá cuál. Puedes revisar el archivo correspondiente y corregirlo, o aplicarlas una por una con:
+
+```powershell
+npx sequelize-cli db:migrate --to 20260830000002-create-documentos.js --config src/config/sequelize-cli.cjs --migrations-path src/migrations
+```
+
+Esto aplicará solo hasta esa migración.
+
+---
+
+## 4. Verificar de nuevo el estado
+
+```powershell
+npx sequelize-cli db:migrate:status --config src/config/sequelize-cli.cjs --migrations-path src/migrations
+```
+
+Ahora todo debería estar en `up`.
+
+También puedes verificar en **Supabase Dashboard → Table Editor** que existan las tablas. O ejecutar esta consulta en el **SQL Editor**:
+
+```sql
+SELECT tablename FROM pg_tables WHERE schemaname = 'public' ORDER BY tablename;
+```
+
+---
+
+## 5. Ejecutar los seeders
+
+```powershell
+npx sequelize-cli db:seed:all --config src/config/sequelize-cli.cjs --seeders-path src/seeders
+```
+
+Esto ejecutará los seeders en orden alfabético:
+
+1. `20260101000100-demo-users.js`
+2. `20260201000100-checklist-matpel.js`
+3. `20260824000001-entes-reguladores.js`
+4. `20260824000002-requisitos-legales.js`
+5. `20260824000003-empresas-demo.js`
+6. `20260824000004-empresa-requisitos.js`
+
+Si necesitas verificar qué datos se insertaron, usa en el SQL Editor:
+
+```sql
+SELECT COUNT(*) FROM "Users";
+SELECT COUNT(*) FROM "Empresas";
+SELECT COUNT(*) FROM "Documentos";
+```
+
+---
+
+## Resumen
+
+| Paso | Comando |
+|---|---|
+| Ver conexión | `node -e "..."` |
+| Ver estado migraciones | `db:migrate:status` |
+| Aplicar migraciones | `db:migrate` |
+| Verificar estado | `db:migrate:status` |
+| Ejecutar seeders | `db:seed:all` |
+
+Si en el paso 1 sale error, el proyecto Supabase está en **pausa** o la URL/región no coincide. Ve al dashboard y restaura el proyecto si está pausado.

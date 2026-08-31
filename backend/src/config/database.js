@@ -17,6 +17,7 @@ const sequelize = new Sequelize(url, {
       require: true,
       rejectUnauthorized: false,
     },
+    family: 4, // Fuerza IPv4
     connectionTimeoutMillis: 30000,
     keepAlive: true,
     keepAliveInitialDelayMillis: 10000,

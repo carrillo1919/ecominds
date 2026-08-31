@@ -33,11 +33,11 @@ export const up = async (queryInterface) => {
       if (!requisitoId) continue;
 
       await queryInterface.sequelize.query(
-        `INSERT INTO empresa_requisitos (id, empresa_id, requisito_id, responsable_id, fecha_asignacion, observaciones, created_at, updated_at)
-         VALUES (gen_random_uuid(), :empresa_id, :requisito_id, :responsable_id, CURRENT_DATE, 'Asignación inicial de datos demo', NOW(), NOW())
+        `INSERT INTO empresa_requisitos (id, empresa_id, requisito_id,  fecha_asignacion, observaciones, created_at, updated_at)
+         VALUES (gen_random_uuid(), :empresa_id, :requisito_id,  CURRENT_DATE, 'Asignación inicial de datos demo', NOW(), NOW())
          ON CONFLICT (empresa_id, requisito_id) DO NOTHING`,
         {
-          replacements: { empresa_id: empresaId, requisito_id: requisitoId, responsable_id: responsableId },
+          replacements: { empresa_id: empresaId, requisito_id: requisitoId },
           type: QueryTypes.INSERT,
         }
       );

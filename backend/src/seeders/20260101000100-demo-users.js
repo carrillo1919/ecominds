@@ -4,10 +4,10 @@ import { QueryTypes } from 'sequelize';
 const SALT_ROUNDS = 10;
 
 const usuarios = [
-  { nombre: 'Administrador', email: 'carloscarrillo119@gmail.com', password: 'Cacn1911.', rol: 'admin' },
-  { nombre: 'Auditor', email: 'auditor@srcd.local', password: 'Cacn1911.', rol: 'auditor' },
-  { nombre: 'Responsable', email: 'responsable@srcd.local', password: 'Cacn1911.', rol: 'responsable' },
-  { nombre: 'Lector', email: 'lector@srcd.local', password: 'Cacn1911.', rol: 'lector' },
+  { nombre: 'Admin', email: 'carloscarrillo119@gmail.com', password: 'Cacn1911.', rol: 'admin' },
+  { nombre: 'Auditor', email: 'auditor@gmail.com', password: 'Cacn1911.', rol: 'auditor' },
+  { nombre: 'Responsable', email: 'responsable@gmail.com', password: 'Cacn1911.', rol: 'responsable'},
+  { nombre: 'Lector', email: 'lector@gmail.com', password: 'Cacn1911.', rol: 'lector' },
 ];
 
 export const up = async (queryInterface) => {
@@ -25,11 +25,12 @@ export const up = async (queryInterface) => {
       id: queryInterface.sequelize.literal('gen_random_uuid()'),
       nombre: u.nombre,
       email: u.email,
+      apellido: "",
       password: hash,
       rol: u.rol,
-      email_verificado: true,
-      created_at: new Date(),
-      updated_at: new Date(),
+      verified: true,
+      createdAt: new Date(),
+      updatedAt: new Date(),
     });
   }
 
