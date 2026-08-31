@@ -50,7 +50,7 @@ export const useAuditoriasStore = defineStore('auditorias', {
     async fetchProximas(params = {}) {
       try {
         const { data } = await api.getProximasAuditorias(params);
-        this.proximas = data.auditorias;
+        this.proximas = data.alertas || [];
       } catch (e) {
         this.error = apiMessage(e, 'No se pudieron cargar las próximas auditorías');
       }

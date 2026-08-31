@@ -1,13 +1,12 @@
 import { createRouter, createWebHistory } from 'vue-router';
 import { setUnauthorizedHandler } from '@/api/axios';
 import { useAuthStore } from '@/stores/auth';
-import LoginView from '@/views/auth/LoginView.vue';
 
 const routes = [
   { path: '/', name: 'landing', component: () => import('@/views/LandingView.vue'), meta: { public: true } },
 
   // Rutas públicas del sistema
-  { path: '/app/login', name: 'login', component: LoginView, meta: { public: true } },
+  { path: '/app/login', name: 'login', component: () => import('@/views/auth/LoginView.vue'), meta: { public: true } },
   { path: '/app/register', name: 'register', component: () => import('@/views/auth/RegisterView.vue'), meta: { public: true } },
   { path: '/app/verify-email', name: 'verify-email', component: () => import('@/views/auth/VerifyEmailView.vue'), meta: { public: true } },
   { path: '/app/forgot-password', name: 'forgot-password', component: () => import('@/views/auth/ForgotPasswordView.vue'), meta: { public: true } },
