@@ -19,3 +19,9 @@ export const deleteArchivo = (documentoId, archivoId) =>
 
 export const getArchivoDownloadUrl = (documentoId, archivoId) =>
   `${api.defaults.baseURL}/documentos/${documentoId}/archivos/${archivoId}/download`;
+
+export const previewArchivo = (documentoId, archivoId) => {
+  return api.get(`/documentos/${documentoId}/archivos/${archivoId}/preview`, {
+    responseType: 'blob',
+  });
+};

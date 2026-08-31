@@ -53,7 +53,7 @@ router.put(
     param('id').isUUID().withMessage('Identificador inválido'),
     body('fechaVencimiento').optional().isDate().withMessage('Fecha de vencimiento inválida'),
     body('responsableId').optional({ values: 'falsy' }).isUUID().withMessage('responsableId inválido'),
-    body('estado').optional().isIn(['vigente', 'vencido', 'archivado']).withMessage('Estado inválido'),
+    body('estado').optional().isIn(['vigente', 'vencido']).withMessage('Estado inválido'),
   ],
   validate,
   controller.update,
@@ -95,6 +95,16 @@ router.get(
   ],
   validate,
   controller.downloadArchivo,
+);
+
+router.get(
+  '/:documentoId/archivos/:archivoId/preview',
+  [
+    param('documentoId').isUUID().withMessage('Identificador de documento inválido'),
+    param('archivoId').isUUID().withMessage('Identificador de archivo inválido'),
+  ],
+  validate,
+  controller.previewArchivo,
 );
 
 export default router;

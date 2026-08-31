@@ -12,7 +12,7 @@ export const useDocumentosStore = defineStore('documentos', {
   getters: {
     vigentes: (state) => state.documentos.filter((d) => d.estadoEfectivo === 'vigente'),
     vencidos: (state) => state.documentos.filter((d) => d.estadoEfectivo === 'vencido'),
-    archivados: (state) => state.documentos.filter((d) => d.estadoEfectivo === 'archivado'),
+    // archivados: eliminado
   },
 
   actions: {
@@ -58,6 +58,16 @@ export const useDocumentosStore = defineStore('documentos', {
         return { ok: true, message: data.message };
       } catch (e) {
         return { ok: false, message: apiMessage(e, 'No se pudo archivar el documento') };
+      }
+    },
+
+    async eliminar(id) {
+      try {
+        const { data } = await api.deleteDocumento(id);
+        this.documentos = this.documentos.filter((d) => d.id !== id);
+        return { ok: true, message: data.message };
+      } catch (e) {
+        return { ok: false, message: apiMessage(e, 'No se pudo eliminar el documento') };
       }
     },
 

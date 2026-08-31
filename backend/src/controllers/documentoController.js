@@ -1,13 +1,31 @@
 import { Documento, ArchivoAdjunto, Empleado, Empresa, EmpresaRequisito, RequisitoLegal, EnteRegulador } from '../models/index.js';
 import { registrarAccion } from '../services/documentoAuditoriaService.js';
+import path from 'path';
+import { Sequelize } from 'sequelize';
+const { Op } = Sequelize;
 
 const ESTADOS = ['vigente', 'vencido', 'archivado'];
 
-// Calcula estado efectivo comparando fecha_vencimiento con hoy
+// Fecha de hoy en formato YYYY-MM-DD en zona local
+const hoyStr = () => new Date().toISOString().slice(0, 10);
+
+const diasHasta = (fechaVencimiento) => {
+  const hoy = new Date(hoyStr());
+  const venc = new Date(fechaVencimiento);
+  const diff = venc - hoy;
+  return Math.ceil(diff / (1000 * 60 * 60 * 24));
+};
+
+// Determina estado efectivo solo con la fecha de vencimiento
 const estadoEfectivo = (doc) => {
-  if (doc.estado === 'archivado') return 'archivado';
-  const hoy = new Date().toISOString().slice(0, 10);
-  return doc.fechaVencimiento < hoy ? 'vencido' : 'vigente';
+  return doc.fechaVencimiento < hoyStr() ? 'vencido' : 'vigente';
+};
+
+// Indica si está próximo a vencer (15 días o menos, pero aún vigente)
+const proximoAVencer = (doc) => {
+  if (estadoEfectivo(doc) === 'vencido') return false;
+  const dias = diasHasta(doc.fechaVencimiento);
+  return dias <= 15;
 };
 
 // admin y auditor ven todas las empresas; demás solo la suya
@@ -24,9 +42,14 @@ const resolveWhere = (req) => {
 // GET /api/documentos
 const getAll = async (req, res, next) => {
   try {
+    const hoy = hoyStr();
     const where = resolveWhere(req);
-    if (req.query.estado && ESTADOS.includes(req.query.estado)) {
-      where.estado = req.query.estado;
+
+    // Filtro por estado calculado a partir de la fecha de vencimiento
+    if (req.query.estado === 'vencido') {
+      where.fechaVencimiento = { [Op.lt]: hoy };
+    } else if (req.query.estado === 'vigente') {
+      where.fechaVencimiento = { [Op.gte]: hoy };
     }
 
     const documentos = await Documento.findAll({
@@ -45,10 +68,15 @@ const getAll = async (req, res, next) => {
       ],
     });
 
-    const result = documentos.map((d) => ({
-      ...d.toJSON(),
-      estadoEfectivo: estadoEfectivo(d),
-    }));
+    const result = documentos.map((d) => {
+      const json = d.toJSON();
+      return {
+        ...json,
+        estadoEfectivo: estadoEfectivo(d),
+        proximoAVencer: proximoAVencer(d),
+        diasHastaVencimiento: diasHasta(d.fechaVencimiento),
+      };
+    });
 
     return res.json({ documentos: result });
   } catch (error) {
@@ -81,8 +109,14 @@ const getOne = async (req, res, next) => {
     });
     if (!documento) return res.status(404).json({ message: 'Documento no encontrado' });
 
+    const json = documento.toJSON();
     return res.json({
-      documento: { ...documento.toJSON(), estadoEfectivo: estadoEfectivo(documento) },
+      documento: {
+        ...json,
+        estadoEfectivo: estadoEfectivo(documento),
+        proximoAVencer: proximoAVencer(documento),
+        diasHastaVencimiento: diasHasta(documento.fechaVencimiento),
+      },
     });
   } catch (error) {
     return next(error);
@@ -194,7 +228,7 @@ const update = async (req, res, next) => {
   }
 };
 
-// DELETE /api/documentos/:id — archiva lógicamente
+// DELETE /api/documentos/:id — borrado físico
 const remove = async (req, res, next) => {
   try {
     const where = { id: req.params.id, ...resolveWhere(req) };
@@ -202,18 +236,19 @@ const remove = async (req, res, next) => {
     if (!documento) return res.status(404).json({ message: 'Documento no encontrado' });
 
     const empresaId = documento.empresaId;
-    documento.estado = 'archivado';
-    await documento.save();
+    const titulo = documento.titulo;
+
+    await documento.destroy();
 
     await registrarAccion({
-      documentoId: documento.id,
+      documentoId: null,
       empleadoId: req.empleado?.id || null,
       empresaId,
       accion: 'eliminado',
-      detalle: { titulo: documento.titulo },
+      detalle: { titulo },
     });
 
-    return res.json({ message: 'Documento archivado', documento });
+    return res.json({ message: 'Documento eliminado' });
   } catch (error) {
     return next(error);
   }
@@ -228,15 +263,25 @@ const uploadArchivo = async (req, res, next) => {
     const documento = await Documento.findOne({ where });
     if (!documento) return res.status(404).json({ message: 'Documento no encontrado' });
 
+    // Solo se permite un archivo por documento
+    const existente = await ArchivoAdjunto.findOne({ where: { documentoId: documento.id } });
+    if (existente) {
+      return res.status(422).json({ message: 'El documento ya tiene un archivo adjunto. Elimínelo antes de subir uno nuevo.' });
+    }
+
+    // Guardar con el nombre del documento asignado manteniendo la extensión original
+    const ext = path.extname(req.file.originalname) || '';
+    const nombreSeguro = String(documento.titulo).trim().replace(/[\\/:*?"<>|]/g, '_');
+    const nombreArchivo = `${nombreSeguro}${ext}`;
+
     const archivo = await ArchivoAdjunto.create({
       documentoId: documento.id,
-      nombreArchivo: req.file.originalname,
+      nombreArchivo,
       contenido: req.file.buffer,
       tipoMime: req.file.mimetype,
       tamano: req.file.size,
     });
 
-    // No devolver el contenido binario en la respuesta
     return res.status(201).json({
       message: 'Archivo adjuntado',
       archivo: {
@@ -294,4 +339,28 @@ const downloadArchivo = async (req, res, next) => {
   }
 };
 
-export { getAll, getOne, create, update, remove, uploadArchivo, deleteArchivo, downloadArchivo };
+// GET /api/documentos/:documentoId/archivos/:archivoId/preview
+const previewArchivo = async (req, res, next) => {
+  try {
+    const where = { id: req.params.documentoId, ...resolveWhere(req) };
+    const documento = await Documento.findOne({ where });
+    if (!documento) return res.status(404).json({ message: 'Documento no encontrado' });
+
+    const archivo = await ArchivoAdjunto.findOne({
+      where: { id: req.params.archivoId, documentoId: documento.id },
+      attributes: ['id', 'nombreArchivo', 'tipoMime', 'tamano', 'contenido'],
+    });
+    if (!archivo) return res.status(404).json({ message: 'Archivo no encontrado' });
+
+    const contentType = archivo.tipoMime || 'application/octet-stream';
+    res.setHeader('Content-Type', contentType);
+    res.setHeader('Content-Disposition', `inline; filename="${encodeURIComponent(archivo.nombreArchivo)}"`);
+    if (archivo.tamano) res.setHeader('Content-Length', archivo.tamano);
+
+    return res.end(archivo.contenido);
+  } catch (error) {
+    return next(error);
+  }
+};
+
+export { getAll, getOne, create, update, remove, uploadArchivo, deleteArchivo, downloadArchivo, previewArchivo };

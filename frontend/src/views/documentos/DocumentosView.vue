@@ -138,9 +138,9 @@ const onFileChange = (event) => {
   archivo.value = file || null;
 };
 
-const archivar = async (doc) => {
-  if (!confirm(`¿Archivar el documento "${nombreDocumentoAsignado(doc)}"?`)) return;
-  const result = await docStore.archivar(doc.id);
+const eliminar = async (id) => {
+  if (!confirm('¿Eliminar permanentemente este documento?')) return;
+  const result = await docStore.eliminar(id);
   if (result.ok) toast.success(result.message);
   else toast.error(result.message);
 };
@@ -204,6 +204,7 @@ watch(
       form.empresaRequisitoId = '';
     }
     if (nuevaEmpresa) {
+      await recargar(); // Asegura que docStore.documentos esté actualizado
       await empStore.fetchActivos({ empresaId: nuevaEmpresa });
       await cargarAsignacionesEmpresa(nuevaEmpresa);
     }
@@ -211,6 +212,16 @@ watch(
 );
 
 const fechaCorta = (f) => f ? new Date(f + 'T00:00:00').toLocaleDateString('es-VE') : '-';
+
+const asignacionesDisponibles = computed(() => {
+  const asignados = new Set(
+    docStore.documentos
+      .filter((d) => d.empresaId === form.empresaId)
+      .map((d) => d.empresaRequisitoId)
+      .filter(Boolean),
+  );
+  return asignacionesEmpresa.value.filter((a) => !asignados.has(a.id));
+});
 
 onMounted(async () => {
   await cargarEmpresas();
@@ -247,7 +258,7 @@ onMounted(async () => {
           Documento *
           <select v-model="form.empresaRequisitoId" :disabled="!form.empresaId">
             <option value="">Seleccione...</option>
-            <option v-for="a in asignacionesEmpresa" :key="a.id" :value="a.id">
+            <option v-for="a in asignacionesDisponibles" :key="a.id" :value="a.id">
               {{ a.requisito?.codigo }} - {{ a.requisito?.titulo }}
             </option>
           </select>
@@ -306,7 +317,6 @@ onMounted(async () => {
             <option value="">Todos</option>
             <option value="vigente">Vigente</option>
             <option value="vencido">Vencido</option>
-            <option value="archivado">Archivado</option>
           </select>
         </label>
       </div>
@@ -342,15 +352,20 @@ onMounted(async () => {
               <td data-label="Fecha doc.">{{ fechaCorta(doc.fechaDocumento) }}</td>
               <td data-label="Vencimiento">{{ fechaCorta(doc.fechaVencimiento) }}</td>
               <td data-label="Subido">{{ fechaCorta(doc.createdAt?.slice(0, 10)) }}</td>
-              <td data-label="Estado"><EstadoDocumentoBadge :estado="doc.estadoEfectivo" /></td>
+              <td data-label="Estado">
+                <EstadoDocumentoBadge
+                  :estado="doc.estadoEfectivo"
+                  :proximo="doc.proximoAVencer"
+                  :dias="doc.diasHastaVencimiento"
+                />
+              </td>
               <td v-if="canEdit" data-label="Acciones" style="white-space:nowrap">
                 <button class="btn-ghost btn-sm" type="button" @click="editar(doc)">Editar</button>
                 <button
-                  v-if="doc.estadoEfectivo !== 'archivado'"
-                  class="btn-ghost btn-sm"
+                  class="btn-ghost btn-sm btn-danger"
                   type="button"
-                  @click="archivar(doc)"
-                >Archivar</button>
+                  @click="eliminar(doc.id)"
+                >Eliminar</button>
                 <router-link
                   class="btn-ghost btn-sm"
                   :to="{ name: 'documento-detalle', params: { id: doc.id } }"

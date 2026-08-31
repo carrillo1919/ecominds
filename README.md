@@ -231,3 +231,21 @@ LOPCYMAT/COVENIN 2226), T-01, T-05 y D-05; editables desde la pantalla Requisito
 3. Importe y monte el router en `backend/src/routes/index.js` bajo el prefijo adecuado.
 4. Aplique los middlewares `authenticate` y `authorize` según el acceso requerido.
 5. Actualice este `README.md` con el nuevo endpoint.
+
+
+
+# 1. Verificar que queden solo origin, backend-origin y frontend-origin
+git remote -v
+
+# 2. Subir solo la carpeta backend
+git subtree split --prefix=backend -b backend-only
+git push backend-origin backend-only:main --force
+git branch -D backend-only
+
+# 3. Subir solo la carpeta frontend
+git subtree split --prefix=frontend -b frontend-only
+git push frontend-origin frontend-only:main --force
+git branch -D frontend-only
+
+https://github.com/ecominds04-design/ecominds-banckend.git  
+https://github.com/ecominds04-design/ecominds-frontend.git 

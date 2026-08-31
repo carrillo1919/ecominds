@@ -86,6 +86,8 @@ const onArchivoEliminado = (archivoId) => {
   archivos.value = archivos.value.filter((a) => a.id !== archivoId);
 };
 
+const extension = (nombreArchivo) => nombreArchivo?.split('.').pop().toLowerCase() || '';
+
 const fechaCorta = (f) => f ? new Date(f + 'T00:00:00').toLocaleDateString('es-VE') : '-';
 
 onMounted(cargar);
@@ -93,20 +95,25 @@ onMounted(cargar);
 
 <template>
   <section>
-    <button class="btn-ghost" type="button" @click="router.push({ name: 'documentos' })">← Volver</button>
-
-    <div v-if="cargando" class="muted" style="margin-top:1rem">Cargando...</div>
+      <div v-if="cargando" class="muted" style="margin-top:1rem">Cargando...</div>
 
     <template v-else-if="documento">
       <div class="card" style="margin-top:1rem">
         <div class="doc-header">
           <div>
             <h2>{{ nombreDocumentoAsignado(documento) }}</h2>
-            <EstadoDocumentoBadge :estado="documento.estadoEfectivo" />
+            <EstadoDocumentoBadge
+              :estado="documento.estadoEfectivo"
+              :proximo="documento.proximoAVencer"
+              :dias="documento.diasHastaVencimiento"
+            />
           </div>
-          <button v-if="canEdit && !editando" class="btn-ghost" type="button" @click="editando = true">
-            Editar
-          </button>
+          <div class="doc-header__actions">
+            <button class="btn-ghost" type="button" @click="router.push({ name: 'documentos' })">← Volver</button>
+            <button v-if="canEdit && !editando" class="btn-ghost" type="button" @click="editando = true">
+              Editar
+            </button>
+          </div>
         </div>
 
         <template v-if="!editando">
@@ -160,6 +167,7 @@ onMounted(cargar);
           :archivos="archivos"
           :can-upload="canEdit"
           :can-delete="canEdit"
+          show-preview
           @archivo-subido="onArchivoSubido"
           @archivo-eliminado="onArchivoEliminado"
         />
@@ -170,7 +178,51 @@ onMounted(cargar);
 
 <style scoped>
 .doc-header { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 1rem; }
+
+.doc-header__actions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-left: auto;
+}
+
 .doc-meta { display: grid; grid-template-columns: 160px 1fr; gap: 0.4rem 1rem; margin: 0; }
 .doc-meta dt { font-weight: 600; color: var(--color-muted, #6b7280); }
 .doc-meta dd { margin: 0; }
+
+.archivo-selector {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.archivo-selector__item {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.45rem 0.8rem;
+  border: 1px solid var(--outline, #e5e7eb);
+  border-radius: 999px;
+  background: #fff;
+  cursor: pointer;
+  font-size: 0.85rem;
+  transition: background 0.15s, border-color 0.15s;
+}
+
+.archivo-selector__item:hover {
+  background: #f1f5f9;
+}
+
+.archivo-selector__item.active {
+  background: var(--primary-soft, #e8f5e9);
+  border-color: var(--primary, #4caf50);
+  color: var(--primary, #4caf50);
+}
+
+.archivo-selector__nombre {
+  max-width: 200px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
 </style>

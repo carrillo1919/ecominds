@@ -1,4 +1,4 @@
-const ESTADOS_DOCUMENTO = ['vigente', 'vencido', 'archivado'];
+const ESTADOS_DOCUMENTO = ['vigente', 'vencido'];
 
 const DocumentoModel = (sequelize, DataTypes) => {
   const Documento = sequelize.define('Documento', {
