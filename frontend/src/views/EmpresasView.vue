@@ -117,6 +117,7 @@ const guardar = async () => {
         toast.success('Empleado registrado');
         form.responsableId = data.empleado?.id || '';
         await api.put(`/empresas/${empresaId}`, { responsableId: form.responsableId });
+        await cargarEmpleados(empresaId);
         limpiarEmpleado();
         mostrarFormEmpleado.value = false;
       } catch (e) {
@@ -124,6 +125,7 @@ const guardar = async () => {
         // Conservar la empresa creada y cambiar a modo edición para permitir reintentar
         // sin duplicar la empresa
         editandoId.value = empresaId;
+        await cargarEmpleados(empresaId);
         await cargar();
         guardando.value = false;
         return;
@@ -168,10 +170,10 @@ const guardarEmpleado = async () => {
       empresaId: editandoId.value,
     });
     toast.success('Empleado registrado');
+    await cargarEmpleados(editandoId.value);
     form.responsableId = data.empleado?.id || '';
     limpiarEmpleado();
     mostrarFormEmpleado.value = false;
-    await cargarEmpleados(editandoId.value);
   } catch (e) {
     toast.error(apiMessage(e, 'No se pudo registrar el empleado'));
   } finally {
