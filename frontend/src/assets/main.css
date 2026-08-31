@@ -1,3 +1,7 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
 /*
  * SRCD - Design system
  * Paleta institucional: azul profundo + acento teal, tipografia Manrope/Inter.
