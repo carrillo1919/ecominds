@@ -6,9 +6,9 @@
   },
   "nav": [
     { "label": "Servicios", "href": "#services" },
+    { "label": "Quienes Somos", "href": "#quienesSomos" },
     { "label": "Beneficios", "href": "#beneficios" },
-    { "label": "Testimonios", "href": "#testimonials" },
-    { "label": "Contacto", "href": "#contacto" }
+    { "label": "Testimonios", "href": "#testimonials" }
   ],
   "hero": {
     "eyebrow": "Precisión Ambiental",
@@ -54,7 +54,7 @@
       }
     ]
   },
-  "whoWeAre": {
+  "quienesSomos": {
     "title": "Comprometidos con la Excelencia Ambiental",
     "background": "/img/comprometidos.png",
     "values": [

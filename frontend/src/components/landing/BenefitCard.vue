@@ -1,4 +1,3 @@
-<!-- filepath: c:\Users\tf carrillo\Documents\proyectos\ecoMinds\frontend\src\components\landing\BenefitCard.vue -->
 <template>
   <div class="bg-surface-container-low p-md rounded-xl border border-outline/5 hover:border-primary/20 hover:shadow-md transition-all duration-300 flex gap-md group">
     <div class="w-10 h-10 rounded-lg bg-secondary-container/40 flex items-center justify-center text-primary shrink-0 group-hover:bg-primary group-hover:text-on-primary transition-colors">

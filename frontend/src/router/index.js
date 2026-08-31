@@ -3,7 +3,7 @@ import { setUnauthorizedHandler } from '@/api/axios';
 import { useAuthStore } from '@/stores/auth';
 
 const routes = [
-  { path: '/', name: 'landing', component: () => import('@/views/LandingView.vue'), meta: { public: true } },
+  { path: '/', name: 'landing', component: () => import('@/views/landing/LandingView.vue'), meta: { public: true } },
 
   // Rutas públicas del sistema
   { path: '/app/login', name: 'login', component: () => import('@/views/auth/LoginView.vue'), meta: { public: true } },

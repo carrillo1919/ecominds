@@ -1,4 +1,3 @@
-<!-- filepath: c:\Users\tf carrillo\Documents\proyectos\ecoMinds\frontend\src\components\landing\ServiceCard.vue -->
 <template>
   <div
     :class=" [

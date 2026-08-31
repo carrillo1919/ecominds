@@ -1,4 +1,4 @@
-<!-- filepath: c:\Users\tf carrillo\Documents\proyectos\ecoMinds\frontend\src\components\landing\ValueCard.vue -->
+ 
 <template>
   <div class="flex" :class="alignClass">
     <div

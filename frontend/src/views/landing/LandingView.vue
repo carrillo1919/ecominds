@@ -1,4 +1,3 @@
-<!-- filepath: c:\Users\tf carrillo\Documents\proyectos\ecoMinds\frontend\src\views\LandingView.vue -->
 <template>
   <div class="min-h-screen bg-background text-on-background font-body-md antialiased selection:bg-primary-container selection:text-on-primary-container">
     <!-- TopNavBar -->
@@ -39,7 +38,7 @@
         <div class="absolute inset-0 z-0">
           <img
             alt="Edificio de oficinas sostenible"
-            class="w-full h-full object-cover opacity-20"
+            class="w-full h-full object-cover opacity-40"
             :src="config.hero.background"
           />
         </div>
@@ -94,22 +93,22 @@
       </section>
 
       <!-- Who We Are Section -->
-      <section class="py-xl relative border-y border-outline/5 overflow-hidden">
+      <section id="quienesSomos" class="py-xl relative border-y border-outline/5 overflow-hidden">
         <div class="absolute inset-0 z-0">
           <img
             alt="Naturaleza y tecnología"
             class="w-full h-full object-cover opacity-80"
-            :src="config.whoWeAre.background"
+            :src="config.quienesSomos.background"
           />
         </div>
         <div class="absolute inset-0 z-0 bg-surface/60" />
         <div class="max-w-container-max mx-auto px-gutter relative z-10">
           <div class="text-center mb-xl">
-            <h2 class="font-headline-lg text-headline-lg text-on-surface">{{ config.whoWeAre.title }}</h2>
+            <h2 class="font-headline-lg text-headline-lg text-on-surface">{{ config.quienesSomos.title }}</h2>
           </div>
           <div class="flex flex-col gap-lg">
             <ValueCard
-              v-for="value in config.whoWeAre.values"
+              v-for="value in config.quienesSomos.values"
               :key="value.title"
               v-bind="value"
               :align="value.align"

@@ -1,4 +1,3 @@
-<!-- filepath: c:\Users\tf carrillo\Documents\proyectos\ecoMinds\frontend\src\components\landing\FormInput.vue -->
 <template>
   <div class="flex flex-col gap-xs">
     <label class="font-label-md text-label-md text-on-surface-variant">{{ label }}</label>

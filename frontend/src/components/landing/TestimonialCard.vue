@@ -1,4 +1,3 @@
-<!-- filepath: c:\Users\tf carrillo\Documents\proyectos\ecoMinds\frontend\src\components\landing\TestimonialCard.vue -->
 <template>
   <div class="bg-surface-container-lowest p-lg rounded-xl border border-outline/10 flex flex-col gap-md relative">
     <span class="material-symbols-outlined text-surface-variant absolute top-lg right-lg text-[48px] opacity-20">{{ quoteIcon }}</span>
