@@ -2,7 +2,7 @@
   "brand": {
     "name": "ecominds",
     "tagline": "Precisión Ambiental",
-    "logo": "/icons/icono.png"
+    "logo": "/icons/icon-512.png"
   },
   "nav": [
     { "label": "Servicios", "href": "#services" },
