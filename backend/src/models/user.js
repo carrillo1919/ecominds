@@ -72,7 +72,6 @@ const UserModel = (sequelize, DataTypes) => {
 
   User.associate = (db) => {
     User.hasMany(db.Empresa, { foreignKey: 'responsableId', as: 'empresasResponsable' });
-    User.hasMany(db.EmpresaRequisito, { foreignKey: 'responsableId', as: 'requisitosAsignados' });
     User.hasOne(db.Empleado, { foreignKey: 'userId', as: 'empleado' });
   };
 

@@ -27,6 +27,10 @@ router.post(
       .optional({ values: 'falsy' })
       .isEmail()
       .withMessage('Correo invalido'),
+    body('responsableId')
+      .optional({ values: 'falsy' })
+      .isUUID()
+      .withMessage('responsableId invalido'),
   ],
   validate,
   controller.create
@@ -46,6 +50,10 @@ router.put(
       .optional({ values: 'falsy' })
       .isEmail()
       .withMessage('Correo invalido'),
+    body('responsableId')
+      .optional({ values: 'falsy' })
+      .isUUID()
+      .withMessage('responsableId invalido'),
   ],
   validate,
   controller.update
