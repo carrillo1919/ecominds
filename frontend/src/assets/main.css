@@ -820,6 +820,28 @@ table.data tbody tr:hover td {
   margin: 1rem 0;
 }
 
+@media (max-width: 700px) {
+  .form-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .filter-inline {
+    max-width: 100%;
+  }
+
+  .actions-row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .actions-row .btn,
+  .actions-row .btn-primary,
+  .actions-row .btn-ghost {
+    width: 100%;
+    justify-content: center;
+  }
+}
+
 .form-grid label,
 .filter-inline {
   display: block;
@@ -979,6 +1001,77 @@ table.data input[type='text'] {
 @media (max-width: 700px) {
   .bar-row__label {
     flex-basis: 120px;
+  }
+}
+
+/* ----------------------------------------------------- Responsive tables */
+
+@media (max-width: 700px) {
+  .table-scroll {
+    overflow-x: visible;
+  }
+
+  table.data,
+  table.data thead,
+  table.data tbody,
+  table.data th,
+  table.data td,
+  table.data tr {
+    display: block;
+  }
+
+  table.data {
+    border: none;
+    background: transparent;
+  }
+
+  table.data thead {
+    display: none;
+  }
+
+  table.data tbody tr {
+    margin-bottom: 1rem;
+    padding: 0.9rem;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    box-shadow: var(--shadow-sm);
+  }
+
+  table.data tbody td {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 0.75rem;
+    padding: 0.5rem 0;
+    border-bottom: 1px solid var(--border);
+    text-align: right;
+  }
+
+  table.data tbody td:last-child {
+    border-bottom: none;
+  }
+
+  table.data tbody td::before {
+    content: attr(data-label);
+    flex: 0 0 auto;
+    font-weight: 600;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--text-muted);
+    text-align: left;
+  }
+
+  table.data tbody td > * {
+    flex: 1 1 auto;
+    text-align: right;
+  }
+
+  table.data tbody td .pill,
+  table.data tbody td a,
+  table.data tbody td button {
+    flex: 0 0 auto;
   }
 }
 

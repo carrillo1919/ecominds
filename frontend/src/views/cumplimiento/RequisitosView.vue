@@ -78,14 +78,14 @@ onMounted(cargar);
           </thead>
           <tbody>
             <tr v-for="r in visibles" :key="r.id">
-              <td>{{ r.codigo }}</td>
-              <td>{{ r.bloque }}</td>
-              <td>{{ r.requisito }}</td>
-              <td>
+              <td data-label="Codigo">{{ r.codigo }}</td>
+              <td data-label="Bloque">{{ r.bloque }}</td>
+              <td data-label="Requisito">{{ r.requisito }}</td>
+              <td data-label="Ente / base legal">
                 {{ r.enteRegulador || '-' }}
                 <span class="muted" v-if="r.baseLegal"><br />{{ r.baseLegal }}</span>
               </td>
-              <td>
+              <td data-label="Critico">
                 <input
                   type="checkbox"
                   :checked="r.critico"
@@ -93,7 +93,7 @@ onMounted(cargar);
                   @change="actualizar(r, 'critico', $event.target.checked)"
                 />
               </td>
-              <td>
+              <td data-label="Activo">
                 <input
                   type="checkbox"
                   :checked="r.activo"

@@ -329,21 +329,21 @@ onMounted(async () => {
           </thead>
           <tbody>
             <tr v-for="doc in documentosFiltrados" :key="doc.id">
-              <td>
+              <td data-label="Documento">
                 <router-link :to="{ name: 'documento-detalle', params: { id: doc.id } }">
                   <strong>{{ nombreDocumentoAsignado(doc) }}</strong>
                 </router-link>
                 <span v-if="doc.descripcion" class="muted"><br />{{ doc.descripcion.slice(0, 60) }}{{ doc.descripcion.length > 60 ? '…' : '' }}</span>
               </td>
-              <td>
+              <td data-label="Responsable">
                 <span v-if="doc.responsable">{{ doc.responsable.apellido }}, {{ doc.responsable.nombre }}</span>
                 <span v-else class="muted">-</span>
               </td>
-              <td>{{ fechaCorta(doc.fechaDocumento) }}</td>
-              <td>{{ fechaCorta(doc.fechaVencimiento) }}</td>
-              <td>{{ fechaCorta(doc.createdAt?.slice(0, 10)) }}</td>
-              <td><EstadoDocumentoBadge :estado="doc.estadoEfectivo" /></td>
-              <td v-if="canEdit" style="white-space:nowrap">
+              <td data-label="Fecha doc.">{{ fechaCorta(doc.fechaDocumento) }}</td>
+              <td data-label="Vencimiento">{{ fechaCorta(doc.fechaVencimiento) }}</td>
+              <td data-label="Subido">{{ fechaCorta(doc.createdAt?.slice(0, 10)) }}</td>
+              <td data-label="Estado"><EstadoDocumentoBadge :estado="doc.estadoEfectivo" /></td>
+              <td v-if="canEdit" data-label="Acciones" style="white-space:nowrap">
                 <button class="btn-ghost btn-sm" type="button" @click="editar(doc)">Editar</button>
                 <button
                   v-if="doc.estadoEfectivo !== 'archivado'"

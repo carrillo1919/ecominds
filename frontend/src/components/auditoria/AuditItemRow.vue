@@ -10,25 +10,25 @@ defineProps({
 
 <template>
   <tr class="audit-item-row">
-    <td>
+    <td data-label="Codigo">
       <strong>{{ item.requisito?.codigo }}</strong>
       <span v-if="item.requisito?.critico" class="pill pill--danger">Critico</span>
       <span class="muted"><br />{{ item.requisito?.bloque }}</span>
     </td>
-    <td>
+    <td data-label="Requisito">
       {{ item.requisito?.requisito }}
       <span class="muted" v-if="item.requisito?.baseLegal"><br />{{ item.requisito.baseLegal }}</span>
     </td>
-    <td>
+    <td data-label="Estado">
       <select v-model="item.estado" :disabled="!editable">
         <option :value="null">Sin evaluar</option>
         <option v-for="e in ESTADOS" :key="e.valor" :value="e.valor">{{ e.label }}</option>
       </select>
     </td>
-    <td>
+    <td data-label="Observaciones / hallazgo">
       <textarea v-model="item.observaciones" rows="2" :disabled="!editable"></textarea>
     </td>
-    <td>
+    <td data-label="Accion correctiva (CAPA)">
       <textarea
         v-model="item.accionCorrectiva"
         rows="2"

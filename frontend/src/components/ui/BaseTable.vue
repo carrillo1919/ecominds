@@ -19,12 +19,12 @@ defineProps({
       </thead>
       <tbody>
         <tr v-for="item in items" :key="item[keyField]">
-          <td v-for="h in headers" :key="h.key">
+          <td v-for="h in headers" :key="h.key" :data-label="h.label">
             <slot :name="`cell-${h.key}`" :item="item" :value="item[h.key]">
               {{ item[h.key] }}
             </slot>
           </td>
-          <td v-if="$slots.actions" class="base-table__actions">
+          <td v-if="$slots.actions" class="base-table__actions" data-label="Acciones">
             <slot name="actions" :item="item" />
           </td>
         </tr>

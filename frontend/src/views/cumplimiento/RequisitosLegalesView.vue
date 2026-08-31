@@ -28,37 +28,39 @@
     <p v-if="loading" class="text-muted">Cargando...</p>
     <p v-else-if="error" class="alert alert-error">{{ error }}</p>
 
-    <table v-else class="table">
-      <thead>
-        <tr>
-          <th>Código</th>
-          <th>Título</th>
-          <th>Ente</th>
-          <th>Categoría</th>
-          <th>Periodicidad</th>
-          <th>Criticidad</th>
-          <th>Vigencia</th>
-          <th v-if="canManage">Acciones</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr v-for="req in requisitos" :key="req.id">
-          <td>{{ req.codigo }}</td>
-          <td>{{ req.titulo }}</td>
-          <td>{{ req.ente?.sigla || '—' }}</td>
-          <td>{{ req.categoria }}</td>
-          <td>{{ req.periodicidad }}</td>
-          <td>
-            <span :class="['badge', req.criticidad]">{{ req.criticidad }}</span>
-          </td>
-          <td>{{ req.vigenciaDesde }} {{ req.vigenciaHasta ? ' / ' + req.vigenciaHasta : '' }}</td>
-          <td v-if="canManage">
-            <button class="btn btn-sm" @click="openModal(req)">Editar</button>
-            <button class="btn btn-sm btn-danger" @click="remove(req.id)">Desactivar</button>
-          </td>
-        </tr>
-      </tbody>
-    </table>
+    <div v-else class="table-scroll">
+      <table class="data">
+        <thead>
+          <tr>
+            <th>Código</th>
+            <th>Título</th>
+            <th>Ente</th>
+            <th>Categoría</th>
+            <th>Periodicidad</th>
+            <th>Criticidad</th>
+            <th>Vigencia</th>
+            <th v-if="canManage">Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr v-for="req in requisitos" :key="req.id">
+            <td data-label="Código">{{ req.codigo }}</td>
+            <td data-label="Título">{{ req.titulo }}</td>
+            <td data-label="Ente">{{ req.ente?.sigla || '—' }}</td>
+            <td data-label="Categoría">{{ req.categoria }}</td>
+            <td data-label="Periodicidad">{{ req.periodicidad }}</td>
+            <td data-label="Criticidad">
+              <span :class="['badge', req.criticidad]">{{ req.criticidad }}</span>
+            </td>
+            <td data-label="Vigencia">{{ req.vigenciaDesde }} {{ req.vigenciaHasta ? ' / ' + req.vigenciaHasta : '' }}</td>
+            <td v-if="canManage" data-label="Acciones">
+              <button class="btn btn-sm" @click="openModal(req)">Editar</button>
+              <button class="btn btn-sm btn-danger" @click="remove(req.id)">Desactivar</button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
 
     <div v-if="showModal" class="modal-overlay" @click.self="closeModal">
       <div class="modal">

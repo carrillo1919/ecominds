@@ -10,34 +10,36 @@
     <p v-if="loading" class="text-muted">Cargando...</p>
     <p v-else-if="error" class="alert alert-error">{{ error }}</p>
 
-    <table v-else class="table">
-      <thead>
-        <tr>
-          <th>Sigla</th>
-          <th>Nombre</th>
-          <th>Ámbito</th>
-          <th>Contacto</th>
-          <th>Sitio web</th>
-          <th v-if="canManage">Acciones</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr v-for="ente in entes" :key="ente.id">
-          <td>{{ ente.sigla }}</td>
-          <td>{{ ente.nombre }}</td>
-          <td>{{ ente.ambito }}</td>
-          <td>{{ ente.contacto || '—' }}</td>
-          <td>
-            <a v-if="ente.sitioWeb" :href="ente.sitioWeb" target="_blank">Ver sitio</a>
-            <span v-else>—</span>
-          </td>
-          <td v-if="canManage">
-            <button class="btn btn-sm" @click="openModal(ente)">Editar</button>
-            <button class="btn btn-sm btn-danger" @click="remove(ente.id)">Desactivar</button>
-          </td>
-        </tr>
-      </tbody>
-    </table>
+    <div v-else class="table-scroll">
+      <table class="data">
+        <thead>
+          <tr>
+            <th>Sigla</th>
+            <th>Nombre</th>
+            <th>Ámbito</th>
+            <th>Contacto</th>
+            <th>Sitio web</th>
+            <th v-if="canManage">Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr v-for="ente in entes" :key="ente.id">
+            <td data-label="Sigla">{{ ente.sigla }}</td>
+            <td data-label="Nombre">{{ ente.nombre }}</td>
+            <td data-label="Ámbito">{{ ente.ambito }}</td>
+            <td data-label="Contacto">{{ ente.contacto || '—' }}</td>
+            <td data-label="Sitio web">
+              <a v-if="ente.sitioWeb" :href="ente.sitioWeb" target="_blank">Ver sitio</a>
+              <span v-else>—</span>
+            </td>
+            <td v-if="canManage" data-label="Acciones">
+              <button class="btn btn-sm" @click="openModal(ente)">Editar</button>
+              <button class="btn btn-sm btn-danger" @click="remove(ente.id)">Desactivar</button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
 
     <div v-if="showModal" class="modal-overlay" @click.self="closeModal">
       <div class="modal">

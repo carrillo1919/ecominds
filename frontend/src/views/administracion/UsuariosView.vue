@@ -66,9 +66,9 @@ onMounted(cargar);
         </thead>
         <tbody>
           <tr v-for="u in usuarios" :key="u.id">
-            <td>{{ u.nombre }} {{ u.apellido }}</td>
-            <td>{{ u.email }}</td>
-            <td>
+            <td data-label="Nombre">{{ u.nombre }} {{ u.apellido }}</td>
+            <td data-label="Correo">{{ u.email }}</td>
+            <td data-label="Rol">
               <select
                 :value="u.rol"
                 :disabled="u.id === auth.user?.id"
@@ -77,8 +77,8 @@ onMounted(cargar);
                 <option v-for="r in roles" :key="r" :value="r">{{ roleLabel(r) }}</option>
               </select>
             </td>
-            <td>{{ u.verified ? 'Si' : 'No' }}</td>
-            <td>{{ fecha(u.createdAt) }}</td>
+            <td data-label="Verificado">{{ u.verified ? 'Si' : 'No' }}</td>
+            <td data-label="Registro">{{ fecha(u.createdAt) }}</td>
           </tr>
           <tr v-if="!usuarios.length">
             <td colspan="5" class="muted">No hay usuarios registrados.</td>
