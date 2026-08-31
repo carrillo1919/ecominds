@@ -7,6 +7,9 @@ import requisitoRoutes from './requisitoRoutes.js';
 import auditoriaRoutes from './auditoriaRoutes.js';
 import empleadoRoutes from './empleadoRoutes.js';
 import documentoRoutes from './documentoRoutes.js';
+import enteReguladorRoutes from './enteReguladorRoutes.js';
+import requisitoLegalRoutes from './requisitoLegalRoutes.js';
+import empresaRequisitoRoutes from './empresaRequisitoRoutes.js';
 
 const router = express.Router();
 
@@ -22,5 +25,8 @@ router.use('/requisitos', requisitoRoutes);
 router.use('/auditorias', auditoriaRoutes);
 router.use('/empleados', empleadoRoutes);
 router.use('/documentos', documentoRoutes);
+router.use('/entes-reguladores', enteReguladorRoutes);
+router.use('/requisitos-legales', requisitoLegalRoutes);
+router.use('/empresa-requisitos', empresaRequisitoRoutes);
 
 export default router;
