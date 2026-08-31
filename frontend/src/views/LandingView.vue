@@ -357,7 +357,6 @@ const footerLinks = [
 ]
 
 const handleSubmit = () => {
-  console.log('Formulario enviado:', form.value)
   // TODO: integrar con API de leads
 }
 </script>

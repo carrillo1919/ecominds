@@ -1,7 +1,8 @@
 <template>
   <div class="flex flex-col gap-xs">
-    <label class="font-label-md text-label-md text-on-surface-variant">{{ label }}</label>
+    <label :for="name" class="font-label-md text-label-md text-on-surface-variant">{{ label }}</label>
     <input
+      :id="name"
       :type="type"
       :placeholder="placeholder"
       :value="modelValue"
@@ -13,6 +14,7 @@
 
 <script setup>
 defineProps({
+  name: String,
   label: String,
   type: {
     type: String,
