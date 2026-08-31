@@ -6,6 +6,7 @@ import { useEmpleadosStore } from '@/stores/empleados';
 import { useAuthorization } from '@/composables/useAuthorization';
 import EstadoDocumentoBadge from '@/components/EstadoDocumentoBadge.vue';
 import * as empresasApi from '@/api/empresas';
+import * as empresaRequisitosApi from '@/api/empresaRequisitos';
 
 const toast = useToast();
 const docStore = useDocumentosStore();
@@ -22,9 +23,10 @@ const filtroEstado = ref('');
 const empresas = ref([]);
 const empresaFiltro = ref('');
 const archivo = ref(null);
+const asignacionesEmpresa = ref([]);
 
 const form = reactive({
-  titulo: '',
+  empresaRequisitoId: '',
   descripcion: '',
   fechaDocumento: '',
   fechaVencimiento: '',
@@ -36,28 +38,58 @@ const limpiar = () => {
   editandoId.value = null;
   mostrarForm.value = false;
   archivo.value = null;
+  asignacionesEmpresa.value = [];
   Object.keys(form).forEach((k) => { form[k] = ''; });
 };
 
-const editar = (doc) => {
+const documentoAsignadoLabel = computed(() => {
+  const asignacion = asignacionesEmpresa.value.find((a) => a.id === form.empresaRequisitoId);
+  if (asignacion?.requisito) {
+    return `${asignacion.requisito.codigo} - ${asignacion.requisito.titulo}`;
+  }
+  return '—';
+});
+
+const editar = async (doc) => {
   editandoId.value = doc.id;
   mostrarForm.value = true;
-  form.titulo = doc.titulo || '';
+  form.empresaRequisitoId = doc.empresaRequisitoId || '';
   form.descripcion = doc.descripcion || '';
   form.fechaDocumento = doc.fechaDocumento || '';
   form.fechaVencimiento = doc.fechaVencimiento || '';
   form.responsableId = doc.responsableId || '';
   form.empresaId = doc.empresaId || '';
   archivo.value = null;
+  if (form.empresaId) {
+    await cargarAsignacionesEmpresa(form.empresaId);
+    if (!form.empresaRequisitoId && doc.empresaRequisito?.requisito) {
+      asignacionesEmpresa.value = [
+        ...asignacionesEmpresa.value,
+        doc.empresaRequisito,
+      ];
+    }
+  }
+};
+
+const nombreDocumentoAsignado = (doc) => {
+  if (doc.empresaRequisito?.requisito) {
+    const r = doc.empresaRequisito.requisito;
+    return `${r.codigo} - ${r.titulo}`;
+  }
+  return doc.titulo || '—';
 };
 
 const guardar = async () => {
-  if (!form.titulo.trim() || !form.fechaVencimiento) {
-    toast.error('Título y fecha de vencimiento son obligatorios');
+  if (!form.fechaVencimiento) {
+    toast.error('La fecha de vencimiento es obligatoria');
     return;
   }
   if (canSelectEmpresa.value && !editandoId.value && !form.empresaId.trim()) {
     toast.error('Seleccione la empresa');
+    return;
+  }
+  if (!editandoId.value && !form.empresaRequisitoId) {
+    toast.error('Seleccione el documento asignado');
     return;
   }
   guardando.value = true;
@@ -66,6 +98,10 @@ const guardar = async () => {
     responsableId: form.responsableId || null,
     empresaId: canSelectEmpresa.value ? form.empresaId || null : undefined,
   };
+  // No enviar empresaRequisitoId al editar; el backend lo rechaza
+  if (editandoId.value) {
+    delete payload.empresaRequisitoId;
+  }
 
   let result;
   if (editandoId.value) {
@@ -103,7 +139,7 @@ const onFileChange = (event) => {
 };
 
 const archivar = async (doc) => {
-  if (!confirm(`¿Archivar el documento "${doc.titulo}"?`)) return;
+  if (!confirm(`¿Archivar el documento "${nombreDocumentoAsignado(doc)}"?`)) return;
   const result = await docStore.archivar(doc.id);
   if (result.ok) toast.success(result.message);
   else toast.error(result.message);
@@ -126,6 +162,17 @@ const empleadosFiltrados = computed(() => {
   return empStore.empleadosActivos.filter((e) => e.empresaId === form.empresaId);
 });
 
+const cargarAsignacionesEmpresa = async (empresaId) => {
+  asignacionesEmpresa.value = [];
+  if (!empresaId) return;
+  try {
+    const { data } = await empresaRequisitosApi.getByEmpresa(empresaId);
+    asignacionesEmpresa.value = data.asignaciones || [];
+  } catch {
+    asignacionesEmpresa.value = [];
+  }
+};
+
 const recargar = async () => {
   const params = {};
   if (empresaFiltro.value) params.empresaId = empresaFiltro.value;
@@ -146,10 +193,14 @@ watch(empresaFiltro, recargar);
 
 watch(
   () => form.empresaId,
-  async (nuevaEmpresa) => {
+  async (nuevaEmpresa, viejaEmpresa) => {
     form.responsableId = '';
+    if (!editandoId.value || nuevaEmpresa !== viejaEmpresa) {
+      form.empresaRequisitoId = '';
+    }
     if (nuevaEmpresa) {
       await empStore.fetchActivos({ empresaId: nuevaEmpresa });
+      await cargarAsignacionesEmpresa(nuevaEmpresa);
     }
   }
 );
@@ -187,7 +238,19 @@ onMounted(async () => {
             <option v-for="e in empresas" :key="e.id" :value="e.id">{{ e.nombre }}</option>
           </select>
         </label>
-        <label>Título *<input v-model="form.titulo" type="text" /></label>
+        <label v-if="!editandoId">
+          Documento *
+          <select v-model="form.empresaRequisitoId" :disabled="!form.empresaId">
+            <option value="">Seleccione...</option>
+            <option v-for="a in asignacionesEmpresa" :key="a.id" :value="a.id">
+              {{ a.requisito?.codigo }} - {{ a.requisito?.titulo }}
+            </option>
+          </select>
+        </label>
+        <label v-else>
+          Documento
+          <input :value="documentoAsignadoLabel" type="text" disabled />
+        </label>
         <label>
           Responsable
           <select v-model="form.responsableId">
@@ -244,7 +307,7 @@ onMounted(async () => {
         <table class="data">
           <thead>
             <tr>
-              <th>Título</th>
+              <th>Documento</th>
               <th>Responsable</th>
               <th>Fecha doc.</th>
               <th>Vencimiento</th>
@@ -257,7 +320,7 @@ onMounted(async () => {
             <tr v-for="doc in documentosFiltrados" :key="doc.id">
               <td>
                 <router-link :to="{ name: 'documento-detalle', params: { id: doc.id } }">
-                  <strong>{{ doc.titulo }}</strong>
+                  <strong>{{ nombreDocumentoAsignado(doc) }}</strong>
                 </router-link>
                 <span v-if="doc.descripcion" class="muted"><br />{{ doc.descripcion.slice(0, 60) }}{{ doc.descripcion.length > 60 ? '…' : '' }}</span>
               </td>
