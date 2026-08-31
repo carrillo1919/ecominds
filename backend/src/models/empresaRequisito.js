@@ -4,14 +4,13 @@ const EmpresaRequisitoModel = (sequelize, DataTypes) => {
     empresaId: { type: DataTypes.UUID, allowNull: false },
     requisitoId: { type: DataTypes.UUID, allowNull: false },
     fechaAsignacion: { type: DataTypes.DATEONLY, allowNull: false, defaultValue: DataTypes.NOW },
-    responsableId: { type: DataTypes.UUID },
     observaciones: DataTypes.TEXT,
   }, { tableName: 'empresa_requisitos', timestamps: true, underscored: true });
 
   EmpresaRequisito.associate = (db) => {
     EmpresaRequisito.belongsTo(db.Empresa, { foreignKey: 'empresaId', as: 'empresa' });
     EmpresaRequisito.belongsTo(db.RequisitoLegal, { foreignKey: 'requisitoId', as: 'requisito' });
-    EmpresaRequisito.belongsTo(db.Empleado, { foreignKey: 'responsableId', as: 'responsable' });
+    EmpresaRequisito.hasMany(db.Documento, { foreignKey: 'empresaRequisitoId', as: 'documentos' });
   };
 
   return EmpresaRequisito;
