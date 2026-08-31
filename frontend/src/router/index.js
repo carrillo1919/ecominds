@@ -32,6 +32,12 @@ const routes = [
       { path: 'empleados/:id', name: 'empleado-detalle', component: () => import('@/views/empleados/EmpleadoDetalleView.vue'), meta: { requiresAuth: true, roles: ['admin'] } },
       { path: 'documentos', name: 'documentos', component: () => import('@/views/documentos/DocumentosView.vue'), meta: { requiresAuth: true } },
       { path: 'documentos/:id', name: 'documento-detalle', component: () => import('@/views/documentos/DocumentoDetalleView.vue'), meta: { requiresAuth: true } },
+      {
+        path: '/calendario',
+        name: 'calendario',
+        component: () => import('@/views/calendario/CalendarioView.vue'),
+        meta: { requiresAuth: true },
+      },
     ],
   },
 

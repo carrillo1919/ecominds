@@ -7,6 +7,7 @@ import {
   Empresa,
   User,
   Empleado,
+  CalendarioEvento,
   sequelize,
 } from '../models/index.js';
 
@@ -183,6 +184,7 @@ const saveItems = async (req, res, next) => {
     }
 
     const items = Array.isArray(req.body.items) ? req.body.items : [];
+    const compromisos = [];
 
     for (const entrada of items) {
       const item = await AuditoriaItem.findOne({
@@ -191,9 +193,13 @@ const saveItems = async (req, res, next) => {
       });
       if (!item) continue;
 
-      ['estado', 'observaciones', 'accionCorrectiva', 'responsableAccion', 'fechaCompromiso'].forEach((campo) => {
-        if (entrada[campo] !== undefined) item[campo] = entrada[campo] || null;
-      });
+      const fechaCompromiso = normalizarFecha(entrada.fechaCompromiso);
+
+      if (entrada.estado !== undefined) item.estado = entrada.estado || null;
+      if (entrada.observaciones !== undefined) item.observaciones = entrada.observaciones || null;
+      if (entrada.accionCorrectiva !== undefined) item.accionCorrectiva = entrada.accionCorrectiva || null;
+      if (entrada.responsableAccion !== undefined) item.responsableAccion = entrada.responsableAccion || null;
+      if (entrada.fechaCompromiso !== undefined) item.fechaCompromiso = fechaCompromiso;
 
       if (entrada.responsableAccionId !== undefined) {
         if (entrada.responsableAccionId) {
@@ -210,12 +216,67 @@ const saveItems = async (req, res, next) => {
       }
 
       await item.save({ transaction });
+
+      // Solo recolectar el compromiso; se creará después del commit
+      if (item.estado === 'no_cumple' && item.fechaCompromiso) {
+
+ console.log('✅ Compromiso detectado:', {
+    itemId: item.id,
+    estado: item.estado,
+    fechaCompromiso: item.fechaCompromiso,
+  });
+
+
+        compromisos.push({
+          itemId: item.id,
+          titulo: `Compromiso: ${item.accionCorrectiva || 'Acción correctiva pendiente'}`,
+          descripcion: item.accionCorrectiva || '',
+          fecha: item.fechaCompromiso,
+          auditoriaId: item.auditoriaId,
+          usuarioId: req.user?.id ?? null,
+        });
+      }else{
+         console.log('⚠️ No cumple condición:', {
+    itemId: item.id,
+    estado: item.estado,
+    fechaCompromiso: item.fechaCompromiso,
+  });
+      }
     }
 
     const resultado = await recalcular(auditoria.id, transaction);
     await transaction.commit();
 
-    return res.json({ message: 'Evaluacion guardada', resultado });
+    // Sincronización post-commit: un error aquí NO pierde el checklist
+    for (const comp of compromisos) {
+      try {
+        await CalendarioEvento.destroy({
+          where: { auditoriaItemId: comp.itemId, tipo: 'compromiso' },
+        });
+        await CalendarioEvento.create({
+          titulo: comp.titulo,
+          descripcion: comp.descripcion,
+          fecha: comp.fecha,
+          tipo: 'compromiso',
+          auditoriaId: comp.auditoriaId,
+          auditoriaItemId: comp.itemId,
+          usuarioId: comp.usuarioId,
+          color: '#f59e0b',
+        });
+      } catch (errorCalendario) {
+        console.error('No se pudo sincronizar el calendario:', errorCalendario);
+      }
+    }
+
+    const actualizada = await Auditoria.findByPk(auditoria.id, {
+      include: [...INCLUDES_BASE, INCLUDE_ITEMS],
+    });
+
+    return res.json({
+      message: 'Evaluacion guardada',
+      auditoria: ordenarItems(actualizada),
+      resultado,
+    });
   } catch (error) {
     await transaction.rollback();
     return next(error);
@@ -398,6 +459,17 @@ const proximas = async (req, res, next) => {
   } catch (error) {
     return next(error);
   }
+};
+
+// Normaliza DD/MM/YYYY -> YYYY-MM-DD
+const normalizarFecha = (fecha) => {
+  if (!fecha) return null;
+  if (/^\d{4}-\d{2}-\d{2}$/.test(fecha)) return fecha;
+  const m = /^(\d{1,2})\/(\d{1,2})\/(\d{4})$/.exec(String(fecha).trim());
+  if (m) {
+    return `${m[3]}-${m[2].padStart(2, '0')}-${m[1].padStart(2, '0')}`;
+  }
+  return fecha; // deja que Sequelize valide y lance el error si es necesario
 };
 
 export {

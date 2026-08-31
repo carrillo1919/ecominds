@@ -1,4 +1,4 @@
-import { Documento, ArchivoAdjunto, Empleado, Empresa, EmpresaRequisito, RequisitoLegal, EnteRegulador } from '../models/index.js';
+import { Documento, ArchivoAdjunto, Empleado, Empresa, EmpresaRequisito, RequisitoLegal, EnteRegulador, CalendarioEvento } from '../models/index.js';
 import { registrarAccion } from '../services/documentoAuditoriaService.js';
 import path from 'path';
 import { Sequelize } from 'sequelize';
@@ -178,6 +178,11 @@ const create = async (req, res, next) => {
       detalle: { titulo: documento.titulo },
     });
 
+    // Dentro de crear/actualizar, después de guardar el documento:
+    // await crearEventosDocumento(documento, req.user?.id ?? req.userId, { transaction });
+
+    await crearEventosDocumento(documento, req.user?.id ?? null);
+
     return res.status(201).json({ message: 'Documento creado', documento });
   } catch (error) {
     return next(error);
@@ -221,6 +226,8 @@ const update = async (req, res, next) => {
       accion: 'editado',
       detalle: req.body,
     });
+
+    await crearEventosDocumento(documento, req.user?.id ?? null);
 
     return res.json({ message: 'Documento actualizado', documento });
   } catch (error) {
@@ -360,6 +367,49 @@ const previewArchivo = async (req, res, next) => {
     return res.end(archivo.contenido);
   } catch (error) {
     return next(error);
+  }
+};
+
+const COLORES = {
+  documentoEmision: '#3b82f6',
+  documentoVencimiento: '#8b5cf6',
+};
+
+const crearEventosDocumento = async (documento, usuarioId, options = {}) => {
+  // Evita duplicados al actualizar el documento.
+  await CalendarioEvento.destroy({
+    where: { documentoId: documento.id },
+    ...options,
+  });
+
+  const eventos = [];
+
+  if (documento.fechaDocumento) {
+    eventos.push({
+      titulo: `Documento: ${documento.titulo}`,
+      descripcion: documento.descripcion,
+      fecha: documento.fechaDocumento,
+      tipo: 'documento',
+      documentoId: documento.id,
+      usuarioId,
+      color: COLORES.documentoEmision,
+    });
+  }
+
+  if (documento.fechaVencimiento) {
+    eventos.push({
+      titulo: `Vencimiento: ${documento.titulo}`,
+      descripcion: documento.descripcion,
+      fecha: documento.fechaVencimiento,
+      tipo: 'documento',
+      documentoId: documento.id,
+      usuarioId,
+      color: COLORES.documentoVencimiento,
+    });
+  }
+
+  if (eventos.length) {
+    await CalendarioEvento.bulkCreate(eventos, options);
   }
 };
 

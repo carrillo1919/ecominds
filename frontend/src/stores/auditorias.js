@@ -82,7 +82,10 @@ export const useAuditoriasStore = defineStore('auditorias', {
         const { data } = await api.updateAuditoria(id, payload);
         const idx = this.auditorias.findIndex((a) => a.id === id);
         if (idx !== -1) this.auditorias[idx] = data.auditoria;
-        if (this.auditoria?.id === id) this.auditoria = data.auditoria;
+        if (this.auditoria?.id === id) {
+          // El PATCH no devuelve items: conservar los que ya teníamos
+          this.auditoria = { ...this.auditoria, ...data.auditoria };
+        }
         return { ok: true, auditoria: data.auditoria, message: data.message };
       } catch (e) {
         return { ok: false, message: apiMessage(e, 'No se pudo actualizar la auditoría') };
@@ -93,7 +96,9 @@ export const useAuditoriasStore = defineStore('auditorias', {
       this.saving = true;
       try {
         const { data } = await api.saveAuditoriaItems(id, items);
-        if (this.auditoria?.id === id) this.auditoria = data.auditoria;
+        if (data.auditoria && this.auditoria?.id === id) {
+          this.auditoria = data.auditoria;
+        }
         return { ok: true, auditoria: data.auditoria, message: data.message };
       } catch (e) {
         return { ok: false, message: apiMessage(e, 'No se pudieron guardar los items') };

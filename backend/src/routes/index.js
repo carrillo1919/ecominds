@@ -10,6 +10,7 @@ import documentoRoutes from './documentoRoutes.js';
 import enteReguladorRoutes from './enteReguladorRoutes.js';
 import requisitoLegalRoutes from './requisitoLegalRoutes.js';
 import empresaRequisitoRoutes from './empresaRequisitoRoutes.js';
+import calendarioRoutes from './calendarioRoutes.js';
 
 const router = express.Router();
 
@@ -28,5 +29,6 @@ router.use('/documentos', documentoRoutes);
 router.use('/entes-reguladores', enteReguladorRoutes);
 router.use('/requisitos-legales', requisitoLegalRoutes);
 router.use('/empresa-requisitos', empresaRequisitoRoutes);
+router.use('/calendario', calendarioRoutes);
 
 export default router;

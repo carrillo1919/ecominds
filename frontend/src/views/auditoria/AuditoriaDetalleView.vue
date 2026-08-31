@@ -42,6 +42,19 @@ const cargar = async () => {
 };
 
 const guardar = async () => {
+  // Capturar los items ANTES de update (update reemplaza this.auditoria)
+  const itemsPayload = items.value.map((i) => ({
+    id: i.id,
+    estado: i.estado,
+    observaciones: i.observaciones,
+    accionCorrectiva: i.accionCorrectiva,
+    responsableAccion: i.responsableEmpleado
+      ? `${i.responsableEmpleado.apellido}, ${i.responsableEmpleado.nombre}`
+      : i.responsableAccion,
+    responsableAccionId: i.responsableAccionId,
+    fechaCompromiso: i.fechaCompromiso,
+  }));
+
   const result = await auditoriasStore.update(auditoria.value.id, {
     fecha: auditoria.value.fecha,
     fechaProximaAuditoria: auditoria.value.fechaProximaAuditoria,
@@ -53,20 +66,11 @@ const guardar = async () => {
     return;
   }
 
-  const itemsResult = await auditoriasStore.saveItems(auditoria.value.id, items.value.map((i) => ({
-    id: i.id,
-    estado: i.estado,
-    observaciones: i.observaciones,
-    accionCorrectiva: i.accionCorrectiva,
-    responsableAccion: i.responsableEmpleado
-      ? `${i.responsableEmpleado.apellido}, ${i.responsableEmpleado.nombre}`
-      : i.responsableAccion,
-    responsableAccionId: i.responsableAccionId,
-    fechaCompromiso: i.fechaCompromiso,
-  })));
+  const itemsResult = await auditoriasStore.saveItems(auditoria.value.id, itemsPayload);
 
   if (itemsResult.ok) {
     toast.success('Evaluacion guardada');
+    await cargar(); // recargar para reflejar los datos persistidos
   } else {
     toast.error(itemsResult.message);
   }
