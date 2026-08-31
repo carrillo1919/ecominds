@@ -132,10 +132,10 @@ onMounted(cargar);
             </thead>
             <tbody>
               <tr v-for="h in stats.hallazgosCriticosRecurrentes" :key="h.codigo">
-                <td>{{ h.codigo }}</td>
-                <td>{{ h.bloque }}</td>
-                <td>{{ h.requisito }}</td>
-                <td>{{ h.veces }}</td>
+                <td data-label="Codigo">{{ h.codigo }}</td>
+                <td data-label="Bloque">{{ h.bloque }}</td>
+                <td data-label="Requisito">{{ h.requisito }}</td>
+                <td data-label="Veces">{{ h.veces }}</td>
               </tr>
               <tr v-if="!stats.hallazgosCriticosRecurrentes.length">
                 <td colspan="4" class="muted">Sin incumplimientos criticos en el periodo.</td>

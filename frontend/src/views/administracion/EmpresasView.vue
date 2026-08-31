@@ -277,21 +277,21 @@ onMounted(async () => {
           </thead>
           <tbody>
             <tr v-for="e in empresas" :key="e.id">
-              <td>
+              <td data-label="Empresa">
                 <strong>{{ e.nombre }}</strong>
                 <span class="muted" v-if="e.responsableEmpleado"><br />{{ e.responsableEmpleado.apellido }}, {{ e.responsableEmpleado.nombre }}</span>
               </td>
-              <td>{{ e.rif }}</td>
-              <td>{{ e.sector || '-' }}</td>
-              <td>{{ e.ultimaAuditoria ? fechaCorta(e.ultimaAuditoria.fecha) : 'Sin auditorias' }}</td>
-              <td>
+              <td data-label="RIF">{{ e.rif }}</td>
+              <td data-label="Sector">{{ e.sector || '-' }}</td>
+              <td data-label="Ultima auditoria">{{ e.ultimaAuditoria ? fechaCorta(e.ultimaAuditoria.fecha) : 'Sin auditorias' }}</td>
+              <td data-label="Riesgo">
                 <span v-if="e.ultimaAuditoria" :class="riesgoClase(e.ultimaAuditoria.nivelRiesgo)">
                   {{ e.ultimaAuditoria.nivelRiesgo }}
                 </span>
                 <span v-else class="muted">-</span>
               </td>
-              <td>{{ e.ultimaAuditoria ? fechaCorta(e.ultimaAuditoria.fechaProximaAuditoria) : '-' }}</td>
-              <td>
+              <td data-label="Proxima">{{ e.ultimaAuditoria ? fechaCorta(e.ultimaAuditoria.fechaProximaAuditoria) : '-' }}</td>
+              <td data-label="Acciones">
                 <router-link :to="{ name: 'auditorias', query: { empresaId: e.id } }">Auditorias</router-link>
                 <button v-if="canAuditar" class="btn-ghost btn-sm" type="button" @click="editar(e)">Editar</button>
               </td>

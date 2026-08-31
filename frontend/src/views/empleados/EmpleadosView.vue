@@ -161,20 +161,20 @@ onMounted(async () => {
           </thead>
           <tbody>
             <tr v-for="emp in store.empleados" :key="emp.id">
-              <td><strong>{{ emp.apellido }}, {{ emp.nombre }}</strong></td>
-              <td>{{ emp.cedula }}</td>
-              <td>{{ emp.cargo || '-' }}</td>
-              <td>{{ emp.email }}</td>
-              <td>
+              <td data-label="Empleado"><strong>{{ emp.apellido }}, {{ emp.nombre }}</strong></td>
+              <td data-label="Cedula">{{ emp.cedula }}</td>
+              <td data-label="Cargo">{{ emp.cargo || '-' }}</td>
+              <td data-label="Correo">{{ emp.email }}</td>
+              <td data-label="Usuario">
                 <span v-if="emp.usuario" class="badge-rol">{{ emp.usuario.rol }}</span>
                 <span v-else class="muted">Sin usuario</span>
               </td>
-              <td>
+              <td data-label="Estado">
                 <span :class="emp.activo ? 'text-success' : 'muted'">
                   {{ emp.activo ? 'Activo' : 'Inactivo' }}
                 </span>
               </td>
-              <td v-if="canEdit" style="white-space:nowrap">
+              <td v-if="canEdit" data-label="Acciones" style="white-space:nowrap">
                 <button class="btn-ghost btn-sm" type="button" @click="editar(emp)">Editar</button>
                 <button v-if="emp.activo" class="btn-ghost btn-sm" type="button" @click="darDeBaja(emp)">Dar de baja</button>
                 <button v-else class="btn-ghost btn-sm" type="button" @click="reactivar(emp)">Reactivar</button>

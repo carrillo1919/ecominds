@@ -4,9 +4,6 @@ import morgan from 'morgan';
 
 import routes from './routes/index.js';
 import { notFound, errorHandler } from './middlewares/errorHandler.js';
-import enteReguladorRoutes from './routes/enteReguladorRoutes.js';
-import requisitoLegalRoutes from './routes/requisitoLegalRoutes.js';
-import empresaRequisitoRoutes from './routes/empresaRequisitoRoutes.js';
 
 const app = express();
 
@@ -31,9 +28,6 @@ app.use(express.urlencoded({ extended: true }));
 app.use(morgan(process.env.NODE_ENV === 'production' ? 'combined' : 'dev'));
 
 app.use('/api', routes);
-app.use('/api/entes-reguladores', enteReguladorRoutes);
-app.use('/api/requisitos-legales', requisitoLegalRoutes);
-app.use('/api/empresa-requisitos', empresaRequisitoRoutes);
 
 app.use(notFound);
 app.use(errorHandler);
