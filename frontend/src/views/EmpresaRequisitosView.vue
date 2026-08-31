@@ -27,12 +27,6 @@
               <small>{{ a.requisito?.ente?.sigla }} | {{ a.requisito?.categoria }}</small>
             </div>
             <div class="actions">
-              <select v-model="a.responsableId" @change="updateResponsable(a)">
-                <option value="">Sin responsable</option>
-                <option v-for="emp in empleadosEmpresa" :key="emp.id" :value="emp.id">
-                  {{ emp.apellido }}, {{ emp.nombre }}
-                </option>
-              </select>
               <button class="btn btn-sm btn-danger" @click="remove(a.id)">Quitar</button>
             </div>
           </li>
@@ -55,14 +49,6 @@
           </li>
         </ul>
 
-        <label>Responsable (opcional)</label>
-        <select v-model="responsableAsignacion">
-          <option value="">Sin responsable</option>
-          <option v-for="emp in empleadosEmpresa" :key="emp.id" :value="emp.id">
-            {{ emp.apellido }}, {{ emp.nombre }}
-          </option>
-        </select>
-
         <button
           class="btn btn-primary"
           :disabled="seleccionados.length === 0 || asignando"
@@ -81,18 +67,15 @@ import { useAuthStore } from '../stores/auth.js';
 import * as api from '../api/empresaRequisitos.js';
 import * as empresasApi from '../api/empresas.js';
 import * as requisitosApi from '../api/requisitosLegales.js';
-import * as empleadosApi from '../api/empleados.js';
 
 const auth = useAuthStore();
 const canManage = computed(() => ['admin', 'auditor'].includes(auth.user?.rol));
 
 const empresas = ref([]);
-const empleadosEmpresa = ref([]);
 const todasAsignadas = ref([]);
 const todosRequisitos = ref([]);
 const empresaSeleccionada = ref('');
 const seleccionados = ref([]);
-const responsableAsignacion = ref('');
 const loading = ref(false);
 const asignando = ref(false);
 const error = ref('');
@@ -116,21 +99,9 @@ async function loadBase() {
   }
 }
 
-async function cargarEmpleadosEmpresa() {
-  empleadosEmpresa.value = [];
-  if (!empresaSeleccionada.value) return;
-  try {
-    const { data } = await empleadosApi.getEmpleadosActivos({ empresaId: empresaSeleccionada.value });
-    empleadosEmpresa.value = data.empleados || [];
-  } catch {
-    empleadosEmpresa.value = [];
-  }
-}
-
 async function onSelectEmpresa() {
   if (!empresaSeleccionada.value) return;
-  responsableAsignacion.value = '';
-  await Promise.all([loadAssignments(), cargarEmpleadosEmpresa()]);
+  await loadAssignments();
 }
 
 async function loadAssignments() {
@@ -157,21 +128,12 @@ async function assignBulk() {
     await api.bulkAssign({
       empresaId: empresaSeleccionada.value,
       requisitoIds: seleccionados.value,
-      responsableId: responsableAsignacion.value || null,
     });
     await loadAssignments();
   } catch (e) {
     error.value = e.response?.data?.message || 'Error al asignar requisitos';
   } finally {
     asignando.value = false;
-  }
-}
-
-async function updateResponsable(asignacion) {
-  try {
-    await api.updateAssignment(asignacion.id, { responsableId: asignacion.responsableId || null });
-  } catch (e) {
-    error.value = e.response?.data?.message || 'Error al actualizar responsable';
   }
 }
 
