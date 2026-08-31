@@ -49,8 +49,8 @@ const cargar = async () => {
     form.fechaDocumento = data.documento.fechaDocumento || '';
     form.fechaVencimiento = data.documento.fechaVencimiento;
     form.responsableId = data.documento.responsableId || '';
-    if (documento.value?.empresaId) {
-      await empStore.fetchActivos({ empresaId: documento.value.empresaId });
+    if (data.documento?.empresaId) {
+      await empStore.fetchActivos({ empresaId: data.documento.empresaId });
     }
   } catch {
     toast.error('No se pudo cargar el documento');

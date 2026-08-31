@@ -117,6 +117,10 @@ const guardar = async () => {
         mostrarFormEmpleado.value = false;
       } catch (e) {
         toast.error(apiMessage(e, 'Empresa creada, pero no se pudo registrar el empleado'));
+        // No limpiar el formulario principal para permitir reintentar o corregir
+        await cargar();
+        guardando.value = false;
+        return;
       }
     }
 
@@ -139,10 +143,7 @@ const cargarEmpleados = async (empresaId) => {
   }
 };
 
-const empleadosEmpresa = computed(() => {
-  if (!editandoId.value) return [];
-  return empleados.value;
-});
+// empleados.value ya se carga filtrado por empresa cuando se edita
 
 const guardarEmpleado = async () => {
   if (!formEmpleado.nombre.trim() || !formEmpleado.apellido.trim() || !formEmpleado.cedula.trim() || !formEmpleado.email.trim()) {
@@ -196,7 +197,7 @@ onMounted(async () => {
           Responsable principal
           <select v-model="form.responsableId">
             <option value="">— Sin responsable —</option>
-            <option v-for="emp in empleadosEmpresa" :key="emp.id" :value="emp.id">
+            <option v-for="emp in empleados" :key="emp.id" :value="emp.id">
               {{ emp.apellido }}, {{ emp.nombre }}
             </option>
           </select>
