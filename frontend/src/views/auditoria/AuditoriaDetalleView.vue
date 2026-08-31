@@ -50,7 +50,7 @@ const guardar = async () => {
   });
   if (!result.ok) {
     toast.error(result.message);
-    return;
+    return false;
   }
 
   const itemsResult = await auditoriasStore.saveItems(auditoria.value.id, items.value.map((i) => ({
@@ -67,9 +67,10 @@ const guardar = async () => {
 
   if (itemsResult.ok) {
     toast.success('Evaluacion guardada');
-  } else {
-    toast.error(itemsResult.message);
+    return true;
   }
+  toast.error(itemsResult.message);
+  return false;
 };
 
 const finalizar = async () => {
@@ -79,7 +80,8 @@ const finalizar = async () => {
   }
   if (!window.confirm('Al finalizar la auditoria no podra modificarse. Continuar?')) return;
 
-  await guardar();
+  const guardado = await guardar();
+  if (!guardado) return;
   const result = await auditoriasStore.finalizar(auditoria.value.id);
   if (result.ok) {
     toast.success('Auditoria finalizada');
@@ -98,7 +100,8 @@ const descargarPdf = async () => {
     enlace.click();
     URL.revokeObjectURL(url);
   } catch (e) {
-    toast.error('No se pudo generar el informe');
+    const { apiMessage } = await import('@/api/axios');
+    toast.error(apiMessage(e, 'No se pudo generar el informe'));
   }
 };
 

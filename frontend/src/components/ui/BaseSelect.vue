@@ -1,5 +1,5 @@
 <script setup>
-defineProps({
+const props = defineProps({
   id: { type: String, default: '' },
   modelValue: { type: [String, Number], default: '' },
   label: { type: String, default: '' },
@@ -14,9 +14,15 @@ defineProps({
 
 const emit = defineEmits(['update:modelValue', 'change']);
 
+const resolveValue = (raw) => {
+  const selected = props.options.find((opt) => String(opt[props.optionValue]) === String(raw));
+  return selected ? selected[props.optionValue] : raw;
+};
+
 const onChange = (event) => {
-  emit('update:modelValue', event.target.value);
-  emit('change', event.target.value);
+  const value = resolveValue(event.target.value);
+  emit('update:modelValue', value);
+  emit('change', value);
 };
 </script>
 

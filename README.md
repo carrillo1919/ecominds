@@ -98,7 +98,7 @@ npm run dev             # http://localhost:5173
 
 Rutas públicas: `/app/login`, `/app/register`, `/app/verify-email`, `/app/forgot-password`, `/app/reset-password` y `/` (landing). Rutas protegidas bajo `/app/*` (ej. `/app/dashboard`, `/app/usuarios`). `/app/usuarios` requiere rol `admin`.
 
-El token se guarda en `localStorage`; un interceptor de Axios lo adjunta en cada petición y, ante un `401`, cierra la sesión y redirige al login. El guardia `beforeEach` del router valida `meta.requiresAuth` y `meta.roles`. Todas las vistas usan lazy loading, excepto `LoginView` (carga inmediata para el primer render).
+El token se guarda en `localStorage`; un interceptor de Axios lo adjunta en cada petición y, ante un `401`, cierra la sesión y redirige al login. El guardia `beforeEach` del router valida `meta.requiresAuth` y `meta.roles`. Todas las vistas del router usan lazy loading.
 
 ### Estructura de carpetas del frontend
 
@@ -129,7 +129,7 @@ frontend/src/
 - **Vistas y componentes**: `PascalCase.vue`.
 - **Stores, composables y archivos JS**: `camelCase.js`.
 - **Alias `@`**: apunta a `frontend/src` (configurado en `vite.config.js`).
-- **Lazy loading por defecto** en el router; solo `LoginView` se carga de forma eager.
+- **Lazy loading por defecto** en el router; todas las vistas se cargan con `() => import(...)`.
 - **Estado centralizado** en Pinia: las vistas leen del store, disparan acciones y renderizan.
 
 ## 3. Producción
