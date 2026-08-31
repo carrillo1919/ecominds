@@ -25,12 +25,19 @@ const editando = ref(false);
 const guardando = ref(false);
 
 const form = reactive({
-  titulo: '',
   descripcion: '',
   fechaDocumento: '',
   fechaVencimiento: '',
   responsableId: '',
 });
+
+const nombreDocumentoAsignado = (doc) => {
+  if (doc?.empresaRequisito?.requisito) {
+    const r = doc.empresaRequisito.requisito;
+    return `${r.codigo} - ${r.titulo}`;
+  }
+  return doc?.titulo || '—';
+};
 
 const cargar = async () => {
   cargando.value = true;
@@ -38,7 +45,6 @@ const cargar = async () => {
     const { data } = await getDocumento(route.params.id);
     documento.value = data.documento;
     archivos.value = data.documento.archivos || [];
-    form.titulo = data.documento.titulo;
     form.descripcion = data.documento.descripcion || '';
     form.fechaDocumento = data.documento.fechaDocumento || '';
     form.fechaVencimiento = data.documento.fechaVencimiento;
@@ -52,8 +58,8 @@ const cargar = async () => {
 };
 
 const guardar = async () => {
-  if (!form.titulo.trim() || !form.fechaVencimiento) {
-    toast.error('Título y fecha de vencimiento son obligatorios');
+  if (!form.fechaVencimiento) {
+    toast.error('La fecha de vencimiento es obligatoria');
     return;
   }
   guardando.value = true;
@@ -95,7 +101,7 @@ onMounted(async () => {
       <div class="card" style="margin-top:1rem">
         <div class="doc-header">
           <div>
-            <h2>{{ documento.titulo }}</h2>
+            <h2>{{ nombreDocumentoAsignado(documento) }}</h2>
             <EstadoDocumentoBadge :estado="documento.estadoEfectivo" />
           </div>
           <button v-if="canEdit && !editando" class="btn-ghost" type="button" @click="editando = true">
@@ -105,6 +111,8 @@ onMounted(async () => {
 
         <template v-if="!editando">
           <dl class="doc-meta">
+            <dt>Documento</dt>
+            <dd>{{ nombreDocumentoAsignado(documento) }}</dd>
             <dt>Responsable</dt>
             <dd>{{ documento.responsable ? `${documento.responsable.apellido}, ${documento.responsable.nombre}` : '—' }}</dd>
             <dt>Fecha del documento</dt>
@@ -120,7 +128,7 @@ onMounted(async () => {
 
         <template v-else>
           <div class="form-grid" style="margin-top:1rem">
-            <label>Título *<input v-model="form.titulo" type="text" /></label>
+            <label>Documento<input :value="nombreDocumentoAsignado(documento)" type="text" disabled /></label>
             <label>
               Responsable
               <select v-model="form.responsableId">
