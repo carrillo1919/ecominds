@@ -1,5 +1,4 @@
-import { Op } from 'sequelize';
-import { Documento, ArchivoAdjunto, Empleado, Empresa } from '../models/index.js';
+import { Documento, ArchivoAdjunto, Empleado, Empresa, EmpresaRequisito, RequisitoLegal, EnteRegulador } from '../models/index.js';
 import { registrarAccion } from '../services/documentoAuditoriaService.js';
 
 const ESTADOS = ['vigente', 'vencido', 'archivado'];
@@ -36,6 +35,13 @@ const getAll = async (req, res, next) => {
       include: [
         { model: Empleado, as: 'responsable', attributes: ['id', 'nombre', 'apellido', 'cargo'] },
         { model: Empresa, as: 'empresa', attributes: ['id', 'nombre', 'rif'] },
+        {
+          model: EmpresaRequisito,
+          as: 'empresaRequisito',
+          include: [
+            { model: RequisitoLegal, as: 'requisito', include: [{ model: EnteRegulador, as: 'ente', attributes: ['id', 'nombre', 'sigla'] }] },
+          ],
+        },
       ],
     });
 
@@ -59,6 +65,13 @@ const getOne = async (req, res, next) => {
       include: [
         { model: Empleado, as: 'responsable', attributes: ['id', 'nombre', 'apellido', 'cargo'] },
         { model: Empresa, as: 'empresa', attributes: ['id', 'nombre', 'rif'] },
+        {
+          model: EmpresaRequisito,
+          as: 'empresaRequisito',
+          include: [
+            { model: RequisitoLegal, as: 'requisito', include: [{ model: EnteRegulador, as: 'ente', attributes: ['id', 'nombre', 'sigla'] }] },
+          ],
+        },
         {
           model: ArchivoAdjunto,
           as: 'archivos',
@@ -94,7 +107,19 @@ const create = async (req, res, next) => {
       empresaId = req.empresaId;
     }
 
-    const { titulo, descripcion, fechaDocumento, fechaVencimiento, responsableId } = req.body;
+    const { empresaRequisitoId, descripcion, fechaDocumento, fechaVencimiento, responsableId } = req.body;
+
+    if (!empresaRequisitoId) {
+      return res.status(400).json({ message: 'Debe seleccionar un documento asignado' });
+    }
+
+    const asignacion = await EmpresaRequisito.findOne({
+      where: { id: empresaRequisitoId, empresaId },
+      include: [{ model: RequisitoLegal, as: 'requisito' }],
+    });
+    if (!asignacion) {
+      return res.status(422).json({ message: 'El documento asignado no pertenece a esta empresa' });
+    }
 
     if (responsableId && !(await validarResponsable(responsableId, empresaId))) {
       return res.status(422).json({ message: 'El responsable no pertenece a esta empresa o no está activo' });
@@ -102,8 +127,9 @@ const create = async (req, res, next) => {
 
     const documento = await Documento.create({
       empresaId,
+      empresaRequisitoId,
       responsableId: responsableId || null,
-      titulo: String(titulo).trim(),
+      titulo: String(asignacion.requisito.titulo).trim(),
       descripcion: descripcion || null,
       fechaDocumento: fechaDocumento || null,
       fechaVencimiento,
@@ -132,13 +158,16 @@ const update = async (req, res, next) => {
     if (!documento) return res.status(404).json({ message: 'Documento no encontrado' });
 
     const empresaId = documento.empresaId;
-    const { titulo, descripcion, fechaDocumento, fechaVencimiento, responsableId, estado } = req.body;
+    const { descripcion, fechaDocumento, fechaVencimiento, responsableId, estado } = req.body;
 
     if (responsableId !== undefined && !(await validarResponsable(responsableId, empresaId))) {
       return res.status(422).json({ message: 'El responsable no pertenece a esta empresa o no está activo' });
     }
 
-    if (titulo !== undefined) documento.titulo = String(titulo).trim();
+    // El documento asignado no se puede cambiar en edición
+    if (req.body.empresaRequisitoId !== undefined) {
+      return res.status(422).json({ message: 'No se puede cambiar el documento asignado' });
+    }
     if (descripcion !== undefined) documento.descripcion = descripcion || null;
     if (fechaDocumento !== undefined) documento.fechaDocumento = fechaDocumento ? String(fechaDocumento).trim() || null : null;
     if (fechaVencimiento !== undefined) {
