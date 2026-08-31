@@ -162,6 +162,11 @@ const empleadosFiltrados = computed(() => {
   return empStore.empleadosActivos.filter((e) => e.empresaId === form.empresaId);
 });
 
+const puedeMostrarResponsable = computed(() => {
+  if (!canSelectEmpresa.value) return true;
+  return !!form.empresaId;
+});
+
 const cargarAsignacionesEmpresa = async (empresaId) => {
   asignacionesEmpresa.value = [];
   if (!empresaId) return;
@@ -251,13 +256,19 @@ onMounted(async () => {
           Documento
           <input :value="documentoAsignadoLabel" type="text" disabled />
         </label>
-        <label>
+        <label v-if="puedeMostrarResponsable">
           Responsable
           <select v-model="form.responsableId">
             <option value="">— Sin responsable —</option>
             <option v-for="emp in empleadosFiltrados" :key="emp.id" :value="emp.id">
               {{ emp.apellido }}, {{ emp.nombre }}
             </option>
+          </select>
+        </label>
+        <label v-else>
+          Responsable
+          <select disabled>
+            <option>Seleccione una empresa primero</option>
           </select>
         </label>
         <label>Fecha del documento<input v-model="form.fechaDocumento" type="date" /></label>

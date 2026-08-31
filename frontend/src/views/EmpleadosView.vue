@@ -22,6 +22,7 @@ const form = reactive({
   apellido: '',
   cedula: '',
   cargo: '',
+  telefono: '',
   email: '',
   empresaId: '',
 });
@@ -39,6 +40,7 @@ const editar = (emp) => {
   form.apellido = emp.apellido || '';
   form.cedula = emp.cedula || '';
   form.cargo = emp.cargo || '';
+  form.telefono = emp.telefono || '';
   form.email = emp.email || '';
   form.empresaId = emp.empresaId || '';
 };
@@ -129,6 +131,7 @@ onMounted(async () => {
         <label>Apellido *<input v-model="form.apellido" type="text" /></label>
         <label>Cédula *<input v-model="form.cedula" type="text" /></label>
         <label>Cargo<input v-model="form.cargo" type="text" /></label>
+        <label>Teléfono<input v-model="form.telefono" type="text" /></label>
         <label>Correo *<input v-model="form.email" type="email" /></label>
       </div>
       <div class="actions-row">
