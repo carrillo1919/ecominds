@@ -5,13 +5,10 @@ export async function up(queryInterface, Sequelize) {
     'Empresas_responsable_id_fkey'
   ).catch(() => {});
 
-  // La columna ya existe; aseguramos tipo nullable y referencia a Empleados
+  // La columna ya existe; aseguramos tipo nullable
   await queryInterface.changeColumn('Empresas', 'responsable_id', {
     type: Sequelize.UUID,
     allowNull: true,
-    references: { model: 'Empleados', key: 'id' },
-    onUpdate: 'CASCADE',
-    onDelete: 'SET NULL',
   });
 
   await queryInterface.addConstraint('Empresas', {
@@ -21,7 +18,7 @@ export async function up(queryInterface, Sequelize) {
     references: { table: 'Empleados', field: 'id' },
     onUpdate: 'CASCADE',
     onDelete: 'SET NULL',
-  }).catch(() => {});
+  });
 }
 
 export async function down(queryInterface, Sequelize) {

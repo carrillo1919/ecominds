@@ -100,12 +100,9 @@ const guardar = async () => {
 };
 
 const cargarEmpleados = async (empresaId) => {
-  if (!empresaId) {
-    empleados.value = [];
-    return;
-  }
   try {
-    const { data } = await empleadosApi.getEmpleadosActivos({ empresaId });
+    const params = empresaId ? { empresaId } : {};
+    const { data } = await empleadosApi.getEmpleadosActivos(params);
     empleados.value = data.empleados || [];
   } catch {
     empleados.value = [];
@@ -135,7 +132,10 @@ const guardarEmpleado = async () => {
   }
 };
 
-onMounted(cargar);
+onMounted(async () => {
+  await cargar();
+  await cargarEmpleados();
+});
 </script>
 
 <template>
@@ -184,6 +184,10 @@ onMounted(cargar);
         <button v-if="!mostrarFormEmpleado" class="btn-ghost" type="button" @click="mostrarFormEmpleado = true">
           + Nuevo empleado responsable
         </button>
+      </div>
+
+      <div v-if="!editandoId" class="hint muted" style="margin-top: 0.5rem">
+        Para asignar un responsable, primero guarde la empresa y luego edítela.
       </div>
 
       <div class="actions-row">
