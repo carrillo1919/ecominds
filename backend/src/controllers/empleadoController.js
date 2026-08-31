@@ -37,7 +37,7 @@ const getActivos = async (req, res, next) => {
     const empleados = await Empleado.findAll({
       where,
       order: [['apellido', 'ASC'], ['nombre', 'ASC']],
-      attributes: ['id', 'nombre', 'apellido', 'cargo', 'telefono', 'email'],
+      attributes: ['id', 'nombre', 'apellido', 'cargo', 'telefono', 'email', 'empresaId'],
     });
     return res.json({ empleados });
   } catch (error) {

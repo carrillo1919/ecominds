@@ -1,5 +1,5 @@
 <script setup>
-import { onMounted, reactive, ref, computed } from 'vue';
+import { onMounted, reactive, ref } from 'vue';
 import { useToast } from 'vue-toastification';
 import api, { apiMessage } from '@/api/axios';
 import { useAuthorization } from '@/composables/useAuthorization';
@@ -40,7 +40,8 @@ const formEmpleado = reactive({
 
 const limpiar = () => {
   editandoId.value = null;
-  mostrarFormEmpleado.value = false;
+  // Al crear una empresa, el formulario de empleado responsable se muestra directo
+  mostrarFormEmpleado.value = true;
   Object.keys(form).forEach((k) => {
     form[k] = '';
   });
@@ -92,12 +93,14 @@ const guardar = async () => {
   guardando.value = true;
   try {
     let empresaId = editandoId.value;
-    const payload = { ...form, responsableId: form.responsableId || null };
 
     if (editandoId.value) {
+      const payload = { ...form, responsableId: form.responsableId || null };
       await api.put(`/empresas/${editandoId.value}`, payload);
       toast.success('Empresa actualizada');
     } else {
+      // Al crear, el responsable se asigna después de registrar el empleado
+      const payload = { ...form, responsableId: null };
       const { data } = await api.post('/empresas', payload);
       empresaId = data.empresa?.id;
       toast.success('Empresa registrada');
@@ -117,7 +120,9 @@ const guardar = async () => {
         mostrarFormEmpleado.value = false;
       } catch (e) {
         toast.error(apiMessage(e, 'Empresa creada, pero no se pudo registrar el empleado'));
-        // No limpiar el formulario principal para permitir reintentar o corregir
+        // Conservar la empresa creada y cambiar a modo edición para permitir reintentar
+        // sin duplicar la empresa
+        editandoId.value = empresaId;
         await cargar();
         guardando.value = false;
         return;
@@ -174,8 +179,8 @@ const guardarEmpleado = async () => {
 };
 
 onMounted(async () => {
+  limpiar();
   await cargar();
-  await cargarEmpleados();
 });
 </script>
 
@@ -193,7 +198,7 @@ onMounted(async () => {
         <label>Direccion<input v-model="form.direccion" type="text" /></label>
         <label>Telefono<input v-model="form.telefono" type="text" /></label>
         <label>Correo<input v-model="form.email" type="email" /></label>
-        <label>
+        <label v-if="editandoId">
           Responsable principal
           <select v-model="form.responsableId">
             <option value="">— Sin responsable —</option>
@@ -218,11 +223,11 @@ onMounted(async () => {
           <button v-if="editandoId" class="btn-primary" type="button" :disabled="guardandoEmpleado" @click="guardarEmpleado">
             {{ guardandoEmpleado ? 'Guardando...' : 'Registrar empleado' }}
           </button>
-          <button class="btn-ghost" type="button" @click="mostrarFormEmpleado = false">Cancelar</button>
+          <button v-if="editandoId" class="btn-ghost" type="button" @click="mostrarFormEmpleado = false">Cancelar</button>
         </div>
       </div>
 
-      <div class="actions-row" style="margin-top: 1rem">
+      <div v-if="editandoId" class="actions-row" style="margin-top: 1rem">
         <button v-if="!mostrarFormEmpleado" class="btn-ghost" type="button" @click="mostrarFormEmpleado = true">
           + Nuevo empleado responsable
         </button>
