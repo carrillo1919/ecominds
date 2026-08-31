@@ -4,9 +4,10 @@ import { useAuthStore } from '@/stores/auth';
 import EntesReguladoresView from '@/views/EntesReguladoresView.vue';
 import RequisitosLegalesView from '@/views/RequisitosLegalesView.vue';
 import EmpresaRequisitosView from '@/views/EmpresaRequisitosView.vue';
+import LandingView from '@/views/LandingView.vue';
 
 const routes = [
-  { path: '/', redirect: { name: 'dashboard' } },
+  { path: '/', name: 'landing', component: LandingView, meta: { public: true } },
 
   // Rutas públicas (sin layout)
   { path: '/login', name: 'login', component: () => import('@/views/LoginView.vue'), meta: { public: true } },
