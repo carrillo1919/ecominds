@@ -9,6 +9,8 @@ const COLORES = {
   nota: '#10b981',
 };
 
+const esRolAmplio = (req) => ['admin', 'auditor'].includes(req.user?.rol);
+
 const validarFecha = (fecha) => /^\d{4}-\d{2}-\d{2}$/.test(fecha);
 
 const obtenerUsuarioId = (req) => req.user?.id ?? req.userId ?? null;
@@ -34,28 +36,39 @@ const obtenerRango = (req) => {
   };
 };
 
-// GET /api/calendario/eventos?fechaInicio=YYYY-MM-DD&fechaFin=YYYY-MM-DD
+// GET /api/calendario/eventos
 export const getEventos = async (req, res, next) => {
   try {
     const { fechaInicio, fechaFin, error } = obtenerRango(req);
     if (error) return res.status(400).json({ message: error });
 
     const rango = { [Op.between]: [fechaInicio, fechaFin] };
+    const usuarioId = obtenerUsuarioId(req);
+
+    // Notas: públicas SIEMPRE visibles, privadas solo del creador
+    const whereNotas = {
+      fecha: rango,
+      [Op.or]: [
+        { privacidad: 'publico' },
+        { privacidad: 'privado', usuarioId },
+      ],
+    };
+
+    // Usuarios normales solo ven notas de su empresa (o notas para todas)
+    if (!esRolAmplio(req) && req.empresaId) {
+      whereNotas.empresaId = {
+        [Op.or]: [null, req.empresaId],
+      };
+    }
 
     const [auditorias, documentos, auditoriaItems, calendarioEventos] = await Promise.all([
       db.Auditoria.findAll({
         where: { fecha: rango },
-        include: [
-          { model: db.Empresa, as: 'empresa', attributes: ['id', 'nombre', 'rif'] },
-        ],
+        include: [{ model: db.Empresa, as: 'empresa', attributes: ['id', 'nombre', 'rif'] }],
       }),
       db.Documento.findAll({
-        where: {
-          [Op.or]: [{ fecha_documento: rango }, { fecha_vencimiento: rango }],
-        },
-        include: [
-          { model: db.Empresa, as: 'empresa', attributes: ['id', 'nombre', 'rif'] },
-        ],
+        where: { [Op.or]: [{ fecha_documento: rango }, { fecha_vencimiento: rango }] },
+        include: [{ model: db.Empresa, as: 'empresa', attributes: ['id', 'nombre', 'rif'] }],
       }),
       db.AuditoriaItem.findAll({
         where: { fechaCompromiso: rango },
@@ -63,16 +76,17 @@ export const getEventos = async (req, res, next) => {
           {
             model: db.Auditoria,
             as: 'auditoria',
-            include: [
-              { model: db.Empresa, as: 'empresa', attributes: ['id', 'nombre', 'rif'] },
-            ],
+            include: [{ model: db.Empresa, as: 'empresa', attributes: ['id', 'nombre', 'rif'] }],
           },
           { model: db.Requisito, as: 'requisito' },
         ],
       }),
       db.CalendarioEvento.findAll({
-        where: { fecha: rango },
-        include: [{ model: db.Auditoria, as: 'auditoria' }],
+        where: whereNotas,
+        include: [
+          { model: db.Auditoria, as: 'auditoria' },
+          { model: db.Empresa, as: 'empresa', attributes: ['id', 'nombre', 'rif'] },
+        ],
       }),
     ]);
 
@@ -149,7 +163,7 @@ export const getEventos = async (req, res, next) => {
       });
     }
 
-    // Notas y auditorías planificadas. Se omiten las que ya aparecen arriba.
+    // Notas y auditorías planificadas desde CalendarioEvento
     for (const evento of calendarioEventos) {
       if (evento.auditoriaId || evento.documentoId || evento.auditoriaItemId) continue;
 
@@ -162,17 +176,17 @@ export const getEventos = async (req, res, next) => {
         entidadId: evento.id,
         color: evento.color || COLORES.nota,
         descripcion: evento.descripcion,
+        empresa: evento.empresa?.nombre || null,
+        empresaId: evento.empresaId || null,
+        usuarioId: evento.usuarioId,
+        privacidad: evento.privacidad,
+        esMio: evento.usuarioId === usuarioId,
       });
     }
 
     eventos.sort((a, b) => a.fecha.localeCompare(b.fecha));
 
-    res.json({
-      fechaInicio,
-      fechaFin,
-      total: eventos.length,
-      eventos,
-    });
+    res.json({ fechaInicio, fechaFin, total: eventos.length, eventos });
   } catch (error) {
     next(error);
   }
@@ -181,7 +195,7 @@ export const getEventos = async (req, res, next) => {
 // POST /api/calendario/eventos
 export const crearEvento = async (req, res, next) => {
   try {
-    const { titulo, descripcion, fecha, tipo, color, auditoriaId } = req.body;
+    const { titulo, descripcion, fecha, tipo, color, auditoriaId, privacidad, empresaId } = req.body;
 
     if (!titulo || !fecha || !validarFecha(fecha)) {
       return res.status(400).json({ message: 'titulo y fecha son obligatorios. fecha debe ser YYYY-MM-DD' });
@@ -200,6 +214,8 @@ export const crearEvento = async (req, res, next) => {
       color,
       auditoriaId: auditoriaId || null,
       usuarioId: obtenerUsuarioId(req),
+      privacidad: privacidad === 'privado' ? 'privado' : 'publico',
+      empresaId: empresaId || null,
     });
 
     res.status(201).json(evento.get({ plain: true }));
@@ -212,9 +228,7 @@ export const crearEvento = async (req, res, next) => {
 export const actualizarEvento = async (req, res, next) => {
   try {
     const evento = await db.CalendarioEvento.findByPk(req.params.id);
-    if (!evento) {
-      return res.status(404).json({ message: 'Evento no encontrado' });
-    }
+    if (!evento) return res.status(404).json({ message: 'Evento no encontrado' });
 
     const usuarioId = obtenerUsuarioId(req);
     if (evento.usuarioId && usuarioId && evento.usuarioId !== usuarioId) {
@@ -227,6 +241,8 @@ export const actualizarEvento = async (req, res, next) => {
     if (req.body.fecha !== undefined) dataActualizada.fecha = req.body.fecha;
     if (req.body.tipo !== undefined) dataActualizada.tipo = req.body.tipo;
     if (req.body.color !== undefined) dataActualizada.color = req.body.color;
+    if (req.body.privacidad !== undefined) dataActualizada.privacidad = req.body.privacidad === 'privado' ? 'privado' : 'publico';
+    if (req.body.empresaId !== undefined) dataActualizada.empresaId = req.body.empresaId || null;
 
     await evento.update(dataActualizada);
     res.json(evento.get({ plain: true }));

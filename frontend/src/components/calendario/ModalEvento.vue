@@ -6,14 +6,17 @@
       class="fixed inset-0 z-50 flex items-center justify-center bg-black/40"
       @click.self="cerrar"
     >
-      <div class="bg-white rounded-lg shadow-lg w-full max-w-md mx-4">
-        <div class="flex items-center justify-between p-4 border-b">
-          <h3 class="text-lg font-semibold text-gray-800">
+      <div class="bg-white rounded-lg shadow-lg w-full max-w-md mx-4 overflow-hidden">
+        <div
+          class="flex items-center justify-between p-4 text-white"
+          style="background: linear-gradient(135deg, var(--navy-800), var(--primary));"
+        >
+          <h3 class="text-lg font-semibold">
             {{ evento ? 'Editar evento' : 'Nuevo evento' }}
           </h3>
           <button
             type="button"
-            class="text-gray-400 hover:text-gray-600"
+            class="text-white/70 hover:text-white transition-colors"
             @click="cerrar"
           >
             ✕
@@ -44,25 +47,28 @@
             </label>
           </div>
 
-          <label class="block">
-            <span class="text-sm text-gray-600">Título</span>
-            <input
-              v-model="form.titulo"
-              type="text"
-              class="w-full mt-1 p-2 border rounded"
-              placeholder="Título del evento"
-            />
-          </label>
+          <!-- Campos solo para notas / edición -->
+          <template v-if="form.tipo === 'nota' || evento">
+            <label class="block">
+              <span class="text-sm text-gray-600">Título</span>
+              <input
+                v-model="form.titulo"
+                type="text"
+                class="w-full mt-1 p-2 border rounded"
+                placeholder="Título del evento"
+              />
+            </label>
 
-          <label class="block">
-            <span class="text-sm text-gray-600">Descripción</span>
-            <textarea
-              v-model="form.descripcion"
-              rows="3"
-              class="w-full mt-1 p-2 border rounded"
-              placeholder="Descripción opcional"
-            ></textarea>
-          </label>
+            <label class="block">
+              <span class="text-sm text-gray-600">Descripción</span>
+              <textarea
+                v-model="form.descripcion"
+                rows="3"
+                class="w-full mt-1 p-2 border rounded"
+                placeholder="Descripción opcional"
+              ></textarea>
+            </label>
+          </template>
 
           <label v-if="form.tipo === 'auditoria' && !evento" class="block">
             <span class="text-sm text-gray-600">Empresa</span>
@@ -104,6 +110,28 @@
             />
           </label>
 
+          <label v-if="form.tipo === 'nota'" class="block">
+            <span class="text-sm text-gray-600">Privacidad</span>
+            <select v-model="form.privacidad" class="w-full mt-1 p-2 border rounded">
+              <option value="publico">Pública</option>
+              <option value="privado">Privada (solo yo)</option>
+            </select>
+          </label>
+
+          <label v-if="form.tipo === 'nota'" class="block">
+            <span class="text-sm text-gray-600">Visible para</span>
+            <select v-model="form.empresaId" class="w-full mt-1 p-2 border rounded">
+              <option value="">Todas las empresas</option>
+              <option
+                v-for="empresa in empresas"
+                :key="empresa.id"
+                :value="empresa.id"
+              >
+                {{ nombreEmpresa(empresa) }}
+              </option>
+            </select>
+          </label>
+
           <p v-if="error" class="text-red-600 text-sm">{{ error }}</p>
 
           <div class="flex justify-end gap-2">
@@ -133,6 +161,7 @@
 import { ref, reactive, watch, onMounted } from 'vue';
 import api from '../../api/axios';
 import { useCalendarioStore } from '../../stores/calendario';
+import { useAuditoriasStore } from '../../stores/auditorias';
 
 const props = defineProps({
   visible: { type: Boolean, default: false },
@@ -143,6 +172,7 @@ const props = defineProps({
 const emit = defineEmits(['close', 'guardado']);
 
 const calendarioStore = useCalendarioStore();
+const auditoriasStore = useAuditoriasStore();
 
 const error = ref('');
 const guardando = ref(false);
@@ -154,6 +184,7 @@ const form = reactive({
   tipo: 'nota',
   color: '#10b981',
   empresaId: '',
+  privacidad: 'publico',
 });
 
 const empresas = ref([]);
@@ -205,6 +236,7 @@ watch(
       form.tipo = props.evento.tipo === 'auditoria' ? 'auditoria' : 'nota';
       form.color = props.evento.color || '#10b981';
       form.empresaId = props.evento.empresaId || '';
+      form.privacidad = props.evento.privacidad || 'publico';
     } else {
       form.titulo = '';
       form.descripcion = '';
@@ -212,6 +244,7 @@ watch(
       form.tipo = 'nota';
       form.color = '#10b981';
       form.empresaId = '';
+      form.privacidad = 'publico';
     }
   }
 );
@@ -223,7 +256,7 @@ const cerrar = () => {
 const guardar = async () => {
   error.value = '';
 
-  if (!form.titulo.trim()) {
+  if (form.tipo === 'nota' && !form.titulo.trim()) {
     error.value = 'El título es obligatorio.';
     return;
   }
@@ -241,14 +274,24 @@ const guardar = async () => {
         descripcion: form.descripcion,
         fecha: form.fecha,
         color: form.color,
-      });
-    } else if (form.tipo === 'auditoria') {
-      await calendarioStore.crearAuditoria({
-        fecha: form.fecha,
-        titulo: form.titulo,
-        descripcion: form.descripcion,
+        privacidad: form.privacidad,
         empresaId: form.empresaId || undefined,
       });
+    } else if (form.tipo === 'auditoria') {
+      if (!form.empresaId) {
+        error.value = 'Debe seleccionar una empresa para crear la auditoría.';
+        guardando.value = false;
+        return;
+      }
+
+      const resultado = await auditoriasStore.create({
+        fecha: form.fecha,
+        empresaId: form.empresaId,
+      });
+
+      if (!resultado.ok) {
+        throw new Error(resultado.message);
+      }
     } else {
       await calendarioStore.crearEvento({
         titulo: form.titulo,
@@ -256,6 +299,8 @@ const guardar = async () => {
         fecha: form.fecha,
         tipo: 'nota',
         color: form.color,
+        privacidad: form.privacidad,
+        empresaId: form.empresaId || undefined,
       });
     }
 

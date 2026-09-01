@@ -42,6 +42,15 @@ const cargar = async () => {
 };
 
 const guardar = async () => {
+  // Validar que todo "No cumple" tenga fecha de compromiso
+  const itemsSinFecha = items.value.filter(
+    (i) => i.estado === 'no_cumple' && !i.fechaCompromiso
+  );
+  if (itemsSinFecha.length) {
+    toast.error(`${itemsSinFecha.length} item(s) en "No cumple" requieren fecha de compromiso`);
+    return;
+  }
+
   // Capturar los items ANTES de update (update reemplaza this.auditoria)
   const itemsPayload = items.value.map((i) => ({
     id: i.id,
@@ -161,32 +170,24 @@ onMounted(cargar);
           />
         </div>
 
-        <div class="table-scroll">
-          <table class="data">
-            <thead>
-              <tr>
-                <th>Codigo</th>
-                <th>Requisito</th>
-                <th>Estado</th>
-                <th>Observaciones / hallazgo</th>
-                <th>Accion correctiva (CAPA)</th>
-              </tr>
-            </thead>
-            <tbody>
-              <AuditItemRow
-                v-for="item in itemsVisibles"
-                :key="item.id"
-                :item="item"
-                :editable="editable"
-                :empleados="empleadosActivos"
-              />
-            </tbody>
-          </table>
+        <div class="checklist-list">
+          <AuditItemRow
+            v-for="item in itemsVisibles"
+            :key="item.id"
+            :item="item"
+            :editable="editable"
+            :empleados="empleadosActivos"
+          />
         </div>
       </BaseCard>
 
       <BaseCard title="Conclusiones del auditor">
-        <textarea v-model="auditoria.conclusiones" rows="4" :disabled="!editable"></textarea>
+        <textarea
+          v-model="auditoria.conclusiones"
+          rows="5"
+          :disabled="!editable"
+          class="textarea-alta"
+        ></textarea>
         <p class="muted" v-if="auditoria.estado === 'finalizada'">
           Finalizada el {{ fechaCorta(auditoria.finalizadaEn) }}.
         </p>
@@ -197,3 +198,44 @@ onMounted(cargar);
     </template>
   </section>
 </template>
+
+<style scoped>
+:deep(table.data) {
+  table-layout: fixed;
+  width: 100%;
+  min-width: 960px; /* evita que las columnas se aplasten */
+}
+
+:deep(table.data th),
+:deep(table.data td) {
+  overflow-wrap: break-word;
+  vertical-align: top;
+}
+
+.table-scroll {
+  overflow-x: auto;
+}
+
+.checklist-list {
+  display: grid;
+  gap: 1rem;
+  margin-top: 1rem;
+}
+
+.textarea-alta {
+  display: block;
+  width: 100%;
+  min-height: 7rem;
+  box-sizing: border-box;
+  padding: 0.75rem;
+  border: 1px solid #d1d5db;
+  border-radius: 0.5rem;
+  resize: vertical;
+}
+
+.textarea-alta:focus {
+  outline: none;
+  border-color: #006c4a;
+  box-shadow: 0 0 0 3px rgb(0 108 74 / 12%);
+}
+</style>

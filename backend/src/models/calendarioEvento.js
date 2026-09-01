@@ -5,36 +5,54 @@ const CalendarioEventoModel = (sequelize, DataTypes) => {
     'CalendarioEvento',
     {
       id: { type: DataTypes.UUID, defaultValue: DataTypes.UUIDV4, primaryKey: true },
-      titulo: { type: DataTypes.STRING(255), allowNull: false },
-      descripcion: { type: DataTypes.TEXT, allowNull: true },
+      titulo: { type: DataTypes.STRING, allowNull: false },
+      descripcion: DataTypes.TEXT,
       fecha: { type: DataTypes.DATEONLY, allowNull: false },
       tipo: {
-        type: DataTypes.STRING(30), // antes ENUM('auditoria','nota')
-        allowNull: false,
+        type: DataTypes.STRING(50),
         defaultValue: 'nota',
       },
-      // Referencias a entidades que originan el evento.
-      auditoriaId: { type: DataTypes.UUID, allowNull: true },
-      documentoId: { type: DataTypes.UUID, allowNull: true, field: 'documento_id' },
-      auditoriaItemId: { type: DataTypes.UUID, allowNull: true, field: 'auditoria_item_id' },
-      usuarioId: { type: DataTypes.UUID, allowNull: true },
-      color: { type: DataTypes.STRING(20), allowNull: true },
+      color: DataTypes.STRING,
+      usuarioId: DataTypes.UUID,
+      auditoriaId: DataTypes.UUID,
+      documentoId: {
+        type: DataTypes.UUID,
+        allowNull: true,
+        field: 'documento_id',
+      },
+      auditoriaItemId: {
+        type: DataTypes.UUID,
+        allowNull: true,
+        field: 'auditoria_item_id',
+      },
+
+      // Privacidad de la nota
+      privacidad: {
+        type: DataTypes.ENUM('publico', 'privado'),
+        defaultValue: 'publico',
+      },
+
+      // Empresa asociada a la nota (null = todas las empresas)
+      empresaId: {
+        type: DataTypes.UUID,
+        allowNull: true,
+      },
     },
     {
       tableName: 'CalendarioEventos',
       timestamps: true,
-      indexes: [{ fields: ['fecha'] }],
     }
   );
 
-  CalendarioEvento.TIPOS = TIPOS_EVENTO;
-
-  CalendarioEvento.associate = (db) => {
-    CalendarioEvento.belongsTo(db.Auditoria, { foreignKey: 'auditoriaId', as: 'auditoria' });
-    CalendarioEvento.belongsTo(db.Documento, { foreignKey: 'documentoId', as: 'documento' });
-    CalendarioEvento.belongsTo(db.AuditoriaItem, { foreignKey: 'auditoriaItemId', as: 'auditoriaItem' });
-    CalendarioEvento.belongsTo(db.User, { foreignKey: 'usuarioId', as: 'usuario' });
+  CalendarioEvento.associate = (models) => {
+    CalendarioEvento.belongsTo(models.User, { as: 'usuario', foreignKey: 'usuarioId' });
+    CalendarioEvento.belongsTo(models.Auditoria, { as: 'auditoria', foreignKey: 'auditoriaId' });
+    CalendarioEvento.belongsTo(models.Empresa, { as: 'empresa', foreignKey: 'empresaId' });
+    CalendarioEvento.belongsTo(models.Documento, { foreignKey: 'documento_id', as: 'documento' });
+    CalendarioEvento.belongsTo(models.AuditoriaItem, { foreignKey: 'auditoria_item_id', as: 'auditoriaItem' });
   };
+
+  CalendarioEvento.TIPOS = TIPOS_EVENTO;
 
   return CalendarioEvento;
 };

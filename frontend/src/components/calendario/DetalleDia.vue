@@ -1,63 +1,98 @@
-<!-- filepath: c:\Users\tf carrillo\Documents\proyectos\ecoMinds\frontend\src\components\calendario\DetalleDia.vue -->
 <template>
-  <div>
-    <div class="bg-white rounded-lg shadow p-4">
-      <h3 class="text-lg font-semibold text-gray-800">{{ tituloDia }}</h3>
+  <div class="h-full flex flex-col text-white">
+    <h3 class="text-2xl font-light mb-1 text-white">
+      {{ tituloDia }}
+    </h3>
+    <p class="text-sm text-white/70 mb-6">
+      {{ subtituloDia }}
+    </p>
 
-      <button
-        type="button"
-        class="mt-2 w-full px-3 py-1.5 text-sm bg-blue-600 text-white rounded hover:bg-blue-700"
-        @click="$emit('nuevo-evento', fecha)"
-      >
-        + Agregar evento
-      </button>
-
-      <div v-if="!eventos.length" class="mt-4 text-sm text-gray-500">
-        Sin eventos para este día.
-      </div>
-
-      <ul v-else class="mt-4 space-y-2">
-        <li
-          v-for="evento in eventos"
-          :key="evento.id"
-          class="border rounded p-2 hover:bg-gray-50"
-        >
-          <div class="flex items-center gap-2">
-            <span
-              class="w-2 h-2 rounded-full"
-              :style="{ backgroundColor: evento.color || '#6b7280' }"
-            ></span>
-            <span class="text-sm font-medium text-gray-800 truncate">
-              {{ evento.titulo }}
-            </span>
-          </div>
-
-          <div class="text-xs text-gray-500 ml-4 mt-1">
-            {{ etiquetaTipo(evento) }}
-          </div>
-
-          <div class="ml-4 mt-1">
-            <button
-              type="button"
-              class="text-xs text-blue-600 hover:underline"
-              @click="verEvento(evento)"
-            >
-              Ver
-            </button>
-            <button
-              v-if="evento.origen === 'calendario'"
-              type="button"
-              class="text-xs text-gray-500 hover:underline ml-2"
-              @click="$emit('editar-evento', evento)"
-            >
-              Editar
-            </button>
-          </div>
-        </li>
-      </ul>
+    <!-- Input estilo referencia para agregar -->
+    <div class="flex items-center gap-2 border-b border-white/30 pb-2 mb-4">
+      <!-- Botón para agregar evento -->
+    <button
+      type="button"
+      class="w-full inline-flex items-center justify-center gap-1 px-3 py-1.5 text-sm bg-[var(--surface-alt)] border border-[var(--border)] rounded-md text-[var(--navy-800)] hover:bg-white hover:border-[var(--primary)] transition-colors mb-4"
+      @click="$emit('nuevo-evento', fecha)"
+    >
+      <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+      </svg>
+      Agregar evento
+    </button>
     </div>
 
-    <!-- Modal de detalle para notas y eventos no navegables -->
+   
+
+    <div v-if="!eventos.length" class="text-sm text-white/70">
+      Sin eventos para este día.
+    </div>
+
+    <!-- Lista de eventos / notas -->
+    <div v-else class="space-y-3 overflow-y-auto pr-1">
+      <div
+        v-for="evento in eventos"
+        :key="evento.id"
+        class="bg-white/10 backdrop-blur-sm border border-white/10 rounded-lg p-3 hover:bg-white/15 transition-colors"
+      >
+        <div class="flex items-start gap-2">
+          <div class="flex-1 min-w-0">
+            <div class="flex items-center gap-2 mb-1">
+              <span
+                class="w-2.5 h-2.5 rounded-full flex-shrink-0"
+                :style="{ backgroundColor: evento.color || '#ffffff' }"
+              ></span>
+              <h4 class="text-sm font-semibold text-white line-clamp-2">
+                {{ evento.tipo === 'compromiso' ? 'Compromiso de cumplimiento' : evento.titulo }}
+              </h4>
+              <span
+                v-if="evento.tipo === 'nota' && evento.privacidad === 'privado'"
+                class="ml-auto text-[10px] px-1.5 py-0.5 rounded bg-white/20 text-white/90"
+                title="Solo tú puedes ver esta nota"
+              >
+                Privada
+              </span>
+            </div>
+
+            <p
+              v-if="evento.empresa"
+              class="text-xs text-white/80 line-clamp-1 mb-1"
+            >
+              {{ evento.empresa }}
+            </p>
+            <p
+              v-else-if="evento.tipo === 'nota' && evento.privacidad === 'publico'"
+              class="text-xs text-white/60 line-clamp-1 mb-1"
+            >
+              Todas las empresas
+            </p>
+
+            
+          </div>
+          
+        </div>
+
+        <div class="flex gap-2 mt-3">
+          <button
+            type="button"
+            class="flex-1 inline-flex items-center justify-center gap-1 text-xs px-3 py-1.5 bg-white/10 border border-white/20 rounded-md text-white hover:bg-white/20 transition-colors"
+            @click="verEvento(evento)"
+          >
+            Ver
+          </button>
+          <button
+            v-if="evento.origen === 'calendario'"
+            type="button"
+            class="flex-1 inline-flex items-center justify-center gap-1 text-xs px-3 py-1.5 bg-white/10 border border-white/20 rounded-md text-white hover:bg-white/20 transition-colors"
+            @click="$emit('editar-evento', evento)"
+          >
+            Editar
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal de detalle -->
     <Teleport to="body">
       <div
         v-if="eventoDetalle"
@@ -127,6 +162,14 @@ const tituloDia = computed(() => {
   const fecha = new Date(anio, mes - 1, dia);
   return fecha.toLocaleDateString("es-MX", {
     weekday: "long",
+  });
+});
+
+const subtituloDia = computed(() => {
+  if (!props.fecha) return "";
+  const [anio, mes, dia] = props.fecha.split("-").map(Number);
+  const fecha = new Date(anio, mes - 1, dia);
+  return fecha.toLocaleDateString("es-MX", {
     year: "numeric",
     month: "long",
     day: "numeric",
@@ -137,7 +180,7 @@ const etiquetaTipo = (evento) => {
   const etiquetas = {
     auditoria: "Auditoría",
     documento: "Documento",
-    compromiso: "Compromiso",
+    compromiso: "Compromiso de cumplimiento",
     nota: "Nota",
   };
   return etiquetas[evento.tipo] || evento.tipo;
@@ -175,7 +218,6 @@ const irAlDetalle = (evento) => {
       params: { id: evento.auditoriaId },
     });
   } else {
-    // Si no tiene ID navegable, mostrar el modal de detalle
     eventoDetalle.value = evento;
   }
 };

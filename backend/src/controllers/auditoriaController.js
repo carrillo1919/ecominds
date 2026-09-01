@@ -220,12 +220,7 @@ const saveItems = async (req, res, next) => {
       // Solo recolectar el compromiso; se creará después del commit
       if (item.estado === 'no_cumple' && item.fechaCompromiso) {
 
- console.log('✅ Compromiso detectado:', {
-    itemId: item.id,
-    estado: item.estado,
-    fechaCompromiso: item.fechaCompromiso,
-  });
-
+ 
 
         compromisos.push({
           itemId: item.id,
@@ -235,13 +230,7 @@ const saveItems = async (req, res, next) => {
           auditoriaId: item.auditoriaId,
           usuarioId: req.user?.id ?? null,
         });
-      }else{
-         console.log('⚠️ No cumple condición:', {
-    itemId: item.id,
-    estado: item.estado,
-    fechaCompromiso: item.fechaCompromiso,
-  });
-      }
+      } 
     }
 
     const resultado = await recalcular(auditoria.id, transaction);

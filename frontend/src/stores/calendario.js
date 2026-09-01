@@ -1,11 +1,5 @@
 import { defineStore } from 'pinia';
-import {
-  getEventos,
-  crearEvento,
-  actualizarEvento,
-  eliminarEvento,
-  crearAuditoria,
-} from '../api/calendario';
+import api from '@/api/axios';
 
 export const useCalendarioStore = defineStore('calendario', {
   state: () => ({
@@ -32,8 +26,10 @@ export const useCalendarioStore = defineStore('calendario', {
       this.cargando = true;
       this.error = null;
       try {
-        const response = await getEventos(fechaInicio, fechaFin);
-        this.eventos = response.eventos ?? response.data?.eventos ?? [];
+        const response = await api.get('/calendario/eventos', {
+          params: { inicio: fechaInicio, fin: fechaFin },
+        });
+        this.eventos = response.data?.eventos ?? [];
         this.rango = { inicio: fechaInicio, fin: fechaFin };
       } catch (error) {
         this.error = error.response?.data?.message || error.message;
@@ -44,28 +40,18 @@ export const useCalendarioStore = defineStore('calendario', {
     },
 
     async crearEvento(payload) {
-      const response = await crearEvento(payload);
-      const evento = response.data ?? response;
-      this.eventos.push(evento);
-      return evento;
+      const response = await api.post('/calendario/eventos', payload);
+      return response.data;
     },
 
     async actualizarEvento(id, payload) {
-      const response = await actualizarEvento(id, payload);
-      const actualizado = response.data ?? response;
-      const index = this.eventos.findIndex((e) => e.id === id || e.entidadId === id);
-      if (index !== -1) this.eventos[index] = actualizado;
-      return actualizado;
+      const response = await api.put(`/calendario/eventos/${id}`, payload);
+      return response.data;
     },
 
     async eliminarEvento(id) {
-      await eliminarEvento(id);
+      await api.delete(`/calendario/eventos/${id}`);
       this.eventos = this.eventos.filter((e) => e.id !== id && e.entidadId !== id);
-    },
-
-    async crearAuditoria(payload) {
-      const response = await crearAuditoria(payload);
-      return response.data ?? response;
     },
   },
 });
