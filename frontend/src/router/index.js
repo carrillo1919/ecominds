@@ -38,6 +38,12 @@ const routes = [
         component: () => import('@/views/calendario/CalendarioView.vue'),
         meta: { requiresAuth: true },
       },
+      {
+        path: '/admin/notificaciones',
+        name: 'NotificacionesConfig',
+        component: () => import('@/views/administracion/NotificacionesConfigView.vue'),
+        meta: { requiresAuth: true, roles: ['admin'] },
+      },
     ],
   },
 

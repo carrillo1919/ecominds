@@ -8,6 +8,7 @@ import {
   User,
   Empleado,
   CalendarioEvento,
+  NotificacionLog,
   sequelize,
 } from '../models/index.js';
 
@@ -15,6 +16,8 @@ import {
   calcularResultado,
   nivelPorPorcentaje,
 } from '../services/riesgoService.js';
+import { sendEmail, buildEmailTemplate } from '../services/emailService.js';
+import { sendEmailWithTemplate } from '../services/emailService.js';
 
 const INCLUDES_BASE = [
   { model: Empresa, as: 'empresa', attributes: ['id', 'nombre', 'rif', 'sector'] },
@@ -34,6 +37,17 @@ const ordenarItems = (auditoria) => {
   const plain = auditoria.toJSON();
   plain.items = (plain.items || []).sort((a, b) => (a.requisito?.orden || 0) - (b.requisito?.orden || 0));
   return plain;
+};
+
+// Normaliza DD/MM/YYYY -> YYYY-MM-DD
+const normalizarFecha = (fecha) => {
+  if (!fecha) return null;
+  if (/^\d{4}-\d{2}-\d{2}$/.test(fecha)) return fecha;
+  const m = /^(\d{1,2})\/(\d{1,2})\/(\d{4})$/.exec(String(fecha).trim());
+  if (m) {
+    return `${m[3]}-${m[2].padStart(2, '0')}-${m[1].padStart(2, '0')}`;
+  }
+  return fecha;
 };
 
 // Recalcula y persiste el resultado de la auditoria.
@@ -63,6 +77,52 @@ const recalcular = async (auditoriaId, transaction) => {
 
   await auditoria.save({ transaction });
   return resultado;
+};
+
+const notificarAuditoriaFinalizada = async (auditoria) => {
+  const empresa = await Empresa.findByPk(auditoria.empresaId, {
+    include: [{ model: Empleado, as: 'responsableEmpleado' }],
+  });
+  const responsableEmail = empresa?.responsableEmpleado?.email;
+  const adminEmail = process.env.ADMIN_EMAIL;
+  const destinatarios = [adminEmail].filter(Boolean);
+  if (responsableEmail) destinatarios.push(responsableEmail);
+
+  const html = buildEmailTemplate({
+    title: 'Auditoría finalizada',
+    message: `
+      <p>La siguiente auditoría ha sido finalizada:</p>
+      <p><strong>Código:</strong> ${auditoria.codigo || `Auditoría #${auditoria.id}`}</p>
+      <p><strong>Empresa:</strong> ${empresa?.nombre || 'N/A'}</p>
+      <p><strong>Fecha:</strong> ${auditoria.fecha}</p>
+      <p>Ingresa a la plataforma para revisar los resultados.</p>
+    `,
+  });
+
+  for (const destinatario of destinatarios) {
+    const resultado = await sendEmailWithTemplate({
+      to: destinatario,
+      subject: 'Auditoría finalizada',
+      title: 'Auditoría finalizada',
+      message: `
+        <p>La siguiente auditoría ha sido finalizada:</p>
+        <p><strong>Código:</strong> ${auditoria.codigo || `Auditoría #${auditoria.id}`}</p>
+        <p><strong>Empresa:</strong> ${empresa?.nombre || 'N/A'}</p>
+        <p><strong>Fecha:</strong> ${auditoria.fecha}</p>
+        <p>Ingresa a la plataforma para revisar los resultados.</p>
+      `,
+    });
+
+    await NotificacionLog.create({
+      tipo: 'auditoria_finalizada',
+      referenciaId: auditoria.id,
+      destinatario,
+      asunto: 'Auditoría finalizada',
+      cuerpo: html,
+      estado: resultado.success ? 'enviado' : 'fallido',
+      error: resultado.error || null,
+    });
+  }
 };
 
 // GET /api/auditorias
@@ -100,7 +160,7 @@ const getOne = async (req, res, next) => {
   }
 };
 
-// POST /api/auditorias  (admin/auditor) - crea la auditoria con el checklist completo
+// POST /api/auditorias (admin/auditor) - crea la auditoria con el checklist completo
 const create = async (req, res, next) => {
   const transaction = await sequelize.transaction();
   try {
@@ -149,7 +209,7 @@ const create = async (req, res, next) => {
   }
 };
 
-// PATCH /api/auditorias/:id  (cabecera)
+// PATCH /api/auditorias/:id (cabecera)
 const update = async (req, res, next) => {
   try {
     const auditoria = await Auditoria.findByPk(req.params.id);
@@ -169,7 +229,7 @@ const update = async (req, res, next) => {
   }
 };
 
-// PUT /api/auditorias/:id/items  (guarda respuestas del checklist y recalcula)
+// PUT /api/auditorias/:id/items (guarda respuestas del checklist y recalcula)
 const saveItems = async (req, res, next) => {
   const transaction = await sequelize.transaction();
   try {
@@ -217,11 +277,7 @@ const saveItems = async (req, res, next) => {
 
       await item.save({ transaction });
 
-      // Solo recolectar el compromiso; se creará después del commit
       if (item.estado === 'no_cumple' && item.fechaCompromiso) {
-
- 
-
         compromisos.push({
           itemId: item.id,
           titulo: `Compromiso: ${item.accionCorrectiva || 'Acción correctiva pendiente'}`,
@@ -230,7 +286,7 @@ const saveItems = async (req, res, next) => {
           auditoriaId: item.auditoriaId,
           usuarioId: req.user?.id ?? null,
         });
-      } 
+      }
     }
 
     const resultado = await recalcular(auditoria.id, transaction);
@@ -302,6 +358,8 @@ const finalizar = async (req, res, next) => {
     finalizada.finalizadaEn = new Date();
     await finalizada.save();
 
+    await notificarAuditoriaFinalizada(finalizada);
+
     const completa = await Auditoria.findByPk(auditoria.id, { include: [...INCLUDES_BASE, INCLUDE_ITEMS] });
     return res.json({ message: 'Auditoria finalizada', auditoria: ordenarItems(completa) });
   } catch (error) {
@@ -309,7 +367,7 @@ const finalizar = async (req, res, next) => {
   }
 };
 
-// DELETE /api/auditorias/:id  (solo borradores)
+// DELETE /api/auditorias/:id (solo borradores)
 const remove = async (req, res, next) => {
   try {
     const auditoria = await Auditoria.findByPk(req.params.id);
@@ -325,7 +383,7 @@ const remove = async (req, res, next) => {
   }
 };
 
-// GET /api/auditorias/estadisticas  (RF-06.2: KPIs por periodo)
+// GET /api/auditorias/estadisticas (RF-06.2: KPIs por periodo)
 const estadisticas = async (req, res, next) => {
   try {
     const where = { estado: 'finalizada' };
@@ -411,7 +469,7 @@ const estadisticas = async (req, res, next) => {
   }
 };
 
-// GET /api/auditorias/proximas?dias=30  (notificaciones de proxima auditoria)
+// GET /api/auditorias/proximas?dias=30 (notificaciones de proxima auditoria)
 const proximas = async (req, res, next) => {
   try {
     const dias = Number(req.query.dias || 30);
@@ -450,17 +508,6 @@ const proximas = async (req, res, next) => {
   }
 };
 
-// Normaliza DD/MM/YYYY -> YYYY-MM-DD
-const normalizarFecha = (fecha) => {
-  if (!fecha) return null;
-  if (/^\d{4}-\d{2}-\d{2}$/.test(fecha)) return fecha;
-  const m = /^(\d{1,2})\/(\d{1,2})\/(\d{4})$/.exec(String(fecha).trim());
-  if (m) {
-    return `${m[3]}-${m[2].padStart(2, '0')}-${m[1].padStart(2, '0')}`;
-  }
-  return fecha; // deja que Sequelize valide y lance el error si es necesario
-};
-
 export {
   getAll,
   getOne,
@@ -472,4 +519,5 @@ export {
   estadisticas,
   proximas,
   recalcular,
+  notificarAuditoriaFinalizada,
 };

@@ -14,6 +14,8 @@ import DocumentoModel from './documento.js';
 import ArchivoAdjuntoModel from './archivoAdjunto.js';
 import DocumentoAuditoriaLogModel from './documentoAuditoriaLog.js';
 import CalendarioEventoModel from './calendarioEvento.js';
+import notificacionConfigModel from './notificacionConfig.js';
+import notificacionLogModel from './notificacionLog.js';
 
 const User = UserModel(sequelize, Sequelize.DataTypes);
 const Empresa = EmpresaModel(sequelize, Sequelize.DataTypes);
@@ -28,6 +30,8 @@ const Documento = DocumentoModel(sequelize, Sequelize.DataTypes);
 const ArchivoAdjunto = ArchivoAdjuntoModel(sequelize, Sequelize.DataTypes);
 const DocumentoAuditoriaLog = DocumentoAuditoriaLogModel(sequelize, Sequelize.DataTypes);
 const CalendarioEvento = CalendarioEventoModel(sequelize, Sequelize.DataTypes);
+const NotificacionConfig = notificacionConfigModel(sequelize, Sequelize.DataTypes);
+const NotificacionLog = notificacionLogModel(sequelize, Sequelize.DataTypes);
 
 const db = {
   sequelize,
@@ -45,6 +49,8 @@ const db = {
   ArchivoAdjunto,
   DocumentoAuditoriaLog,
   CalendarioEvento,
+  NotificacionConfig,
+  NotificacionLog,
 };
 
 Object.values(db).forEach((model) => {
@@ -69,6 +75,8 @@ export {
   ArchivoAdjunto,
   DocumentoAuditoriaLog,
   CalendarioEvento,
+  NotificacionConfig,
+  NotificacionLog,
 };
 
 export default db;

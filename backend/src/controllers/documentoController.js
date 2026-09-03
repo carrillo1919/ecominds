@@ -1,9 +1,9 @@
-import { Documento, ArchivoAdjunto, Empleado, Empresa, EmpresaRequisito, RequisitoLegal, EnteRegulador, CalendarioEvento } from '../models/index.js';
+import { Documento, ArchivoAdjunto, Empleado, Empresa, EmpresaRequisito, RequisitoLegal, EnteRegulador, CalendarioEvento, NotificacionLog } from '../models/index.js';
 import { registrarAccion } from '../services/documentoAuditoriaService.js';
+import { sendEmail, buildEmailTemplate, sendEmailWithTemplate } from '../services/emailService.js';
 import path from 'path';
 import { Sequelize } from 'sequelize';
 const { Op } = Sequelize;
-
 const ESTADOS = ['vigente', 'vencido', 'archivado'];
 
 // Fecha de hoy en formato YYYY-MM-DD en zona local
@@ -182,6 +182,8 @@ const create = async (req, res, next) => {
     // await crearEventosDocumento(documento, req.user?.id ?? req.userId, { transaction });
 
     await crearEventosDocumento(documento, req.user?.id ?? null);
+
+    await notificarDocumentoCargado(documento);
 
     return res.status(201).json({ message: 'Documento creado', documento });
   } catch (error) {
@@ -413,4 +415,59 @@ const crearEventosDocumento = async (documento, usuarioId, options = {}) => {
   }
 };
 
-export { getAll, getOne, create, update, remove, uploadArchivo, deleteArchivo, downloadArchivo, previewArchivo };
+const notificarDocumentoCargado = async (documento) => {
+  const empresa = await Empresa.findByPk(documento.empresaId, {
+    include: [{ model: Empleado, as: 'responsableEmpleado' }],
+  });
+  const responsableEmail = empresa?.responsableEmpleado?.email;
+  const adminEmail = process.env.ADMIN_EMAIL;
+  const destinatarios = [adminEmail].filter(Boolean);
+  if (responsableEmail) destinatarios.push(responsableEmail);
+
+  const html = buildEmailTemplate({
+    title: 'Nuevo documento cargado',
+    message: `
+      <p>Se ha cargado un nuevo documento en la plataforma.</p>
+      <p><strong>Documento:</strong> ${documento.titulo}</p>
+      <p><strong>Empresa:</strong> ${empresa?.nombre || 'N/A'}</p>
+      <p><strong>Fecha de vencimiento:</strong> ${documento.fechaVencimiento || 'Sin fecha'}</p>
+    `,
+  });
+
+  for (const destinatario of destinatarios) {
+    const resultado = await sendEmailWithTemplate({
+      to: destinatario,
+      subject: 'Nuevo documento cargado en EcoMinds',
+      title: 'Nuevo documento cargado',
+      message: `
+        <p>Se ha cargado un nuevo documento en la plataforma.</p>
+        <p><strong>Documento:</strong> ${documento.titulo}</p>
+        <p><strong>Empresa:</strong> ${empresa?.nombre || 'N/A'}</p>
+        <p><strong>Fecha de vencimiento:</strong> ${documento.fechaVencimiento || 'Sin fecha'}</p>
+      `,
+    });
+
+    await NotificacionLog.create({
+      tipo: 'documento_cargado',
+      referenciaId: documento.id,
+      destinatario,
+      asunto: 'Nuevo documento cargado en EcoMinds',
+      cuerpo: html,
+      estado: resultado.success ? 'enviado' : 'fallido',
+      error: resultado.error || null,
+    });
+  }
+};
+
+export {
+  getAll,
+  getOne,
+  create,
+  update,
+  remove,
+  uploadArchivo,
+  deleteArchivo,
+  downloadArchivo,
+  previewArchivo,
+  notificarDocumentoCargado,
+};

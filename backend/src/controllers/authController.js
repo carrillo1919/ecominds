@@ -1,17 +1,17 @@
 import jwt from 'jsonwebtoken';
 import { Op } from 'sequelize';
-
+import crypto from 'crypto';
 import { User } from '../models/index.js';
-import { generateToken, resetTokenExpiry } from '../utils/tokens.js';
-import {
-  sendVerificationEmail,
-  sendResetPasswordEmail,
-} from '../services/emailService.js';
+import { sendVerificationEmail, sendResetPasswordEmail } from '../services/emailService.js';
 
 const signToken = (user) =>
   jwt.sign({ sub: user.id, rol: user.rol }, process.env.JWT_SECRET, {
     expiresIn: process.env.JWT_EXPIRES_IN || '24h',
   });
+
+const generateToken = () => crypto.randomBytes(32).toString('hex');
+
+const resetTokenExpiry = () => new Date(Date.now() + 60 * 60 * 1000); // 1 hora
 
 // POST /api/auth/register
 const register = async (req, res, next) => {
@@ -25,7 +25,6 @@ const register = async (req, res, next) => {
 
     const verificationToken = generateToken();
 
-    // El rol nunca se acepta desde el registro publico.
     const user = await User.create({
       nombre,
       apellido,
@@ -36,7 +35,7 @@ const register = async (req, res, next) => {
       verificationToken,
     });
 
-    await emailService.sendVerificationEmail(user, verificationToken);
+    await sendVerificationEmail(user, verificationToken);
 
     return res.status(201).json({
       message: 'Registro exitoso. Revise su correo para verificar la cuenta.',
@@ -109,7 +108,6 @@ const forgotPassword = async (req, res, next) => {
       where: { email: String(email).toLowerCase() },
     });
 
-    // Respuesta generica para no revelar si el correo existe.
     if (!user) return res.json(genericResponse);
 
     const token = generateToken();
@@ -117,7 +115,7 @@ const forgotPassword = async (req, res, next) => {
     user.resetPasswordExpires = resetTokenExpiry();
     await user.save();
 
-    await emailService.sendResetPasswordEmail(user, token);
+    await sendResetPasswordEmail(user, token);
 
     return res.json(genericResponse);
   } catch (error) {
@@ -141,7 +139,7 @@ const resetPassword = async (req, res, next) => {
       return res.status(400).json({ message: 'El enlace es invalido o ha expirado' });
     }
 
-    user.password = password; // el hook beforeSave lo hashea
+    user.password = password;
     user.resetPasswordToken = null;
     user.resetPasswordExpires = null;
     await user.save();
