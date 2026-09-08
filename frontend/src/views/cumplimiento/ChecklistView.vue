@@ -3,6 +3,8 @@ import { computed, onMounted, ref } from 'vue';
 import { useToast } from 'vue-toastification';
 import api, { apiMessage } from '@/api/axios';
 import { useAuthorization } from '@/composables/useAuthorization';
+import PageToolbar from '@/components/ui/PageToolbar.vue';
+import DataTable from '@/components/ui/DataTable.vue';
 
 const toast = useToast();
 const { isAdmin } = useAuthorization();
@@ -42,18 +44,23 @@ const actualizar = async (requisito, campo, valor) => {
   }
 };
 
+const headers = [
+  { key: 'codigo', label: 'Código' },
+  { key: 'bloque', label: 'Bloque' },
+  { key: 'requisito', label: 'Requisito' },
+  { key: 'ente', label: 'Ente / base legal' },
+  { key: 'critico', label: 'Crítico' },
+  { key: 'activo', label: 'Activo' },
+];
+
 onMounted(cargar);
 </script>
 
 <template>
   <section>
-    <div class="card">
-      <h1>Checklist de requisitos legales</h1>
-      <p class="muted">
-        Base del checklist de materiales y desechos peligrosos (Venezuela). Los requisitos marcados como
-        <strong>criticos</strong> elevan automaticamente la severidad del riesgo cuando resultan en No cumple.
-      </p>
+    <PageToolbar title="Checklist de requisitos legales" subtitle="Base del checklist de materiales y desechos peligrosos (Venezuela)." />
 
+    <div class="card">
       <label class="filter-inline">Bloque
         <select v-model="filtroBloque">
           <option value="">Todos</option>
@@ -62,55 +69,42 @@ onMounted(cargar);
       </label>
 
       <div v-if="error" class="alert alert-error">{{ error }}</div>
-      <p v-if="cargando" class="muted">Cargando requisitos...</p>
-
-      <div v-else class="table-scroll">
-        <table class="data">
-          <thead>
-            <tr>
-              <th>Codigo</th>
-              <th>Bloque</th>
-              <th>Requisito</th>
-              <th>Ente / base legal</th>
-              <th>Critico</th>
-              <th>Activo</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr v-for="r in visibles" :key="r.id">
-              <td data-label="Codigo">{{ r.codigo }}</td>
-              <td data-label="Bloque">{{ r.bloque }}</td>
-              <td data-label="Requisito">{{ r.requisito }}</td>
-              <td data-label="Ente / base legal">
-                {{ r.enteRegulador || '-' }}
-                <span class="muted" v-if="r.baseLegal"><br />{{ r.baseLegal }}</span>
-              </td>
-              <td data-label="Critico">
-                <label class="switch">
-                  <input
-                    type="checkbox"
-                    :checked="r.critico"
-                    :disabled="!isAdmin"
-                    @change="actualizar(r, 'critico', $event.target.checked)"
-                  />
-                  <span class="slider"></span>
-                </label>
-              </td>
-              <td data-label="Activo">
-                <label class="switch">
-                  <input
-                    type="checkbox"
-                    :checked="r.activo"
-                    :disabled="!isAdmin"
-                    @change="actualizar(r, 'activo', $event.target.checked)"
-                  />
-                  <span class="slider"></span>
-                </label>
-              </td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
+      <DataTable
+        :headers="headers"
+        :items="visibles"
+        :loading="cargando"
+        empty-text="No hay requisitos registrados."
+      >
+        <template #cell-requisito="{ item }">
+          {{ item.requisito }}
+        </template>
+        <template #cell-ente="{ item }">
+          {{ item.enteRegulador || '—' }}
+          <span v-if="item.baseLegal" class="muted"><br />{{ item.baseLegal }}</span>
+        </template>
+        <template #cell-critico="{ item }">
+          <label class="switch">
+            <input
+              type="checkbox"
+              :checked="item.critico"
+              :disabled="!isAdmin"
+              @change="actualizar(item, 'critico', $event.target.checked)"
+            />
+            <span class="slider"></span>
+          </label>
+        </template>
+        <template #cell-activo="{ item }">
+          <label class="switch">
+            <input
+              type="checkbox"
+              :checked="item.activo"
+              :disabled="!isAdmin"
+              @change="actualizar(item, 'activo', $event.target.checked)"
+            />
+            <span class="slider"></span>
+          </label>
+        </template>
+      </DataTable>
     </div>
   </section>
 </template>
