@@ -5,6 +5,9 @@ import { useDocumentosStore } from '@/stores/documentos';
 import { useEmpleadosStore } from '@/stores/empleados';
 import { useAuthorization } from '@/composables/useAuthorization';
 import EstadoDocumentoBadge from '@/components/EstadoDocumentoBadge.vue';
+import PageToolbar from '@/components/ui/PageToolbar.vue';
+import DataTable from '@/components/ui/DataTable.vue';
+import CrudModal from '@/components/ui/CrudModal.vue';
 import * as empresasApi from '@/api/empresas';
 import * as empresaRequisitosApi from '@/api/empresaRequisitos';
 
@@ -16,7 +19,7 @@ const { isAdmin, isAuditor, isResponsable } = useAuthorization();
 const canEdit = computed(() => isAdmin.value || isAuditor.value || isResponsable.value);
 const canSelectEmpresa = computed(() => isAdmin.value || isAuditor.value);
 
-const mostrarForm = ref(false);
+const mostrarModal = ref(false);
 const editandoId = ref(null);
 const guardando = ref(false);
 const filtroEstado = ref('');
@@ -36,10 +39,19 @@ const form = reactive({
 
 const limpiar = () => {
   editandoId.value = null;
-  mostrarForm.value = false;
   archivo.value = null;
   asignacionesEmpresa.value = [];
   Object.keys(form).forEach((k) => { form[k] = ''; });
+};
+
+const abrirCrear = () => {
+  limpiar();
+  mostrarModal.value = true;
+};
+
+const cerrarModal = () => {
+  mostrarModal.value = false;
+  limpiar();
 };
 
 const documentoAsignadoLabel = computed(() => {
@@ -52,7 +64,6 @@ const documentoAsignadoLabel = computed(() => {
 
 const editar = async (doc) => {
   editandoId.value = doc.id;
-  mostrarForm.value = true;
   form.empresaRequisitoId = doc.empresaRequisitoId || '';
   form.descripcion = doc.descripcion || '';
   form.fechaDocumento = doc.fechaDocumento || '';
@@ -69,6 +80,7 @@ const editar = async (doc) => {
       ];
     }
   }
+  mostrarModal.value = true;
 };
 
 const nombreDocumentoAsignado = (doc) => {
@@ -120,7 +132,7 @@ const guardar = async () => {
   guardando.value = false;
   if (result.ok) {
     toast.success(result.message);
-    limpiar();
+    cerrarModal();
     await recargar();
   } else {
     toast.error(result.message);
@@ -213,6 +225,18 @@ watch(
 
 const fechaCorta = (f) => f ? new Date(f + 'T00:00:00').toLocaleDateString('es-VE') : '-';
 
+const modalTitle = computed(() => editandoId.value ? 'Editar documento' : 'Registrar documento');
+const saveLabel = computed(() => editandoId.value ? 'Guardar cambios' : 'Registrar');
+
+const tableHeaders = [
+  { key: 'documento', label: 'Documento' },
+  { key: 'responsable', label: 'Responsable' },
+  { key: 'fechaDocumento', label: 'Fecha doc.' },
+  { key: 'fechaVencimiento', label: 'Vencimiento' },
+  { key: 'subido', label: 'Subido' },
+  { key: 'estado', label: 'Estado' },
+];
+
 const asignacionesDisponibles = computed(() => {
   const asignados = new Set(
     docStore.documentos
@@ -234,18 +258,82 @@ onMounted(async () => {
 
 <template>
   <section>
-    <div class="section-header">
-      <div>
-        <h1>Documentos</h1>
-        <p class="muted">Documentos asignados a su empresa.</p>
+    <PageToolbar title="Documentos" subtitle="Documentos asignados a su empresa.">
+      <template #actions>
+        <button v-if="canEdit" class="btn-primary" type="button" @click="abrirCrear">
+          + Nuevo documento
+        </button>
+      </template>
+    </PageToolbar>
+
+    <div class="card">
+      <div class="filter-bar">
+        <label v-if="canSelectEmpresa">
+          Empresa:
+          <select v-model="empresaFiltro">
+            <option value="">Todas</option>
+            <option v-for="e in empresas" :key="e.id" :value="e.id">{{ e.nombre }}</option>
+          </select>
+        </label>
+        <label>
+          Estado:
+          <select v-model="filtroEstado">
+            <option value="">Todos</option>
+            <option value="vigente">Vigente</option>
+            <option value="vencido">Vencido</option>
+          </select>
+        </label>
       </div>
-      <button v-if="canEdit && !mostrarForm" class="btn-primary" type="button" @click="mostrarForm = true">
-        + Nuevo documento
-      </button>
+
+      <div v-if="docStore.error" class="alert alert-error">{{ docStore.error }}</div>
+      <DataTable
+        :headers="tableHeaders"
+        :items="documentosFiltrados"
+        :loading="docStore.loading"
+        empty-text="No hay documentos."
+      >
+        <template #cell-documento="{ item }">
+          <router-link :to="{ name: 'documento-detalle', params: { id: item.id } }">
+            <strong>{{ nombreDocumentoAsignado(item) }}</strong>
+          </router-link>
+          <span v-if="item.descripcion" class="muted"><br />{{ item.descripcion.slice(0, 60) }}{{ item.descripcion.length > 60 ? '…' : '' }}</span>
+        </template>
+        <template #cell-responsable="{ item }">
+          <span v-if="item.responsable">{{ item.responsable.apellido }}, {{ item.responsable.nombre }}</span>
+          <span v-else class="muted">—</span>
+        </template>
+        <template #cell-fechaDocumento="{ item }">
+          {{ fechaCorta(item.fechaDocumento) }}
+        </template>
+        <template #cell-fechaVencimiento="{ item }">
+          {{ fechaCorta(item.fechaVencimiento) }}
+        </template>
+        <template #cell-subido="{ item }">
+          {{ fechaCorta(item.createdAt?.slice(0, 10)) }}
+        </template>
+        <template #cell-estado="{ item }">
+          <EstadoDocumentoBadge
+            :estado="item.estadoEfectivo"
+            :proximo="item.proximoAVencer"
+            :dias="item.diasHastaVencimiento"
+          />
+        </template>
+        <template v-if="canEdit" #actions="{ item }">
+          <button class="btn-ghost btn-sm" type="button" @click="editar(item)">Editar</button>
+          <button class="btn-ghost btn-sm btn-danger" type="button" @click="eliminar(item.id)">Eliminar</button>
+          <router-link class="btn-ghost btn-sm" :to="{ name: 'documento-detalle', params: { id: item.id } }">Ver</router-link>
+        </template>
+      </DataTable>
     </div>
 
-    <div v-if="mostrarForm && canEdit" class="card">
-      <h2>{{ editandoId ? 'Editar documento' : 'Registrar documento' }}</h2>
+    <CrudModal
+      :show="mostrarModal"
+      :title="modalTitle"
+      :save-label="saveLabel"
+      :saving="guardando"
+      @close="cerrarModal"
+      @save="guardar"
+    >
       <div class="form-grid">
         <label v-if="canSelectEmpresa && !editandoId">
           Empresa *
@@ -294,95 +382,10 @@ onMounted(async () => {
           <textarea v-model="form.descripcion" rows="3"></textarea>
         </label>
       </div>
-      <div class="actions-row">
-        <button class="btn-primary" type="button" :disabled="guardando" @click="guardar">
-          {{ guardando ? 'Guardando...' : editandoId ? 'Guardar cambios' : 'Registrar' }}
-        </button>
-        <button class="btn-ghost" type="button" @click="limpiar">Cancelar</button>
-      </div>
-    </div>
-
-    <div class="card">
-      <div class="filter-bar">
-        <label v-if="canSelectEmpresa">
-          Empresa:
-          <select v-model="empresaFiltro">
-            <option value="">Todas</option>
-            <option v-for="e in empresas" :key="e.id" :value="e.id">{{ e.nombre }}</option>
-          </select>
-        </label>
-        <label>
-          Estado:
-          <select v-model="filtroEstado">
-            <option value="">Todos</option>
-            <option value="vigente">Vigente</option>
-            <option value="vencido">Vencido</option>
-          </select>
-        </label>
-      </div>
-
-      <div v-if="docStore.error" class="alert alert-error">{{ docStore.error }}</div>
-      <p v-if="docStore.loading" class="muted">Cargando documentos...</p>
-
-      <div v-else class="table-scroll">
-        <table class="data">
-          <thead>
-            <tr>
-              <th>Documento</th>
-              <th>Responsable</th>
-              <th>Fecha doc.</th>
-              <th>Vencimiento</th>
-              <th>Subido</th>
-              <th>Estado</th>
-              <th v-if="canEdit"></th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr v-for="doc in documentosFiltrados" :key="doc.id">
-              <td data-label="Documento">
-                <router-link :to="{ name: 'documento-detalle', params: { id: doc.id } }">
-                  <strong>{{ nombreDocumentoAsignado(doc) }}</strong>
-                </router-link>
-                <span v-if="doc.descripcion" class="muted"><br />{{ doc.descripcion.slice(0, 60) }}{{ doc.descripcion.length > 60 ? '…' : '' }}</span>
-              </td>
-              <td data-label="Responsable">
-                <span v-if="doc.responsable">{{ doc.responsable.apellido }}, {{ doc.responsable.nombre }}</span>
-                <span v-else class="muted">-</span>
-              </td>
-              <td data-label="Fecha doc.">{{ fechaCorta(doc.fechaDocumento) }}</td>
-              <td data-label="Vencimiento">{{ fechaCorta(doc.fechaVencimiento) }}</td>
-              <td data-label="Subido">{{ fechaCorta(doc.createdAt?.slice(0, 10)) }}</td>
-              <td data-label="Estado">
-                <EstadoDocumentoBadge
-                  :estado="doc.estadoEfectivo"
-                  :proximo="doc.proximoAVencer"
-                  :dias="doc.diasHastaVencimiento"
-                />
-              </td>
-              <td v-if="canEdit" data-label="Acciones" style="white-space:nowrap">
-                <button class="btn-ghost btn-sm" type="button" @click="editar(doc)">Editar</button>
-                <button
-                  class="btn-ghost btn-sm btn-danger"
-                  type="button"
-                  @click="eliminar(doc.id)"
-                >Eliminar</button>
-                <router-link
-                  class="btn-ghost btn-sm"
-                  :to="{ name: 'documento-detalle', params: { id: doc.id } }"
-                >Ver</router-link>
-              </td>
-            </tr>
-            <tr v-if="!documentosFiltrados.length">
-              <td colspan="7" class="muted">No hay documentos.</td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-    </div>
+    </CrudModal>
   </section>
 </template>
 
 <style scoped>
-.section-header { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 1.25rem; }
 .filter-bar { margin-bottom: 1rem; }
 </style>
