@@ -4,7 +4,7 @@ import helmet from 'helmet';
 import morgan from 'morgan';
 import rateLimit from 'express-rate-limit';
 import cookieParser from 'cookie-parser';
-import { doubleCsrfProtection, csrfErrorHandler } from './middlewares/csrf.js';
+import { doubleCsrfProtection, csrfErrorHandler, generateToken as generateCsrfToken } from './middlewares/csrf.js';
 
 import routes from './routes/index.js';
 import { notFound, errorHandler } from './middlewares/errorHandler.js';
@@ -90,6 +90,11 @@ app.use(morgan(isProduction ? 'combined' : 'dev'));
 app.use(limiter);
 
 app.use('/api/auth', authLimiter);
+app.use('/api/health', (req, res) => res.json({ status: 'ok', timestamp: new Date().toISOString() }));
+app.get('/api/csrf-token', (req, res) => {
+  const token = generateCsrfToken(req, res);
+  res.json({ csrfToken: token });
+});
 app.use('/api', doubleCsrfProtection, routes);
 
 app.use(notFound);

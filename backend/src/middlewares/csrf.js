@@ -16,7 +16,13 @@ const {
     sameSite: 'strict',
   },
   size: 64,
-  getTokenFromRequest: (req) => req.headers['x-csrf-token'] || req.body?._csrf || req.query?._csrf,
+  getTokenFromRequest: (req) => {
+    const token = req.headers['x-csrf-token'];
+    if (typeof token === 'string' && token.length > 0) return token;
+    if (typeof req.body?._csrf === 'string' && req.body._csrf.length > 0) return req.body._csrf;
+    if (typeof req.query?._csrf === 'string' && req.query._csrf.length > 0) return req.query._csrf;
+    return undefined;
+  },
 });
 
 const csrfErrorHandler = (error, req, res, next) => {
