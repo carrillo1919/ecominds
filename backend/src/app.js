@@ -1,32 +1,89 @@
 import express from 'express';
 import cors from 'cors';
+import helmet from 'helmet';
 import morgan from 'morgan';
+import rateLimit from 'express-rate-limit';
 
 import routes from './routes/index.js';
 import { notFound, errorHandler } from './middlewares/errorHandler.js';
+import logger from './utils/logger.js';
 
 const app = express();
+const isProduction = process.env.NODE_ENV === 'production';
+const frontendUrl = process.env.FRONTEND_URL;
 
-const allowedOrigins = (process.env.FRONTEND_URL)
+if (isProduction && !frontendUrl) {
+  throw new Error('FRONTEND_URL debe estar definida en producción');
+}
+
+const allowedOrigins = (frontendUrl || 'http://localhost:5173')
   .split(',')
   .map((origin) => origin.trim().replace(/\/$/, ''));
+
+const limiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 100,
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 5,
+  standardHeaders: true,
+  legacyHeaders: false,
+  skipSuccessfulRequests: true,
+  handler(req, res, _next, options) {
+    const retryAfter = req.rateLimit?.resetTime
+      ? Math.max(1, Math.ceil((req.rateLimit.resetTime.getTime() - Date.now()) / 1000))
+      : Math.ceil(options.windowMs / 1000);
+
+    logger.warn({
+      event: 'auth_rate_limit_exceeded',
+      ip: req.ip,
+      path: req.originalUrl,
+      retryAfter,
+    });
+
+    return res.status(options.statusCode).json({
+      message: 'Demasiados intentos. Intente más tarde.',
+      retryAfter,
+    });
+  },
+});
+
+app.use(
+  helmet({
+    contentSecurityPolicy: {
+      directives: {
+        defaultSrc: ["'self'"],
+        scriptSrc: ["'self'"],
+        styleSrc: ["'self'", "'unsafe-inline'"],
+      },
+    },
+    crossOriginEmbedderPolicy: false,
+    crossOriginResourcePolicy: { policy: 'cross-origin' },
+  })
+);
 
 app.use(
   cors({
     origin(origin, callback) {
       if (!origin || allowedOrigins.includes(origin.replace(/\/$/, ''))) return callback(null, true);
       // No se lanza error: se responde sin cabeceras CORS y el navegador bloquea la peticion.
-      console.warn(`[cors] Origen no permitido: ${origin}`);
+      logger.warn({ event: 'cors_origin_blocked', origin });
       return callback(null, false);
     },
     credentials: true,
   })
 );
 
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
-app.use(morgan(process.env.NODE_ENV === 'production' ? 'combined' : 'dev'));
+app.use(express.json({ limit: '10kb' }));
+app.use(express.urlencoded({ extended: true, limit: '10kb' }));
+app.use(morgan(isProduction ? 'combined' : 'dev'));
+app.use(limiter);
 
+app.use('/api/auth', authLimiter);
 app.use('/api', routes);
 
 app.use(notFound);

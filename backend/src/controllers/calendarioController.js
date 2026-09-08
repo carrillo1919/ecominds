@@ -1,5 +1,6 @@
 import { Op } from 'sequelize';
 import db from '../models/index.js';
+import { applyEmpresaScope, assertEmpresaInScope } from '../utils/empresaScope.js';
 
 const COLORES = {
   auditoria: '#ef4444',
@@ -9,7 +10,7 @@ const COLORES = {
   nota: '#10b981',
 };
 
-const esRolAmplio = (req) => ['admin', 'auditor'].includes(req.user?.rol);
+const tieneAccesoTotal = (req) => Boolean(req.scope?.all);
 
 const validarFecha = (fecha) => /^\d{4}-\d{2}-\d{2}$/.test(fecha);
 
@@ -54,20 +55,20 @@ export const getEventos = async (req, res, next) => {
       ],
     };
 
-    // Usuarios normales solo ven notas de su empresa (o notas para todas)
-    if (!esRolAmplio(req) && req.empresaId) {
-      whereNotas.empresaId = {
-        [Op.or]: [null, req.empresaId],
-      };
+    if (!tieneAccesoTotal(req)) {
+      const empresaIds = req.scope?.empresaIds || [];
+      whereNotas[Op.and] = empresaIds.length
+        ? [{ [Op.or]: [{ empresaId: null }, { empresaId: empresaIds }] }]
+        : [{ empresaId: null }];
     }
 
     const [auditorias, documentos, auditoriaItems, calendarioEventos] = await Promise.all([
       db.Auditoria.findAll({
-        where: { fecha: rango },
+        where: applyEmpresaScope({ fecha: rango }, req),
         include: [{ model: db.Empresa, as: 'empresa', attributes: ['id', 'nombre', 'rif'] }],
       }),
       db.Documento.findAll({
-        where: { [Op.or]: [{ fecha_documento: rango }, { fecha_vencimiento: rango }] },
+        where: applyEmpresaScope({ [Op.or]: [{ fecha_documento: rango }, { fecha_vencimiento: rango }] }, req),
         include: [{ model: db.Empresa, as: 'empresa', attributes: ['id', 'nombre', 'rif'] }],
       }),
       db.AuditoriaItem.findAll({
@@ -76,6 +77,8 @@ export const getEventos = async (req, res, next) => {
           {
             model: db.Auditoria,
             as: 'auditoria',
+            where: applyEmpresaScope({}, req),
+            required: true,
             include: [{ model: db.Empresa, as: 'empresa', attributes: ['id', 'nombre', 'rif'] }],
           },
           { model: db.Requisito, as: 'requisito' },
@@ -206,6 +209,16 @@ export const crearEvento = async (req, res, next) => {
       return res.status(400).json({ message: `tipo debe ser uno de: ${db.CalendarioEvento.TIPOS.join(', ')}` });
     }
 
+    if (empresaId) {
+      assertEmpresaInScope(empresaId, req);
+    }
+
+    if (auditoriaId) {
+      const auditoria = await db.Auditoria.findByPk(auditoriaId);
+      if (!auditoria) return res.status(404).json({ message: 'Auditoría no encontrada' });
+      assertEmpresaInScope(auditoria.empresaId, req);
+    }
+
     const evento = await db.CalendarioEvento.create({
       titulo,
       descripcion,
@@ -229,6 +242,9 @@ export const actualizarEvento = async (req, res, next) => {
   try {
     const evento = await db.CalendarioEvento.findByPk(req.params.id);
     if (!evento) return res.status(404).json({ message: 'Evento no encontrado' });
+    if (evento.empresaId) {
+      assertEmpresaInScope(evento.empresaId, req);
+    }
 
     const usuarioId = obtenerUsuarioId(req);
     if (evento.usuarioId && usuarioId && evento.usuarioId !== usuarioId) {
@@ -242,7 +258,12 @@ export const actualizarEvento = async (req, res, next) => {
     if (req.body.tipo !== undefined) dataActualizada.tipo = req.body.tipo;
     if (req.body.color !== undefined) dataActualizada.color = req.body.color;
     if (req.body.privacidad !== undefined) dataActualizada.privacidad = req.body.privacidad === 'privado' ? 'privado' : 'publico';
-    if (req.body.empresaId !== undefined) dataActualizada.empresaId = req.body.empresaId || null;
+    if (req.body.empresaId !== undefined) {
+      if (req.body.empresaId) {
+        assertEmpresaInScope(req.body.empresaId, req);
+      }
+      dataActualizada.empresaId = req.body.empresaId || null;
+    }
 
     await evento.update(dataActualizada);
     res.json(evento.get({ plain: true }));
@@ -257,6 +278,9 @@ export const eliminarEvento = async (req, res, next) => {
     const evento = await db.CalendarioEvento.findByPk(req.params.id);
     if (!evento) {
       return res.status(404).json({ message: 'Evento no encontrado' });
+    }
+    if (evento.empresaId) {
+      assertEmpresaInScope(evento.empresaId, req);
     }
 
     const usuarioId = obtenerUsuarioId(req);
@@ -286,6 +310,7 @@ export const crearAuditoria = async (req, res, next) => {
     if (!empresaId) {
       return res.status(400).json({ message: 'empresaId es obligatorio para crear una auditoría' });
     }
+    assertEmpresaInScope(empresaId, req);
 
     if (!auditorId) {
       return res.status(401).json({ message: 'No se pudo identificar al usuario autenticado' });

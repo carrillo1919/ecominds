@@ -1,9 +1,11 @@
 import { Empresa, Auditoria, Empleado } from '../models/index.js';
+import { applyEmpresaScope, assertEmpresaInScope } from '../utils/empresaScope.js';
 
 // GET /api/empresas
 const getAll = async (req, res, next) => {
   try {
     const empresas = await Empresa.findAll({
+      where: applyEmpresaScope({}, req, 'id'),
       order: [['nombre', 'ASC']],
       include: [
         {
@@ -46,6 +48,7 @@ const getOne = async (req, res, next) => {
       ],
     });
     if (!empresa) return res.status(404).json({ message: 'Empresa no encontrada' });
+    assertEmpresaInScope(empresa.id, req);
     return res.json({ empresa });
   } catch (error) {
     return next(error);
@@ -92,6 +95,7 @@ const update = async (req, res, next) => {
   try {
     const empresa = await Empresa.findByPk(req.params.id);
     if (!empresa) return res.status(404).json({ message: 'Empresa no encontrada' });
+    assertEmpresaInScope(empresa.id, req);
 
     const campos = ['nombre', 'rif', 'sector', 'actividad', 'direccion', 'telefono', 'email', 'activo'];
     campos.forEach((campo) => {

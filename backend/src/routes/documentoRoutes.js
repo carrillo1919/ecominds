@@ -3,7 +3,7 @@ import multer from 'multer';
 import { body, param } from 'express-validator';
 
 import validate from '../middlewares/validate.js';
-import { authenticate, authorize, requireEmpresa } from '../middlewares/auth.js';
+import { authenticate, authorize, requireEmpresa, resolveScope } from '../middlewares/auth.js';
 import * as controller from '../controllers/documentoController.js';
 
 const router = express.Router();
@@ -23,6 +23,7 @@ const upload = multer({
 
 router.use(authenticate);
 router.use(requireEmpresa);
+router.use(resolveScope);
 
 router.get('/', controller.getAll);
 

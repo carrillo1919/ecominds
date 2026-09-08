@@ -2,13 +2,14 @@ import express from 'express';
 import { body, param } from 'express-validator';
 
 import validate from '../middlewares/validate.js';
-import { authenticate, authorize, requireEmpresa } from '../middlewares/auth.js';
+import { authenticate, authorize, requireEmpresa, resolveScope } from '../middlewares/auth.js';
 import * as controller from '../controllers/empleadoController.js';
 
 const router = express.Router();
 
 router.use(authenticate);
 router.use(requireEmpresa);
+router.use(resolveScope);
 
 router.get('/', controller.getAll);
 router.get('/activos', controller.getActivos);

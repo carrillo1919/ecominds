@@ -1,5 +1,6 @@
 import jwt from 'jsonwebtoken';
-import { User, Empleado } from '../models/index.js';
+import { User, Empleado, EmpresaAsignacion } from '../models/index.js';
+import { resolveScope as resolveScopeFactory } from '../utils/empresaScope.js';
 
 const authenticate = async (req, res, next) => {
   try {
@@ -42,15 +43,15 @@ const authorize = (...allowedRoles) => {
 
 /**
  * Middleware que resuelve la empresa del usuario autenticado a través de su Empleado.
- * Inyecta req.empresaId y req.empleado.
- * Admins y auditores pueden operar sin empleado; en ese caso req.empresaId queda undefined
- * y los controllers deben manejar el acceso global.
+ * Inyecta req.empresaId y req.empleado. Solo aplica al rol 'responsable'.
+ * Admin, auditor y lector resuelven su alcance de empresas via resolveScope
+ * (EmpresaAsignacion para auditor/lector, acceso total para admin).
  */
 const requireEmpresa = async (req, res, next) => {
   try {
     if (!req.user) return res.status(401).json({ message: 'No autenticado' });
 
-    if (['admin', 'auditor'].includes(req.user.rol)) {
+    if (req.user.rol !== 'responsable') {
       return next();
     }
 
@@ -72,4 +73,10 @@ const requireEmpresa = async (req, res, next) => {
   }
 };
 
-export { authenticate, authorize, requireEmpresa };
+/**
+ * Middleware que calcula req.scope = { all, empresaIds, canWrite } segun el rol del usuario.
+ * Debe montarse despues de `authenticate` (y de `requireEmpresa` si aplica al rol responsable).
+ */
+const resolveScope = resolveScopeFactory({ EmpresaAsignacion });
+
+export { authenticate, authorize, requireEmpresa, resolveScope };

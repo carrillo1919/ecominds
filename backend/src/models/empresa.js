@@ -19,6 +19,12 @@ const EmpresaModel = (sequelize, DataTypes) => {
       field: 'responsable_id', // <-- mapeo explícito a la columna de BD
     },
     activo: { type: DataTypes.BOOLEAN, allowNull: false, defaultValue: true },
+    esDemo: {
+      type: DataTypes.BOOLEAN,
+      allowNull: false,
+      defaultValue: false,
+      field: 'es_demo',
+    },
   }, { tableName: 'Empresas', timestamps: true });
 
   Empresa.associate = (db) => {

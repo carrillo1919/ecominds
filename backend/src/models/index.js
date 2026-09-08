@@ -10,6 +10,7 @@ import enteRegulador from './enteRegulador.js';
 import requisitoLegal from './requisitoLegal.js';
 import empresaRequisito from './empresaRequisito.js';
 import EmpleadoModel from './empleado.js';
+import EmpresaAsignacionModel from './empresaAsignacion.js';
 import DocumentoModel from './documento.js';
 import ArchivoAdjuntoModel from './archivoAdjunto.js';
 import DocumentoAuditoriaLogModel from './documentoAuditoriaLog.js';
@@ -26,6 +27,7 @@ const EnteRegulador = enteRegulador(sequelize, Sequelize.DataTypes);
 const RequisitoLegal = requisitoLegal(sequelize, Sequelize.DataTypes);
 const EmpresaRequisito = empresaRequisito(sequelize, Sequelize.DataTypes);
 const Empleado = EmpleadoModel(sequelize, Sequelize.DataTypes);
+const EmpresaAsignacion = EmpresaAsignacionModel(sequelize, Sequelize.DataTypes);
 const Documento = DocumentoModel(sequelize, Sequelize.DataTypes);
 const ArchivoAdjunto = ArchivoAdjuntoModel(sequelize, Sequelize.DataTypes);
 const DocumentoAuditoriaLog = DocumentoAuditoriaLogModel(sequelize, Sequelize.DataTypes);
@@ -45,6 +47,7 @@ const db = {
   RequisitoLegal,
   EmpresaRequisito,
   Empleado,
+  EmpresaAsignacion,
   Documento,
   ArchivoAdjunto,
   DocumentoAuditoriaLog,
@@ -71,6 +74,7 @@ export {
   RequisitoLegal,
   EmpresaRequisito,
   Empleado,
+  EmpresaAsignacion,
   Documento,
   ArchivoAdjunto,
   DocumentoAuditoriaLog,

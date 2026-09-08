@@ -2,6 +2,7 @@ import nodemailer from 'nodemailer';
 import path from 'path';
 import fs from 'fs';
 import { fileURLToPath } from 'url';
+import logger from '../utils/logger.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -32,7 +33,7 @@ export const sendEmail = async ({ to, subject, html, attachments = [] }) => {
     });
     return { success: true, messageId: info.messageId };
   } catch (error) {
-    console.error('Error enviando correo:', error);
+    logger.error({ event: 'email_send_failed', message: 'Error enviando correo', error: error.message, to, subject });
     return { success: false, error: error.message };
   }
 };
@@ -40,15 +41,15 @@ export const sendEmail = async ({ to, subject, html, attachments = [] }) => {
 export const verifyEmailConnection = async () => {
   try {
     await transporter.verify();
-    console.log('[email] Conexión SMTP verificada');
+    logger.info('[email] Conexión SMTP verificada');
   } catch (error) {
-    console.error('[email] No se pudo verificar la conexión SMTP:', error.message);
+    logger.error({ event: 'email_verify_failed', message: '[email] No se pudo verificar la conexión SMTP', error: error.message });
   }
 };
 
 const getLogoAttachment = () => {
   if (!fs.existsSync(ICONO_LOCAL)) {
-    console.warn(`[email] Icono no encontrado en ${ICONO_LOCAL}`);
+    logger.warn(`[email] Icono no encontrado en ${ICONO_LOCAL}`);
     return null;
   }
 
