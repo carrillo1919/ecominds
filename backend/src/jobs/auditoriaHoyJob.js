@@ -3,11 +3,12 @@ import { Op } from 'sequelize';
 import { format } from 'date-fns';
 import { sendEmailWithTemplate } from '../services/emailService.js';
 import { Auditoria, Empresa, Empleado, NotificacionConfig, NotificacionLog } from '../models/index.js';
+import logger from '../utils/logger.js';
 
 export const runAuditoriaHoyJob = async () => {
   const config = await NotificacionConfig.findOne({ where: { tipo: 'auditoria', activo: true } });
   if (!config) {
-    console.log('[job:auditorias] No hay configuración activa');
+    logger.info('[job:auditorias] No hay configuración activa');
     return { enviados: 0, tipo: 'auditoria' };
   }
 
@@ -76,12 +77,12 @@ export const runAuditoriaHoyJob = async () => {
 
 const auditoriaHoyJob = () => {
   cron.schedule('0 7 * * *', async () => {
-    console.log('[cron] Ejecutando job de auditorías...');
+    logger.info('[cron] Ejecutando job de auditorías...');
     try {
       const resultado = await runAuditoriaHoyJob();
-      console.log('[cron] Auditorías enviadas:', resultado.enviados);
+      logger.info({ event: 'job_auditorias_completed', enviados: resultado.enviados });
     } catch (error) {
-      console.error('[cron] Error en job de auditorías:', error);
+      logger.error({ event: 'job_auditorias_error', error: error.message, stack: error.stack });
     }
   });
 };

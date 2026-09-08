@@ -325,7 +325,7 @@ const saveItems = async (req, res, next) => {
           color: '#f59e0b',
         });
       } catch (errorCalendario) {
-        console.error('No se pudo sincronizar el calendario:', errorCalendario);
+        logger.error({ event: 'calendario_sync_failed', error: errorCalendario.message });
       }
     }
 

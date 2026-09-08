@@ -4,7 +4,7 @@ import helmet from 'helmet';
 import morgan from 'morgan';
 import rateLimit from 'express-rate-limit';
 import cookieParser from 'cookie-parser';
-import { doubleCsrfProtection } from './middlewares/csrf.js';
+import { doubleCsrfProtection, csrfErrorHandler } from './middlewares/csrf.js';
 
 import routes from './routes/index.js';
 import { notFound, errorHandler } from './middlewares/errorHandler.js';
@@ -60,7 +60,10 @@ app.use(
       directives: {
         defaultSrc: ["'self'"],
         scriptSrc: ["'self'"],
-        styleSrc: ["'self'", "'unsafe-inline'"],
+        styleSrc: ["'self'", "'unsafe-inline'", 'https://fonts.googleapis.com'],
+        fontSrc: ["'self'", 'https://fonts.gstatic.com'],
+        connectSrc: ["'self'", ...(frontendUrl ? frontendUrl.split(',').map((o) => o.trim().replace(/\/$/, '')) : [])],
+        imgSrc: ["'self'", 'data:', 'blob:'],
       },
     },
     crossOriginEmbedderPolicy: false,
