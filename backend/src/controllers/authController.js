@@ -28,6 +28,8 @@ const signRefreshToken = (user) =>
 
 const generateToken = () => crypto.randomBytes(32).toString('hex');
 
+const hashEmail = (email) => crypto.createHash('sha256').update(String(email).toLowerCase()).digest('hex');
+
 const resetTokenExpiry = () => new Date(Date.now() + 60 * 60 * 1000); // 1 hora
 
 const setAuthCookies = (res, user) => {
@@ -84,17 +86,17 @@ const login = async (req, res, next) => {
     });
 
     if (!user || !(await user.comparePassword(password))) {
-      logger.warn({ event: 'login_failed', emailHash: normalizedEmail, ip: req.ip });
+      logger.warn({ event: 'login_failed', emailHash: hashEmail(normalizedEmail), ip: req.ip });
       return res.status(401).json({ message: 'Credenciales invalidas' });
     }
 
     if (!user.activo) {
-      logger.warn({ event: 'login_failed_inactive_user', emailHash: normalizedEmail, ip: req.ip, userId: user.id });
+      logger.warn({ event: 'login_failed_inactive_user', emailHash: hashEmail(normalizedEmail), ip: req.ip, userId: user.id });
       return res.status(403).json({ message: 'Su usuario esta desactivado. Contacte al administrador.' });
     }
 
     if (!user.verified) {
-      logger.warn({ event: 'login_failed_unverified_user', emailHash: normalizedEmail, ip: req.ip, userId: user.id });
+      logger.warn({ event: 'login_failed_unverified_user', emailHash: hashEmail(normalizedEmail), ip: req.ip, userId: user.id });
       return res.status(403).json({ message: 'Debe verificar su correo antes de iniciar sesion' });
     }
 
@@ -148,7 +150,7 @@ const forgotPassword = async (req, res, next) => {
     await user.save();
 
     await sendResetPasswordEmail(user, token);
-    logger.info({ event: 'password_reset_requested', userId: user.id, emailHash: user.email, ip: req.ip });
+    logger.info({ event: 'password_reset_requested', userId: user.id, emailHash: hashEmail(user.email), ip: req.ip });
 
     return res.json(genericResponse);
   } catch (error) {
@@ -208,7 +210,7 @@ const resetPassword = async (req, res, next) => {
     user.resetPasswordToken = null;
     user.resetPasswordExpires = null;
     await user.save();
-    logger.info({ event: 'password_reset_completed', userId: user.id, emailHash: user.email, ip: req.ip });
+    logger.info({ event: 'password_reset_completed', userId: user.id, emailHash: hashEmail(user.email), ip: req.ip });
 
     return res.json({ message: 'Contrasena actualizada correctamente. Ya puede iniciar sesion.' });
   } catch (error) {

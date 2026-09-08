@@ -11,11 +11,16 @@ export const applyRlsContext = async (transaction, req) => {
   const isAdmin = scope.all || false;
 
   await sequelize.query(
-    `SET LOCAL app.current_empresa_id = '${empresaId || '00000000-0000-0000-0000-000000000000'}'`,
-    { transaction }
+    "SELECT set_config('app.current_empresa_id', :empresaId, true)",
+    {
+      replacements: {
+        empresaId: empresaId || '00000000-0000-0000-0000-000000000000',
+      },
+      transaction,
+    }
   );
   await sequelize.query(
-    `SET LOCAL app.current_is_admin = ${isAdmin}`,
-    { transaction }
+    "SELECT set_config('app.current_is_admin', :isAdmin, true)",
+    { replacements: { isAdmin: String(isAdmin) }, transaction }
   );
 };

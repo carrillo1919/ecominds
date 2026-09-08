@@ -1,5 +1,5 @@
 import { createRouter, createWebHistory } from 'vue-router';
-import { setUnauthorizedHandler, setCsrfToken } from '@/api/axios';
+import { setUnauthorizedHandler } from '@/api/axios';
 import { useAuthStore } from '@/stores/auth';
 
 const routes = [
@@ -56,7 +56,7 @@ const router = createRouter({
   scrollBehavior: () => ({ top: 0 }),
 });
 
-router.beforeEach(async (to) => {
+router.beforeEach((to) => {
   const auth = useAuthStore();
   auth.restore();
 
