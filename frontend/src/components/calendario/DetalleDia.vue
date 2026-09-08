@@ -1,15 +1,12 @@
 <template>
   <div class="h-full flex flex-col text-white">
-    <h3 class="text-2xl font-light mb-1 text-white">
+    <h3 class="text-xl md:text-2xl font-light mb-1 text-white">
       {{ tituloDia }}
     </h3>
-    <p class="text-sm text-white/70 mb-6">
+    <p class="text-sm text-white/70 mb-4 md:mb-6">
       {{ subtituloDia }}
     </p>
 
-    <!-- Input estilo referencia para agregar -->
-    <div class="flex items-center gap-2 border-b border-white/30 pb-2 mb-4">
-      <!-- Botón para agregar evento -->
     <button
       type="button"
       class="w-full inline-flex items-center justify-center gap-1 px-3 py-1.5 text-sm bg-[var(--surface-alt)] border border-[var(--border)] rounded-md text-[var(--navy-800)] hover:bg-white hover:border-[var(--primary)] transition-colors mb-4"
@@ -20,9 +17,6 @@
       </svg>
       Agregar evento
     </button>
-    </div>
-
-   
 
     <div v-if="!eventos.length" class="text-sm text-white/70">
       Sin eventos para este día.
@@ -66,13 +60,10 @@
             >
               Todas las empresas
             </p>
-
-            
           </div>
-          
         </div>
 
-        <div class="flex gap-2 mt-3">
+        <div class="flex flex-wrap gap-2 mt-3">
           <button
             type="button"
             class="flex-1 inline-flex items-center justify-center gap-1 text-xs px-3 py-1.5 bg-white/10 border border-white/20 rounded-md text-white hover:bg-white/20 transition-colors"

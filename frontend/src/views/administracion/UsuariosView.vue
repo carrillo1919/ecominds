@@ -3,6 +3,8 @@ import { computed, onMounted, reactive, ref, watch } from 'vue';
 import { useToast } from 'vue-toastification';
 import { format } from 'date-fns';
 import BaseModal from '@/components/ui/BaseModal.vue';
+import PageToolbar from '@/components/ui/PageToolbar.vue';
+import DataTable from '@/components/ui/DataTable.vue';
 import { getEmpresas } from '@/api/empresas';
 import { useUsuariosStore } from '@/stores/usuarios';
 import { roleLabel } from '@/utils/validators';
@@ -262,6 +264,15 @@ const guardarEmpresas = async () => {
 
 const fecha = (valor) => (valor ? format(new Date(valor), 'dd/MM/yyyy') : '-');
 
+const tableHeaders = [
+  { key: 'nombre', label: 'Nombre' },
+  { key: 'email', label: 'Correo' },
+  { key: 'rol', label: 'Rol' },
+  { key: 'verificado', label: 'Verificado' },
+  { key: 'activo', label: 'Activo' },
+  { key: 'registro', label: 'Registro' },
+];
+
 watch(
   () => formUsuario.rol,
   (rol) => {
@@ -283,68 +294,54 @@ onMounted(async () => {
 
 <template>
   <section>
-    <div class="section-header">
-      <div>
-        <h1>Usuarios del sistema</h1>
-        <p class="muted">Solo el administrador puede consultar y modificar los roles.</p>
-        <p class="muted">
-          El admin ve todas las empresas, el auditor ve las empresas que se le asignen, el responsable
-          solo edita los datos de su empresa asignada (gestionada desde Empleados/Empresas) y el lector
-          solo visualiza la empresa que se le asigne (por defecto una empresa de demostración).
-        </p>
-      </div>
-      <button class="btn-primary" type="button" @click="abrirNuevoUsuario">+ Nuevo usuario</button>
+    <PageToolbar title="Usuarios del sistema" subtitle="Solo el administrador puede consultar y modificar los roles.">
+      <template #actions>
+        <button class="btn-primary" type="button" @click="abrirNuevoUsuario">+ Nuevo usuario</button>
+      </template>
+    </PageToolbar>
+
+    <div class="card" style="margin-bottom:1.25rem">
+      <p class="muted" style="margin:0">
+        El admin ve todas las empresas, el auditor ve las empresas que se le asignen, el responsable
+        solo edita los datos de su empresa asignada (gestionada desde Empleados/Empresas) y el lector
+        solo visualiza la empresa que se le asigne (por defecto una empresa de demostración).
+      </p>
     </div>
 
     <div class="card">
       <div v-if="error" class="alert alert-error">{{ error }}</div>
-      <p v-if="cargando" class="muted">Cargando usuarios...</p>
-
-      <div v-else class="table-scroll">
-        <table class="data">
-          <thead>
-            <tr>
-              <th>Nombre</th>
-              <th>Correo</th>
-              <th>Rol</th>
-              <th>Verificado</th>
-              <th>Activo</th>
-              <th>Registro</th>
-              <th>Acciones</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr v-for="u in usuarios" :key="u.id">
-              <td data-label="Nombre">{{ u.nombre }} {{ u.apellido }}</td>
-              <td data-label="Correo">{{ u.email }}</td>
-              <td data-label="Rol">
-                <select :value="u.rol" :disabled="u.id === auth.user?.id" @change="cambiarRol(u, $event.target.value)">
-                  <option v-for="r in roles" :key="r" :value="r">{{ roleLabel(r) }}</option>
-                </select>
-              </td>
-              <td data-label="Verificado">{{ u.verified ? 'Si' : 'No' }}</td>
-              <td data-label="Activo">{{ u.activo ? 'Si' : 'No' }}</td>
-              <td data-label="Registro">{{ fecha(u.createdAt) }}</td>
-              <td data-label="Acciones">
-                <div class="actions-inline">
-                  <button class="btn-ghost btn-sm" type="button" @click="abrirEditarUsuario(u)">Editar</button>
-                  <button
-                    v-if="puedeGestionarEmpresas(u)"
-                    class="btn-ghost btn-sm"
-                    type="button"
-                    @click="abrirModalEmpresas(u)"
-                  >
-                    Empresas asignadas
-                  </button>
-                </div>
-              </td>
-            </tr>
-            <tr v-if="!usuarios.length">
-              <td colspan="7" class="muted">No hay usuarios registrados.</td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
+      <DataTable
+        :headers="tableHeaders"
+        :items="usuarios"
+        :loading="cargando"
+        empty-text="No hay usuarios registrados."
+      >
+        <template #cell-rol="{ item }">
+          <select :value="item.rol" :disabled="item.id === auth.user?.id" @change="cambiarRol(item, $event.target.value)">
+            <option v-for="r in roles" :key="r" :value="r">{{ roleLabel(r) }}</option>
+          </select>
+        </template>
+        <template #cell-verificado="{ item }">
+          {{ item.verified ? 'Sí' : 'No' }}
+        </template>
+        <template #cell-activo="{ item }">
+          {{ item.activo ? 'Sí' : 'No' }}
+        </template>
+        <template #cell-registro="{ item }">
+          {{ fecha(item.createdAt) }}
+        </template>
+        <template #actions="{ item }">
+          <button class="btn-ghost btn-sm" type="button" @click="abrirEditarUsuario(item)">Editar</button>
+          <button
+            v-if="puedeGestionarEmpresas(item)"
+            class="btn-ghost btn-sm"
+            type="button"
+            @click="abrirModalEmpresas(item)"
+          >
+            Empresas asignadas
+          </button>
+        </template>
+      </DataTable>
     </div>
 
     <BaseModal :show="mostrarModalUsuario" :title="tituloModalUsuario" @close="cerrarModalUsuario">
@@ -548,7 +545,6 @@ onMounted(async () => {
 }
 
 @media (max-width: 700px) {
-  .section-header,
   .actions-inline {
     flex-direction: column;
     align-items: stretch;

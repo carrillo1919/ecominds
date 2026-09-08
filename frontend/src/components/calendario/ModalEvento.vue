@@ -23,8 +23,8 @@
           </button>
         </div>
 
-        <div class="space-y-4 p-4">
-          <div class="flex gap-4">
+        <div class="space-y-4 p-4 max-h-[70vh] overflow-y-auto">
+          <div class="flex flex-col sm:flex-row gap-4">
             <label class="flex-1">
               <span class="text-sm text-gray-600">Tipo</span>
               <select

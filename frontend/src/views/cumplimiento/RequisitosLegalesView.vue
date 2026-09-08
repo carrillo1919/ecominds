@@ -1,94 +1,87 @@
 <template>
-  <div class="page">
-    <header class="page-header">
-      <h1>Requisitos Legales</h1>
-      <button v-if="canManage" class="btn btn-primary" @click="openModal()">
-        + Nuevo requisito
-      </button>
-    </header>
+  <section>
+    <PageToolbar title="Requisitos Legales" subtitle="Requisitos legales aplicables al cumplimiento.">
+      <template #actions>
+        <button v-if="canManage" class="btn-primary" type="button" @click="openModal()">
+          + Nuevo requisito
+        </button>
+      </template>
+    </PageToolbar>
 
-    <div class="filters">
-      <select v-model="filters.enteId" @change="load">
-        <option value="">Todos los entes</option>
-        <option v-for="ente in entes" :key="ente.id" :value="ente.id">
-          {{ ente.sigla }} - {{ ente.nombre }}
-        </option>
-      </select>
+    <div class="card">
+      <div v-if="error" class="alert alert-error">{{ error }}</div>
+      <div class="filters">
+        <label>
+          Ente:
+          <select v-model="filters.enteId" @change="load">
+            <option value="">Todos los entes</option>
+            <option v-for="ente in entes" :key="ente.id" :value="ente.id">
+              {{ ente.sigla }} - {{ ente.nombre }}
+            </option>
+          </select>
+        </label>
 
-      <select v-model="filters.categoria" @change="load">
-        <option value="">Todas las categorías</option>
-        <option value="Tributario">Tributario</option>
-        <option value="Laboral">Laboral</option>
-        <option value="Seguridad ocupacional">Seguridad ocupacional</option>
-        <option value="Municipal">Municipal</option>
-        <option value="Ambiental">Ambiental</option>
-      </select>
+        <label>
+          Categoría:
+          <select v-model="filters.categoria" @change="load">
+            <option value="">Todas las categorías</option>
+            <option value="Tributario">Tributario</option>
+            <option value="Laboral">Laboral</option>
+            <option value="Seguridad ocupacional">Seguridad ocupacional</option>
+            <option value="Municipal">Municipal</option>
+            <option value="Ambiental">Ambiental</option>
+          </select>
+        </label>
+      </div>
+
+      <DataTable
+        :headers="headers"
+        :items="requisitos"
+        :loading="loading"
+        empty-text="No hay requisitos registrados."
+      >
+        <template #cell-ente="{ item }">
+          {{ item.ente?.sigla || '—' }}
+        </template>
+        <template #cell-criticidad="{ item }">
+          <span :class="['badge', item.criticidad]">{{ item.criticidad }}</span>
+        </template>
+        <template #cell-vigencia="{ item }">
+          {{ item.vigenciaDesde }} {{ item.vigenciaHasta ? ' / ' + item.vigenciaHasta : '' }}
+        </template>
+        <template v-if="canManage" #actions="{ item }">
+          <button class="btn-ghost btn-sm" type="button" @click="openModal(item)">Editar</button>
+          <button class="btn-ghost btn-sm btn-danger" type="button" @click="remove(item.id)">Desactivar</button>
+        </template>
+      </DataTable>
     </div>
 
-    <p v-if="loading" class="text-muted">Cargando...</p>
-    <p v-else-if="error" class="alert alert-error">{{ error }}</p>
-
-    <div v-else class="table-scroll">
-      <table class="data">
-        <thead>
-          <tr>
-            <th>Código</th>
-            <th>Título</th>
-            <th>Ente</th>
-            <th>Categoría</th>
-            <th>Periodicidad</th>
-            <th>Criticidad</th>
-            <th>Vigencia</th>
-            <th v-if="canManage">Acciones</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr v-for="req in requisitos" :key="req.id">
-            <td data-label="Código">{{ req.codigo }}</td>
-            <td data-label="Título">{{ req.titulo }}</td>
-            <td data-label="Ente">{{ req.ente?.sigla || '—' }}</td>
-            <td data-label="Categoría">{{ req.categoria }}</td>
-            <td data-label="Periodicidad">{{ req.periodicidad }}</td>
-            <td data-label="Criticidad">
-              <span :class="['badge', req.criticidad]">{{ req.criticidad }}</span>
-            </td>
-            <td data-label="Vigencia">{{ req.vigenciaDesde }} {{ req.vigenciaHasta ? ' / ' + req.vigenciaHasta : '' }}</td>
-            <td v-if="canManage" data-label="Acciones">
-              <button class="btn btn-sm" @click="openModal(req)">Editar</button>
-              <button class="btn btn-sm btn-danger" @click="remove(req.id)">Desactivar</button>
-            </td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
-
-    <div v-if="showModal" class="modal-overlay" @click.self="closeModal">
-      <div class="modal">
-        <h2>{{ editing ? 'Editar' : 'Nuevo' }} requisito legal</h2>
-        <form @submit.prevent="save">
-          <label>Ente regulador *</label>
+    <CrudModal
+      :show="showModal"
+      :title="editing ? 'Editar requisito legal' : 'Nuevo requisito legal'"
+      save-label="Guardar"
+      :saving="saving"
+      @close="closeModal"
+      @save="save"
+    >
+      <div class="form-grid">
+        <label>Ente regulador *
           <select v-model="form.enteId" required>
             <option v-for="ente in entes" :key="ente.id" :value="ente.id">
               {{ ente.sigla }} - {{ ente.nombre }}
             </option>
           </select>
-
-          <label>Código *</label>
+        </label>
+        <label>Código *
           <input v-model="form.codigo" required maxlength="40" />
-
-          <label>Título *</label>
+        </label>
+        <label>Título *
           <input v-model="form.titulo" required maxlength="200" />
-
-          <label>Descripción</label>
-          <textarea v-model="form.descripcion" rows="3" />
-
-          <label>Norma de respaldo</label>
-          <input v-model="form.normaRespaldo" maxlength="200" />
-
-          <label>Categoría *</label>
+        </label>
+        <label>Categoría *
           <input v-model="form.categoria" required maxlength="80" />
-
-          <label>Periodicidad</label>
+        </label>
+        <label>Periodicidad
           <select v-model="form.periodicidad">
             <option value="unica">Única</option>
             <option value="mensual">Mensual</option>
@@ -96,33 +89,37 @@
             <option value="semestral">Semestral</option>
             <option value="anual">Anual</option>
           </select>
-
-          <label>Criticidad</label>
+        </label>
+        <label>Criticidad
           <select v-model="form.criticidad">
             <option value="alta">Alta</option>
             <option value="media">Media</option>
             <option value="baja">Baja</option>
           </select>
-
-          <label>Vigencia desde</label>
+        </label>
+        <label>Vigencia desde
           <input v-model="form.vigenciaDesde" type="date" />
-
-          <label>Vigencia hasta</label>
+        </label>
+        <label>Vigencia hasta
           <input v-model="form.vigenciaHasta" type="date" />
-
-          <div class="modal-actions">
-            <button type="button" class="btn" @click="closeModal">Cancelar</button>
-            <button type="submit" class="btn btn-primary" :disabled="saving">Guardar</button>
-          </div>
-        </form>
+        </label>
+        <label style="grid-column: 1 / -1">Descripción
+          <textarea v-model="form.descripcion" rows="3"></textarea>
+        </label>
+        <label style="grid-column: 1 / -1">Norma de respaldo
+          <input v-model="form.normaRespaldo" maxlength="200" />
+        </label>
       </div>
-    </div>
-  </div>
+    </CrudModal>
+  </section>
 </template>
 
 <script setup>
 import { ref, computed, onMounted } from 'vue';
 import { useAuthStore } from '@/stores/auth.js';
+import PageToolbar from '@/components/ui/PageToolbar.vue';
+import DataTable from '@/components/ui/DataTable.vue';
+import CrudModal from '@/components/ui/CrudModal.vue';
 import * as api from '@/api/requisitosLegales.js';
 import * as entesApi from '@/api/entesReguladores.js';
 
@@ -188,6 +185,7 @@ function closeModal() {
 
 async function save() {
   saving.value = true;
+  error.value = '';
   try {
     if (editing.value) {
       await api.updateRequisito(form.value.id, form.value);
@@ -198,6 +196,7 @@ async function save() {
     await load();
   } catch (e) {
     error.value = e.response?.data?.message || 'Error al guardar';
+    throw e;
   } finally {
     saving.value = false;
   }
@@ -212,6 +211,16 @@ async function remove(id) {
     error.value = e.response?.data?.message || 'Error al eliminar';
   }
 }
+
+const headers = [
+  { key: 'codigo', label: 'Código' },
+  { key: 'titulo', label: 'Título' },
+  { key: 'ente', label: 'Ente' },
+  { key: 'categoria', label: 'Categoría' },
+  { key: 'periodicidad', label: 'Periodicidad' },
+  { key: 'criticidad', label: 'Criticidad' },
+  { key: 'vigencia', label: 'Vigencia' },
+];
 
 onMounted(load);
 </script>

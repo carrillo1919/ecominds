@@ -1,5 +1,5 @@
 <script setup>
-import { computed, onMounted, reactive } from 'vue';
+import { computed, onMounted, reactive, ref } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { storeToRefs } from 'pinia';
 import { useToast } from 'vue-toastification';
@@ -7,10 +7,12 @@ import { useAuditoriasStore } from '@/stores/auditorias';
 import { useEmpresasStore } from '@/stores/empresas';
 import { useAuthorization } from '@/composables/useAuthorization';
 import { fechaCorta, riesgoClase } from '@/utils/riesgo';
+import PageToolbar from '@/components/ui/PageToolbar.vue';
+import DataTable from '@/components/ui/DataTable.vue';
+import CrudModal from '@/components/ui/CrudModal.vue';
 import BaseCard from '@/components/ui/BaseCard.vue';
 import BaseButton from '@/components/ui/BaseButton.vue';
 import BaseSelect from '@/components/ui/BaseSelect.vue';
-import BaseTable from '@/components/ui/BaseTable.vue';
 import LoadingState from '@/components/ui/LoadingState.vue';
 
 const route = useRoute();
@@ -37,6 +39,9 @@ const nueva = reactive({
   alcance: '',
 });
 
+const mostrarModal = ref(false);
+const guardandoNueva = ref(false);
+
 const empresasOptions = computed(() => empresas.value.map((e) => ({ value: e.id, label: `${e.nombre} (${e.rif})` })));
 const empresasFilterOptions = computed(() => empresas.value.map((e) => ({ value: e.id, label: e.nombre })));
 const alertasOrdenadas = computed(() => proximas.value.slice(0, 6));
@@ -58,18 +63,29 @@ const crear = async () => {
     toast.error('Seleccione la empresa a auditar');
     return;
   }
+  guardandoNueva.value = true;
   const result = await auditoriasStore.create({
     empresaId: nueva.empresaId,
     fecha: nueva.fecha,
     fechaProximaAuditoria: nueva.fechaProximaAuditoria || undefined,
     alcance: nueva.alcance || undefined,
   });
+  guardandoNueva.value = false;
   if (result.ok) {
     toast.success('Auditoria creada con el checklist completo');
+    mostrarModal.value = false;
     router.push({ name: 'auditoria-detalle', params: { id: result.auditoria.id } });
   } else {
     toast.error(result.message);
   }
+};
+
+const abrirModalNueva = () => {
+  nueva.empresaId = route.query.empresaId || '';
+  nueva.fecha = new Date().toISOString().slice(0, 10);
+  nueva.fechaProximaAuditoria = '';
+  nueva.alcance = '';
+  mostrarModal.value = true;
 };
 
 const eliminar = async (auditoria) => {
@@ -98,11 +114,19 @@ onMounted(cargar);
 
 <template>
   <section>
-    <BaseCard v-if="alertasOrdenadas.length" title="Proximas auditorias" subtitle="Recordatorios generados a partir de la fecha de proxima auditoria registrada.">
+    <PageToolbar title="Auditorías" subtitle="Historial y programación de auditorías de cumplimiento.">
+      <template #actions>
+        <button v-if="canAuditar" class="btn-primary" type="button" @click="abrirModalNueva">
+          + Nueva auditoría
+        </button>
+      </template>
+    </PageToolbar>
+
+    <BaseCard v-if="alertasOrdenadas.length" title="Próximas auditorías" subtitle="Recordatorios generados a partir de la fecha de próxima auditoría registrada.">
       <ul class="alert-list">
         <li v-for="a in alertasOrdenadas" :key="a.auditoriaId">
           <span :class="a.vencida ? 'pill pill--danger' : 'pill pill--warn'">
-            {{ a.vencida ? `Vencida hace ${Math.abs(a.diasRestantes)} dia(s)` : `En ${a.diasRestantes} dia(s)` }}
+            {{ a.vencida ? `Vencida hace ${Math.abs(a.diasRestantes)} día(s)` : `En ${a.diasRestantes} día(s)` }}
           </span>
           <strong>{{ a.empresa?.nombre }}</strong>
           <span class="muted">Programada: {{ fechaCorta(a.fechaProximaAuditoria) }}</span>
@@ -110,26 +134,7 @@ onMounted(cargar);
       </ul>
     </BaseCard>
 
-    <BaseCard v-if="canAuditar" title="Nueva auditoria" subtitle="Se aplica cada vez que el auditor lo requiera. Se cargan los 55 requisitos del checklist vigente.">
-      <div class="form-grid">
-        <BaseSelect
-          id="nueva-empresa"
-          v-model="nueva.empresaId"
-          label="Empresa"
-          required
-          placeholder="Seleccione..."
-          :options="empresasOptions"
-        />
-        <label>Fecha de auditoria<input v-model="nueva.fecha" type="date" /></label>
-        <label>Fecha de proxima auditoria<input v-model="nueva.fechaProximaAuditoria" type="date" /></label>
-        <label>Alcance<input v-model="nueva.alcance" type="text" placeholder="Areas o procesos evaluados" /></label>
-      </div>
-      <template #footer>
-        <BaseButton variant="primary" @click="crear">Iniciar auditoria</BaseButton>
-      </template>
-    </BaseCard>
-
-    <BaseCard title="Historial de auditorias">
+    <BaseCard title="Historial de auditorías">
       <div class="form-grid">
         <BaseSelect
           id="filtro-empresa"
@@ -155,13 +160,11 @@ onMounted(cargar);
       </div>
 
       <div v-if="auditoriasStore.error" class="alert alert-error">{{ auditoriasStore.error }}</div>
-      <LoadingState v-if="loading" text="Cargando auditorias..." />
-
-      <BaseTable
-        v-else
+      <DataTable
         :headers="tableHeaders"
         :items="auditorias"
-        empty-text="No hay auditorias registradas con esos filtros."
+        :loading="loading"
+        empty-text="No hay auditorías registradas con esos filtros."
       >
         <template #cell-empresa="{ item }">
           {{ item.empresa?.nombre }}
@@ -170,7 +173,7 @@ onMounted(cargar);
           {{ fechaCorta(item.fecha) }}
         </template>
         <template #cell-auditor="{ item }">
-          {{ item.auditor ? `${item.auditor.nombre} ${item.auditor.apellido}` : '-' }}
+          {{ item.auditor ? `${item.auditor.nombre} ${item.auditor.apellido}` : '—' }}
         </template>
         <template #cell-porcentajeCumplimiento="{ item }">
           {{ Number(item.porcentajeCumplimiento) }}%
@@ -180,23 +183,45 @@ onMounted(cargar);
         </template>
         <template #cell-nivelRiesgo="{ item }">
           <span :class="riesgoClase(item.nivelRiesgo)">{{ item.nivelRiesgo }}</span>
-          <span v-if="item.riesgoEscalado" class="muted" title="Severidad elevada por hallazgo critico"> *</span>
+          <span v-if="item.riesgoEscalado" class="muted" title="Severidad elevada por hallazgo crítico"> *</span>
         </template>
         <template #cell-estado="{ item }">
           {{ item.estado === 'finalizada' ? 'Finalizada' : 'Borrador' }}
         </template>
         <template #actions="{ item }">
           <router-link :to="{ name: 'auditoria-detalle', params: { id: item.id } }">Abrir</router-link>
-          <BaseButton
+          <button
             v-if="canAuditar && item.estado === 'borrador'"
-            variant="ghost"
-            size="sm"
+            class="btn-ghost btn-sm"
+            type="button"
             @click="eliminar(item)"
           >
             Eliminar
-          </BaseButton>
+          </button>
         </template>
-      </BaseTable>
+      </DataTable>
     </BaseCard>
+
+    <CrudModal
+      :show="mostrarModal"
+      title="Nueva auditoría"
+      save-label="Iniciar auditoría"
+      :saving="guardandoNueva"
+      @close="mostrarModal = false"
+      @save="crear"
+    >
+      <p class="muted">Se aplica cada vez que el auditor lo requiera. Se cargan los requisitos del checklist vigente.</p>
+      <div class="form-grid">
+        <label>Empresa *
+          <select v-model="nueva.empresaId" required>
+            <option value="">Seleccione...</option>
+            <option v-for="e in empresas" :key="e.id" :value="e.id">{{ e.nombre }} ({{ e.rif }})</option>
+          </select>
+        </label>
+        <label>Fecha de auditoría<input v-model="nueva.fecha" type="date" /></label>
+        <label>Fecha de próxima auditoría<input v-model="nueva.fechaProximaAuditoria" type="date" /></label>
+        <label>Alcance<input v-model="nueva.alcance" type="text" placeholder="Áreas o procesos evaluados" /></label>
+      </div>
+    </CrudModal>
   </section>
 </template>

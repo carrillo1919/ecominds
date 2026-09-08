@@ -1,83 +1,75 @@
 <template>
-  <div class="page">
-    <header class="page-header">
-      <h1>Entes Reguladores</h1>
-      <button v-if="canManage" class="btn btn-primary" @click="openModal()">
-        + Nuevo ente
-      </button>
-    </header>
+  <section>
+    <PageToolbar title="Entes Reguladores" subtitle="Organismos reguladores aplicables.">
+      <template #actions>
+        <button v-if="canManage" class="btn-primary" type="button" @click="openModal()">
+          + Nuevo ente
+        </button>
+      </template>
+    </PageToolbar>
 
-    <p v-if="loading" class="text-muted">Cargando...</p>
-    <p v-else-if="error" class="alert alert-error">{{ error }}</p>
-
-    <div v-else class="table-scroll">
-      <table class="data">
-        <thead>
-          <tr>
-            <th>Sigla</th>
-            <th>Nombre</th>
-            <th>Ámbito</th>
-            <th>Contacto</th>
-            <th>Sitio web</th>
-            <th v-if="canManage">Acciones</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr v-for="ente in entes" :key="ente.id">
-            <td data-label="Sigla">{{ ente.sigla }}</td>
-            <td data-label="Nombre">{{ ente.nombre }}</td>
-            <td data-label="Ámbito">{{ ente.ambito }}</td>
-            <td data-label="Contacto">{{ ente.contacto || '—' }}</td>
-            <td data-label="Sitio web">
-              <a v-if="ente.sitioWeb" :href="ente.sitioWeb" target="_blank">Ver sitio</a>
-              <span v-else>—</span>
-            </td>
-            <td v-if="canManage" data-label="Acciones">
-              <button class="btn btn-sm" @click="openModal(ente)">Editar</button>
-              <button class="btn btn-sm btn-danger" @click="remove(ente.id)">Desactivar</button>
-            </td>
-          </tr>
-        </tbody>
-      </table>
+    <div class="card">
+      <div v-if="error" class="alert alert-error">{{ error }}</div>
+      <DataTable
+        :headers="headers"
+        :items="entes"
+        :loading="loading"
+        empty-text="No hay entes reguladores registrados."
+      >
+        <template #cell-contacto="{ item }">
+          {{ item.contacto || '—' }}
+        </template>
+        <template #cell-sitioWeb="{ item }">
+          <a v-if="item.sitioWeb" :href="item.sitioWeb" target="_blank">Ver sitio</a>
+          <span v-else>—</span>
+        </template>
+        <template v-if="canManage" #actions="{ item }">
+          <button class="btn-ghost btn-sm" type="button" @click="openModal(item)">Editar</button>
+          <button class="btn-ghost btn-sm btn-danger" type="button" @click="remove(item.id)">Desactivar</button>
+        </template>
+      </DataTable>
     </div>
 
-    <div v-if="showModal" class="modal-overlay" @click.self="closeModal">
-      <div class="modal">
-        <h2>{{ editing ? 'Editar' : 'Nuevo' }} ente regulador</h2>
-        <form @submit.prevent="save">
-          <label>Nombre *</label>
+    <CrudModal
+      :show="showModal"
+      :title="editing ? 'Editar ente regulador' : 'Nuevo ente regulador'"
+      save-label="Guardar"
+      :saving="saving"
+      @close="closeModal"
+      @save="save"
+    >
+      <div class="form-grid">
+        <label>Nombre *
           <input v-model="form.nombre" required />
-
-          <label>Sigla *</label>
+        </label>
+        <label>Sigla *
           <input v-model="form.sigla" required maxlength="20" />
-
-          <label>Ámbito</label>
+        </label>
+        <label>Ámbito
           <select v-model="form.ambito">
             <option value="nacional">Nacional</option>
             <option value="departamental">Departamental</option>
             <option value="municipal">Municipal</option>
             <option value="sectorial">Sectorial</option>
           </select>
-
-          <label>Contacto</label>
+        </label>
+        <label>Contacto
           <input v-model="form.contacto" type="email" />
-
-          <label>Sitio web</label>
+        </label>
+        <label style="grid-column: 1 / -1">Sitio web
           <input v-model="form.sitioWeb" type="url" />
-
-          <div class="modal-actions">
-            <button type="button" class="btn" @click="closeModal">Cancelar</button>
-            <button type="submit" class="btn btn-primary" :disabled="saving">Guardar</button>
-          </div>
-        </form>
+        </label>
       </div>
-    </div>
-  </div>
+    </CrudModal>
+  </section>
 </template>
 
 <script setup>
 import { ref, computed, onMounted } from 'vue';
 import { useAuthStore } from '@/stores/auth.js';
+import PageToolbar from '@/components/ui/PageToolbar.vue';
+import DataTable from '@/components/ui/DataTable.vue';
+import CrudModal from '@/components/ui/CrudModal.vue';
 import * as api from '@/api/entesReguladores.js';
 
 const auth = useAuthStore();
@@ -125,6 +117,7 @@ function closeModal() {
 
 async function save() {
   saving.value = true;
+  error.value = '';
   try {
     if (editing.value) {
       await api.updateEnte(form.value.id, form.value);
@@ -135,10 +128,19 @@ async function save() {
     await load();
   } catch (e) {
     error.value = e.response?.data?.message || 'Error al guardar';
+    throw e;
   } finally {
     saving.value = false;
   }
 }
+
+const headers = [
+  { key: 'sigla', label: 'Sigla' },
+  { key: 'nombre', label: 'Nombre' },
+  { key: 'ambito', label: 'Ámbito' },
+  { key: 'contacto', label: 'Contacto' },
+  { key: 'sitioWeb', label: 'Sitio web' },
+];
 
 async function remove(id) {
   if (!confirm('¿Desactivar este ente regulador?')) return;

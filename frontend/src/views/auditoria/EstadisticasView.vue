@@ -2,6 +2,8 @@
 import { computed, onMounted, reactive, ref } from 'vue';
 import api, { apiMessage } from '@/api/axios';
 import { fechaCorta, riesgoClase } from '@/utils/riesgo';
+import PageToolbar from '@/components/ui/PageToolbar.vue';
+import DataTable from '@/components/ui/DataTable.vue';
 
 const stats = ref(null);
 const empresas = ref([]);
@@ -40,15 +42,21 @@ const cargar = async () => {
 
 const maxTendencia = computed(() => 100);
 
+const headersHallazgos = [
+  { key: 'codigo', label: 'Código' },
+  { key: 'bloque', label: 'Bloque' },
+  { key: 'requisito', label: 'Requisito' },
+  { key: 'veces', label: 'Veces' },
+];
+
 onMounted(cargar);
 </script>
 
 <template>
   <section>
-    <div class="card">
-      <h1>Tablero de cumplimiento</h1>
-      <p class="muted">Indicadores del periodo seleccionado (solo auditorias finalizadas).</p>
+    <PageToolbar title="Tablero de cumplimiento" subtitle="Indicadores del periodo seleccionado (solo auditorías finalizadas)." />
 
+    <div class="card">
       <div class="form-grid">
         <label>Empresa
           <select v-model="filtros.empresaId" @change="cargar">
@@ -124,25 +132,12 @@ onMounted(cargar);
       </div>
 
       <div class="card">
-        <h2>Hallazgos criticos recurrentes</h2>
-        <div class="table-scroll">
-          <table class="data">
-            <thead>
-              <tr><th>Codigo</th><th>Bloque</th><th>Requisito</th><th>Veces</th></tr>
-            </thead>
-            <tbody>
-              <tr v-for="h in stats.hallazgosCriticosRecurrentes" :key="h.codigo">
-                <td data-label="Codigo">{{ h.codigo }}</td>
-                <td data-label="Bloque">{{ h.bloque }}</td>
-                <td data-label="Requisito">{{ h.requisito }}</td>
-                <td data-label="Veces">{{ h.veces }}</td>
-              </tr>
-              <tr v-if="!stats.hallazgosCriticosRecurrentes.length">
-                <td colspan="4" class="muted">Sin incumplimientos criticos en el periodo.</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
+        <h2>Hallazgos críticos recurrentes</h2>
+        <DataTable
+          :headers="headersHallazgos"
+          :items="stats.hallazgosCriticosRecurrentes"
+          empty-text="Sin incumplimientos críticos en el periodo."
+        />
       </div>
     </template>
   </section>
