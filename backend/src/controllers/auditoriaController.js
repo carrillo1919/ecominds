@@ -19,6 +19,7 @@ import {
 import { sendEmail, buildEmailTemplate } from '../services/emailService.js';
 import { sendEmailWithTemplate } from '../services/emailService.js';
 import { applyEmpresaScope, assertEmpresaInScope } from '../utils/empresaScope.js';
+import { applyRlsContext } from '../utils/rls.js';
 
 const INCLUDES_BASE = [
   { model: Empresa, as: 'empresa', attributes: ['id', 'nombre', 'rif', 'sector'] },
@@ -174,6 +175,7 @@ const getOne = async (req, res, next) => {
 const create = async (req, res, next) => {
   const transaction = await sequelize.transaction();
   try {
+    await applyRlsContext(transaction, req);
     const { empresaId, fecha, fechaProximaAuditoria, alcance } = req.body;
     assertEmpresaInScope(empresaId, req);
 
@@ -245,6 +247,7 @@ const update = async (req, res, next) => {
 const saveItems = async (req, res, next) => {
   const transaction = await sequelize.transaction();
   try {
+    await applyRlsContext(transaction, req);
     const auditoria = await Auditoria.findByPk(req.params.id, { transaction });
     if (!auditoria) {
       await transaction.rollback();
