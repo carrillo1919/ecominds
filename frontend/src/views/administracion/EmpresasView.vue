@@ -1,13 +1,16 @@
 <script setup>
-import { onMounted, reactive, ref } from 'vue';
+import { computed, onMounted, reactive, ref } from 'vue';
 import { useToast } from 'vue-toastification';
 import api, { apiMessage } from '@/api/axios';
 import { useAuthorization } from '@/composables/useAuthorization';
 import { fechaCorta, riesgoClase } from '@/utils/riesgo';
 import * as empleadosApi from '@/api/empleados';
+import PageToolbar from '@/components/ui/PageToolbar.vue';
+import DataTable from '@/components/ui/DataTable.vue';
+import CrudModal from '@/components/ui/CrudModal.vue';
 
 const toast = useToast();
-const { canAuditar, isAdmin } = useAuthorization();
+const { canAuditar } = useAuthorization();
 
 const empresas = ref([]);
 const empleados = ref([]);
@@ -17,6 +20,7 @@ const guardando = ref(false);
 const editandoId = ref(null);
 const mostrarFormEmpleado = ref(false);
 const guardandoEmpleado = ref(false);
+const mostrarModal = ref(false);
 
 const form = reactive({
   nombre: '',
@@ -40,12 +44,21 @@ const formEmpleado = reactive({
 
 const limpiar = () => {
   editandoId.value = null;
-  // Al crear una empresa, el formulario de empleado responsable se muestra directo
   mostrarFormEmpleado.value = true;
   Object.keys(form).forEach((k) => {
     form[k] = '';
   });
   limpiarEmpleado();
+};
+
+const abrirCrear = () => {
+  limpiar();
+  mostrarModal.value = true;
+};
+
+const cerrarModal = () => {
+  mostrarModal.value = false;
+  limpiar();
 };
 
 const limpiarEmpleado = () => {
@@ -75,6 +88,7 @@ const editar = (empresa) => {
   });
   form.responsableId = empresa.responsableEmpleado?.id || '';
   cargarEmpleados(empresa.id);
+  mostrarModal.value = true;
 };
 
 const guardar = async () => {
@@ -132,6 +146,7 @@ const guardar = async () => {
     }
 
     limpiar();
+    cerrarModal();
     await cargar();
   } catch (e) {
     toast.error(apiMessage(e, 'No se pudo guardar la empresa'));
@@ -157,7 +172,6 @@ const guardarEmpleado = async () => {
     toast.error('Nombre, apellido, cédula y correo son obligatorios');
     return;
   }
-  // En modo crear empresa, el empleado se guarda junto con la empresa
   if (!editandoId.value) {
     toast.info('El empleado se guardará al registrar la empresa');
     return;
@@ -180,25 +194,85 @@ const guardarEmpleado = async () => {
   }
 };
 
+const modalTitle = computed(() => (editandoId.value ? 'Editar empresa' : 'Registrar empresa'));
+const saveLabel = computed(() => (editandoId.value ? 'Guardar cambios' : 'Registrar empresa'));
+
 onMounted(async () => {
   limpiar();
   await cargar();
 });
+
+const headers = [
+  { key: 'nombre', label: 'Empresa' },
+  { key: 'rif', label: 'RIF' },
+  { key: 'sector', label: 'Sector' },
+  { key: 'ultimaAuditoria', label: 'Última auditoría' },
+  { key: 'riesgo', label: 'Riesgo' },
+  { key: 'proxima', label: 'Próxima' },
+];
 </script>
 
 <template>
   <section>
-    <div class="card" v-if="canAuditar">
-      <h1>{{ editandoId ? 'Editar empresa' : 'Registrar empresa' }}</h1>
-      <p class="muted">Cada empresa acumula el historial de auditorias de cumplimiento.</p>
+    <PageToolbar title="Empresas" subtitle="Gestión de empresas y responsables.">
+      <template #actions>
+        <button v-if="canAuditar" class="btn-primary" type="button" @click="abrirCrear">
+          + Registrar empresa
+        </button>
+      </template>
+    </PageToolbar>
+
+    <div class="card">
+      <div v-if="error" class="alert alert-error">{{ error }}</div>
+      <DataTable
+        :headers="headers"
+        :items="empresas"
+        :loading="cargando"
+        empty-text="Aún no hay empresas registradas."
+      >
+        <template #cell-nombre="{ item }">
+          <strong>{{ item.nombre }}</strong>
+          <span v-if="item.responsableEmpleado" class="muted"><br />{{ item.responsableEmpleado.apellido }}, {{ item.responsableEmpleado.nombre }}</span>
+        </template>
+        <template #cell-sector="{ item }">
+          {{ item.sector || '—' }}
+        </template>
+        <template #cell-ultimaAuditoria="{ item }">
+          {{ item.ultimaAuditoria ? fechaCorta(item.ultimaAuditoria.fecha) : 'Sin auditorías' }}
+        </template>
+        <template #cell-riesgo="{ item }">
+          <span v-if="item.ultimaAuditoria" :class="riesgoClase(item.ultimaAuditoria.nivelRiesgo)">
+            {{ item.ultimaAuditoria.nivelRiesgo }}
+          </span>
+          <span v-else class="muted">—</span>
+        </template>
+        <template #cell-proxima="{ item }">
+          {{ item.ultimaAuditoria ? fechaCorta(item.ultimaAuditoria.fechaProximaAuditoria) : '—' }}
+        </template>
+        <template #actions="{ item }">
+          <router-link :to="{ name: 'auditorias', query: { empresaId: item.id } }">Auditorías</router-link>
+          <button v-if="canAuditar" class="btn-ghost btn-sm" type="button" @click="editar(item)">Editar</button>
+        </template>
+      </DataTable>
+    </div>
+
+    <CrudModal
+      :show="mostrarModal"
+      :title="modalTitle"
+      :save-label="saveLabel"
+      :saving="guardando"
+      @close="cerrarModal"
+      @save="guardar"
+    >
+      <p class="muted">Cada empresa acumula el historial de auditorías de cumplimiento.</p>
 
       <div class="form-grid">
-        <label>Nombre o razon social *<input v-model="form.nombre" type="text" /></label>
+        <label>Nombre o razón social *<input v-model="form.nombre" type="text" /></label>
         <label>RIF *<input v-model="form.rif" type="text" placeholder="J-12345678-9" /></label>
         <label>Sector<input v-model="form.sector" type="text" /></label>
         <label>Actividad<input v-model="form.actividad" type="text" /></label>
-        <label>Direccion<input v-model="form.direccion" type="text" /></label>
-        <label>Telefono<input v-model="form.telefono" type="text" /></label>
+        <label>Dirección<input v-model="form.direccion" type="text" /></label>
+        <label>Teléfono<input v-model="form.telefono" type="text" /></label>
         <label>Correo<input v-model="form.email" type="email" /></label>
         <label v-if="editandoId">
           Responsable principal
@@ -248,60 +322,6 @@ onMounted(async () => {
           <button v-if="editandoId" class="btn-ghost" type="button" @click="mostrarFormEmpleado = false">Cancelar</button>
         </div>
       </div>
-
-      <div class="actions-row">
-        <button class="btn-primary" type="button" :disabled="guardando" @click="guardar">
-          {{ guardando ? 'Guardando...' : editandoId ? 'Guardar cambios' : 'Registrar empresa' }}
-        </button>
-        <button v-if="editandoId" class="btn-ghost" type="button" @click="limpiar">Cancelar</button>
-      </div>
-    </div>
-
-    <div class="card">
-      <h2>Empresas registradas</h2>
-      <div v-if="error" class="alert alert-error">{{ error }}</div>
-      <p v-if="cargando" class="muted">Cargando empresas...</p>
-
-      <div v-else class="table-scroll">
-        <table class="data">
-          <thead>
-            <tr>
-              <th>Empresa</th>
-              <th>RIF</th>
-              <th>Sector</th>
-              <th>Ultima auditoria</th>
-              <th>Riesgo</th>
-              <th>Proxima</th>
-              <th></th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr v-for="e in empresas" :key="e.id">
-              <td data-label="Empresa">
-                <strong>{{ e.nombre }}</strong>
-                <span class="muted" v-if="e.responsableEmpleado"><br />{{ e.responsableEmpleado.apellido }}, {{ e.responsableEmpleado.nombre }}</span>
-              </td>
-              <td data-label="RIF">{{ e.rif }}</td>
-              <td data-label="Sector">{{ e.sector || '-' }}</td>
-              <td data-label="Ultima auditoria">{{ e.ultimaAuditoria ? fechaCorta(e.ultimaAuditoria.fecha) : 'Sin auditorias' }}</td>
-              <td data-label="Riesgo">
-                <span v-if="e.ultimaAuditoria" :class="riesgoClase(e.ultimaAuditoria.nivelRiesgo)">
-                  {{ e.ultimaAuditoria.nivelRiesgo }}
-                </span>
-                <span v-else class="muted">-</span>
-              </td>
-              <td data-label="Proxima">{{ e.ultimaAuditoria ? fechaCorta(e.ultimaAuditoria.fechaProximaAuditoria) : '-' }}</td>
-              <td data-label="Acciones">
-                <router-link :to="{ name: 'auditorias', query: { empresaId: e.id } }">Auditorias</router-link>
-                <button v-if="canAuditar" class="btn-ghost btn-sm" type="button" @click="editar(e)">Editar</button>
-              </td>
-            </tr>
-            <tr v-if="!empresas.length">
-              <td colspan="7" class="muted">Aun no hay empresas registradas.</td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-    </div>
+    </CrudModal>
   </section>
 </template>

@@ -4,6 +4,9 @@ import { useToast } from 'vue-toastification';
 import { useEmpleadosStore } from '@/stores/empleados';
 import { useAuthorization } from '@/composables/useAuthorization';
 import * as empresasApi from '@/api/empresas';
+import PageToolbar from '@/components/ui/PageToolbar.vue';
+import DataTable from '@/components/ui/DataTable.vue';
+import CrudModal from '@/components/ui/CrudModal.vue';
 
 const toast = useToast();
 const store = useEmpleadosStore();
@@ -14,7 +17,7 @@ const canSelectEmpresa = computed(() => isAdmin.value);
 
 const editandoId = ref(null);
 const guardando = ref(false);
-const mostrarForm = ref(false);
+const mostrarModal = ref(false);
 const empresas = ref([]);
 
 const form = reactive({
@@ -29,13 +32,21 @@ const form = reactive({
 
 const limpiar = () => {
   editandoId.value = null;
-  mostrarForm.value = false;
   Object.keys(form).forEach((k) => { form[k] = ''; });
+};
+
+const abrirCrear = () => {
+  limpiar();
+  mostrarModal.value = true;
+};
+
+const cerrarModal = () => {
+  mostrarModal.value = false;
+  limpiar();
 };
 
 const editar = (emp) => {
   editandoId.value = emp.id;
-  mostrarForm.value = true;
   form.nombre = emp.nombre || '';
   form.apellido = emp.apellido || '';
   form.cedula = emp.cedula || '';
@@ -43,6 +54,7 @@ const editar = (emp) => {
   form.telefono = emp.telefono || '';
   form.email = emp.email || '';
   form.empresaId = emp.empresaId || '';
+  mostrarModal.value = true;
 };
 
 const guardar = async () => {
@@ -66,7 +78,7 @@ const guardar = async () => {
   guardando.value = false;
   if (result.ok) {
     toast.success(result.message);
-    limpiar();
+    cerrarModal();
     await store.fetchAll();
   } else {
     toast.error(result.message);
@@ -103,22 +115,74 @@ onMounted(async () => {
   await store.fetchAll();
   await cargarEmpresas();
 });
+
+const modalTitle = computed(() => (editandoId.value ? 'Editar empleado' : 'Registrar empleado'));
+const saveLabel = computed(() => (editandoId.value ? 'Guardar cambios' : 'Registrar'));
+
+const headers = [
+  { key: 'empleado', label: 'Empleado' },
+  { key: 'cedula', label: 'Cédula' },
+  { key: 'cargo', label: 'Cargo' },
+  { key: 'email', label: 'Correo' },
+  { key: 'usuario', label: 'Usuario' },
+  { key: 'estado', label: 'Estado' },
+];
 </script>
 
 <template>
   <section>
-    <div class="section-header">
-      <div>
-        <h1>Empleados</h1>
-        <p class="muted">Gestión de empleados de su empresa.</p>
-      </div>
-      <button v-if="canEdit && !mostrarForm" class="btn-primary" type="button" @click="mostrarForm = true">
-        + Nuevo empleado
-      </button>
+    <PageToolbar title="Empleados" subtitle="Gestión de empleados de su empresa.">
+      <template #actions>
+        <button v-if="canEdit" class="btn-primary" type="button" @click="abrirCrear">
+          + Nuevo empleado
+        </button>
+      </template>
+    </PageToolbar>
+
+    <div class="card">
+      <div v-if="store.error" class="alert alert-error">{{ store.error }}</div>
+      <DataTable
+        :headers="headers"
+        :items="store.empleados"
+        :loading="store.loading"
+        empty-text="Aún no hay empleados registrados."
+      >
+        <template #cell-empleado="{ item }">
+          <strong>{{ item.apellido }}, {{ item.nombre }}</strong>
+        </template>
+        <template #cell-cargo="{ item }">
+          {{ item.cargo || '—' }}
+        </template>
+        <template #cell-usuario="{ item }">
+          <span v-if="item.usuario" class="badge-rol">{{ item.usuario.rol }}</span>
+          <span v-else class="muted">Sin usuario</span>
+        </template>
+        <template #cell-estado="{ item }">
+          <span :class="item.activo ? 'text-success' : 'muted'">
+            {{ item.activo ? 'Activo' : 'Inactivo' }}
+          </span>
+        </template>
+        <template v-if="canEdit" #actions="{ item }">
+          <button class="btn-ghost btn-sm" type="button" @click="editar(item)">Editar</button>
+          <button v-if="item.activo" class="btn-ghost btn-sm" type="button" @click="darDeBaja(item)">Dar de baja</button>
+          <button v-else class="btn-ghost btn-sm" type="button" @click="reactivar(item)">Reactivar</button>
+          <router-link
+            v-if="isAdmin && !item.usuario"
+            class="btn-ghost btn-sm"
+            :to="{ name: 'empleado-detalle', params: { id: item.id } }"
+          >Crear usuario</router-link>
+        </template>
+      </DataTable>
     </div>
 
-    <div v-if="mostrarForm && canEdit" class="card">
-      <h2>{{ editandoId ? 'Editar empleado' : 'Registrar empleado' }}</h2>
+    <CrudModal
+      :show="mostrarModal"
+      :title="modalTitle"
+      :save-label="saveLabel"
+      :saving="guardando"
+      @close="cerrarModal"
+      @save="guardar"
+    >
       <div class="form-grid">
         <label v-if="canSelectEmpresa">
           Empresa *
@@ -134,68 +198,10 @@ onMounted(async () => {
         <label>Teléfono<input v-model="form.telefono" type="text" /></label>
         <label>Correo *<input v-model="form.email" type="email" /></label>
       </div>
-      <div class="actions-row">
-        <button class="btn-primary" type="button" :disabled="guardando" @click="guardar">
-          {{ guardando ? 'Guardando...' : editandoId ? 'Guardar cambios' : 'Registrar' }}
-        </button>
-        <button class="btn-ghost" type="button" @click="limpiar">Cancelar</button>
-      </div>
-    </div>
-
-    <div class="card">
-      <div v-if="store.error" class="alert alert-error">{{ store.error }}</div>
-      <p v-if="store.loading" class="muted">Cargando empleados...</p>
-
-      <div v-else class="table-scroll">
-        <table class="data">
-          <thead>
-            <tr>
-              <th>Empleado</th>
-              <th>Cédula</th>
-              <th>Cargo</th>
-              <th>Correo</th>
-              <th>Usuario</th>
-              <th>Estado</th>
-              <th v-if="canEdit"></th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr v-for="emp in store.empleados" :key="emp.id">
-              <td data-label="Empleado"><strong>{{ emp.apellido }}, {{ emp.nombre }}</strong></td>
-              <td data-label="Cedula">{{ emp.cedula }}</td>
-              <td data-label="Cargo">{{ emp.cargo || '-' }}</td>
-              <td data-label="Correo">{{ emp.email }}</td>
-              <td data-label="Usuario">
-                <span v-if="emp.usuario" class="badge-rol">{{ emp.usuario.rol }}</span>
-                <span v-else class="muted">Sin usuario</span>
-              </td>
-              <td data-label="Estado">
-                <span :class="emp.activo ? 'text-success' : 'muted'">
-                  {{ emp.activo ? 'Activo' : 'Inactivo' }}
-                </span>
-              </td>
-              <td v-if="canEdit" data-label="Acciones" style="white-space:nowrap">
-                <button class="btn-ghost btn-sm" type="button" @click="editar(emp)">Editar</button>
-                <button v-if="emp.activo" class="btn-ghost btn-sm" type="button" @click="darDeBaja(emp)">Dar de baja</button>
-                <button v-else class="btn-ghost btn-sm" type="button" @click="reactivar(emp)">Reactivar</button>
-                <router-link
-                  v-if="isAdmin && !emp.usuario"
-                  class="btn-ghost btn-sm"
-                  :to="{ name: 'empleado-detalle', params: { id: emp.id } }"
-                >Crear usuario</router-link>
-              </td>
-            </tr>
-            <tr v-if="!store.empleados.length">
-              <td colspan="7" class="muted">Aún no hay empleados registrados.</td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-    </div>
+    </CrudModal>
   </section>
 </template>
 
 <style scoped>
-.section-header { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 1.25rem; }
 .text-success { color: #065f46; font-weight: 600; }
 </style>
