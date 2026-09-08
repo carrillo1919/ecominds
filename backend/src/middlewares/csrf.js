@@ -16,7 +16,7 @@ const {
     sameSite: 'strict',
   },
   size: 64,
-  getTokenFromRequest: (req) => req.headers['x-csrf-token'],
+  getTokenFromRequest: (req) => req.headers['x-csrf-token'] || req.body?._csrf || req.query?._csrf,
 });
 
 const csrfErrorHandler = (error, req, res, next) => {
