@@ -7,9 +7,9 @@
   "scripts": {
     "start": "node src/server.js",
     "dev": "nodemon src/server.js",
-    "migrate": "sequelize-cli db:migrate --config src/config/sequelize-cli.js --migrations-path src/migrations --seeders-path src/seeders",
-    "migrate:undo": "sequelize-cli db:migrate:undo --config src/config/sequelize-cli.js --migrations-path src/migrations",
-    "seed": "sequelize-cli db:seed:all --config src/config/sequelize-cli.js --migrations-path src/migrations --seeders-path src/seeders",
+    "migrate": "sequelize-cli db:migrate --config src/config/sequelize-cli.cjs --migrations-path src/migrations --seeders-path src/seeders",
+    "migrate:undo": "sequelize-cli db:migrate:undo --config src/config/sequelize-cli.cjs --migrations-path src/migrations",
+    "seed": "sequelize-cli db:seed:all --config src/config/sequelize-cli.cjs --migrations-path src/migrations --seeders-path src/seeders",
     "test:email": "node test/email.test.js"
   },
   "dependencies": {
