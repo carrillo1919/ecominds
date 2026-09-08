@@ -3,6 +3,8 @@ import cors from 'cors';
 import helmet from 'helmet';
 import morgan from 'morgan';
 import rateLimit from 'express-rate-limit';
+import cookieParser from 'cookie-parser';
+import { doubleCsrfProtection, csrfErrorHandler, generateToken as generateCsrfToken } from './middlewares/csrf.js';
 
 import routes from './routes/index.js';
 import { notFound, errorHandler } from './middlewares/errorHandler.js';
@@ -58,7 +60,10 @@ app.use(
       directives: {
         defaultSrc: ["'self'"],
         scriptSrc: ["'self'"],
-        styleSrc: ["'self'", "'unsafe-inline'"],
+        styleSrc: ["'self'", "'unsafe-inline'", 'https://fonts.googleapis.com'],
+        fontSrc: ["'self'", 'https://fonts.gstatic.com'],
+        connectSrc: ["'self'", ...(frontendUrl ? frontendUrl.split(',').map((o) => o.trim().replace(/\/$/, '')) : [])],
+        imgSrc: ["'self'", 'data:', 'blob:'],
       },
     },
     crossOriginEmbedderPolicy: false,
@@ -80,13 +85,20 @@ app.use(
 
 app.use(express.json({ limit: '10kb' }));
 app.use(express.urlencoded({ extended: true, limit: '10kb' }));
+app.use(cookieParser());
 app.use(morgan(isProduction ? 'combined' : 'dev'));
 app.use(limiter);
 
 app.use('/api/auth', authLimiter);
-app.use('/api', routes);
+app.use('/api/health', (req, res) => res.json({ status: 'ok', timestamp: new Date().toISOString() }));
+app.get('/api/csrf-token', (req, res) => {
+  const token = generateCsrfToken(req, res);
+  res.json({ csrfToken: token });
+});
+app.use('/api', doubleCsrfProtection, routes);
 
 app.use(notFound);
+app.use(csrfErrorHandler);
 app.use(errorHandler);
 
 export default app;

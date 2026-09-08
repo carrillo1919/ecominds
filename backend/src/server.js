@@ -5,15 +5,23 @@ import logger from './utils/logger.js';
 const PORT = Number(process.env.PORT);
 
 const validateStartupConfig = () => {
-  const requiredVars = ['JWT_SECRET', 'DATABASE_URL'];
+  const requiredVars = ['JWT_SECRET', 'JWT_REFRESH_SECRET', 'CSRF_SECRET', 'DATABASE_URL'];
   const missingVars = requiredVars.filter((name) => !process.env[name]);
 
   if (missingVars.length > 0) {
     throw new Error(`Faltan variables de entorno requeridas: ${missingVars.join(', ')}`);
   }
 
-  if (process.env.NODE_ENV === 'production' && process.env.JWT_SECRET.length < 32) {
-    throw new Error('JWT_SECRET debe tener al menos 32 caracteres en producción');
+  if (process.env.NODE_ENV === 'production') {
+    if (process.env.JWT_SECRET.length < 32) {
+      throw new Error('JWT_SECRET debe tener al menos 32 caracteres en producción');
+    }
+    if (process.env.JWT_REFRESH_SECRET.length < 32) {
+      throw new Error('JWT_REFRESH_SECRET debe tener al menos 32 caracteres en producción');
+    }
+    if (process.env.CSRF_SECRET.length < 32) {
+      throw new Error('CSRF_SECRET debe tener al menos 32 caracteres en producción');
+    }
   }
 };
 

@@ -14,7 +14,6 @@ app.use(createPinia());
 app.use(router);
 app.use(Toast, { position: 'top-right', timeout: 4000 });
 
-// Restaura la sesion guardada antes de montar la aplicacion.
-useAuthStore().restore();
+// La sesion se restaura en AppLayout para intentar refresh si no hay usuario en memoria.
 
 app.mount('#app');

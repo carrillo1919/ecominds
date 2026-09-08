@@ -4,10 +4,9 @@ import { resolveScope as resolveScopeFactory } from '../utils/empresaScope.js';
 
 const authenticate = async (req, res, next) => {
   try {
-    const header = req.headers.authorization || '';
-    const [scheme, token] = header.split(' ');
+    const token = req.cookies?.access_token;
 
-    if (scheme !== 'Bearer' || !token) {
+    if (!token) {
       return res.status(401).json({ message: 'Token no proporcionado' });
     }
 

@@ -3,11 +3,12 @@ import { Op } from 'sequelize';
 import { addDays, format } from 'date-fns';
 import { sendEmailWithTemplate } from '../services/emailService.js';
 import { Documento, Empresa, Empleado, NotificacionConfig, NotificacionLog } from '../models/index.js';
+import logger from '../utils/logger.js';
 
 export const runDocumentosVencimientoJob = async () => {
   const config = await NotificacionConfig.findOne({ where: { tipo: 'documento_vencimiento', activo: true } });
   if (!config) {
-    console.log('[job:vencimientos] No hay configuración activa');
+    logger.info('[job:vencimientos] No hay configuración activa');
     return { enviados: 0, tipo: 'documento_vencimiento' };
   }
 
@@ -91,12 +92,12 @@ export const runDocumentosVencimientoJob = async () => {
 
 const documentosVencimientoJob = () => {
   cron.schedule('0 8 * * *', async () => {
-    console.log('[cron] Ejecutando job de vencimientos...');
+    logger.info('[cron] Ejecutando job de vencimientos...');
     try {
       const resultado = await runDocumentosVencimientoJob();
-      console.log('[cron] Vencimientos enviados:', resultado.enviados);
+      logger.info({ event: 'job_vencimientos_completed', enviados: resultado.enviados });
     } catch (error) {
-      console.error('[cron] Error en job de vencimientos:', error);
+      logger.error({ event: 'job_vencimientos_error', error: error.message, stack: error.stack });
     }
   });
 };

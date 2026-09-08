@@ -17,6 +17,9 @@ const passwordValidation = () => body('password')
   .matches(/[^A-Za-z0-9]/)
   .withMessage('La contrasena debe incluir al menos un caracter especial');
 
+router.post('/refresh', controller.refresh);
+router.post('/logout', controller.logout);
+
 router.post(
   '/register',
   [
