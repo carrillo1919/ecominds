@@ -43,18 +43,19 @@ const handleLogout = async () => {
 };
 
 onMounted(async () => {
-  if (!auth.isAuthenticated) {
-    try {
-      await auth.fetchCsrfToken();
+  try {
+    await auth.fetchCsrfToken();
+
+    if (!auth.isAuthenticated) {
       const user = await auth.fetchUser();
       if (!user) {
         await auth.logout();
         router.push({ name: 'login' });
       }
-    } catch {
-      await auth.logout();
-      router.push({ name: 'login' });
     }
+  } catch {
+    await auth.logout();
+    router.push({ name: 'login' });
   }
 });
 </script>
