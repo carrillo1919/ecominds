@@ -5,14 +5,40 @@ import { User } from '../models/index.js';
 import { sendVerificationEmail, sendResetPasswordEmail } from '../services/emailService.js';
 import logger from '../utils/logger.js';
 
-const signToken = (user) =>
+const isProduction = process.env.NODE_ENV === 'production';
+const ACCESS_TOKEN_MAX_AGE = 15 * 60 * 1000; // 15 min
+const REFRESH_TOKEN_MAX_AGE = 7 * 24 * 60 * 60 * 1000; // 7 días
+
+const cookieOptions = (maxAge) => ({
+  httpOnly: true,
+  secure: isProduction,
+  sameSite: 'strict',
+  maxAge,
+});
+
+const signAccessToken = (user) =>
   jwt.sign({ sub: user.id, rol: user.rol }, process.env.JWT_SECRET, {
-    expiresIn: process.env.JWT_EXPIRES_IN || '24h',
+    expiresIn: '15m',
+  });
+
+const signRefreshToken = (user) =>
+  jwt.sign({ sub: user.id, type: 'refresh' }, process.env.JWT_REFRESH_SECRET, {
+    expiresIn: '7d',
   });
 
 const generateToken = () => crypto.randomBytes(32).toString('hex');
 
 const resetTokenExpiry = () => new Date(Date.now() + 60 * 60 * 1000); // 1 hora
+
+const setAuthCookies = (res, user) => {
+  res.cookie('access_token', signAccessToken(user), cookieOptions(ACCESS_TOKEN_MAX_AGE));
+  res.cookie('refresh_token', signRefreshToken(user), cookieOptions(REFRESH_TOKEN_MAX_AGE));
+};
+
+const clearAuthCookies = (res) => {
+  res.clearCookie('access_token');
+  res.clearCookie('refresh_token');
+};
 
 // POST /api/auth/register
 const register = async (req, res, next) => {
@@ -58,21 +84,22 @@ const login = async (req, res, next) => {
     });
 
     if (!user || !(await user.comparePassword(password))) {
-      logger.warn({ event: 'login_failed', email: normalizedEmail, ip: req.ip });
+      logger.warn({ event: 'login_failed', emailHash: normalizedEmail, ip: req.ip });
       return res.status(401).json({ message: 'Credenciales invalidas' });
     }
 
     if (!user.activo) {
-      logger.warn({ event: 'login_failed_inactive_user', email: normalizedEmail, ip: req.ip, userId: user.id });
+      logger.warn({ event: 'login_failed_inactive_user', emailHash: normalizedEmail, ip: req.ip, userId: user.id });
       return res.status(403).json({ message: 'Su usuario esta desactivado. Contacte al administrador.' });
     }
 
     if (!user.verified) {
-      logger.warn({ event: 'login_failed_unverified_user', email: normalizedEmail, ip: req.ip, userId: user.id });
+      logger.warn({ event: 'login_failed_unverified_user', emailHash: normalizedEmail, ip: req.ip, userId: user.id });
       return res.status(403).json({ message: 'Debe verificar su correo antes de iniciar sesion' });
     }
 
-    return res.json({ token: signToken(user), user: user.toPublicJSON() });
+    setAuthCookies(res, user);
+    return res.json({ user: user.toPublicJSON() });
   } catch (error) {
     return next(error);
   }
@@ -121,12 +148,44 @@ const forgotPassword = async (req, res, next) => {
     await user.save();
 
     await sendResetPasswordEmail(user, token);
-    logger.info({ event: 'password_reset_requested', userId: user.id, email: user.email, ip: req.ip });
+    logger.info({ event: 'password_reset_requested', userId: user.id, emailHash: user.email, ip: req.ip });
 
     return res.json(genericResponse);
   } catch (error) {
     return next(error);
   }
+};
+
+// POST /api/auth/refresh
+const refresh = async (req, res, next) => {
+  try {
+    const token = req.cookies?.refresh_token;
+    if (!token) {
+      return res.status(401).json({ message: 'Sesión inválida' });
+    }
+
+    const payload = jwt.verify(token, process.env.JWT_REFRESH_SECRET);
+    if (payload.type !== 'refresh') {
+      return res.status(401).json({ message: 'Token inválido' });
+    }
+
+    const user = await User.findByPk(payload.sub);
+    if (!user || !user.activo) {
+      clearAuthCookies(res);
+      return res.status(401).json({ message: 'Sesión inválida' });
+    }
+
+    setAuthCookies(res, user);
+    return res.json({ user: user.toPublicJSON() });
+  } catch (error) {
+    return next(error);
+  }
+};
+
+// POST /api/auth/logout
+const logout = async (req, res) => {
+  clearAuthCookies(res);
+  return res.json({ message: 'Sesión cerrada' });
 };
 
 // POST /api/auth/reset-password
@@ -149,7 +208,7 @@ const resetPassword = async (req, res, next) => {
     user.resetPasswordToken = null;
     user.resetPasswordExpires = null;
     await user.save();
-    logger.info({ event: 'password_reset_completed', userId: user.id, email: user.email, ip: req.ip });
+    logger.info({ event: 'password_reset_completed', userId: user.id, emailHash: user.email, ip: req.ip });
 
     return res.json({ message: 'Contrasena actualizada correctamente. Ya puede iniciar sesion.' });
   } catch (error) {
@@ -157,4 +216,4 @@ const resetPassword = async (req, res, next) => {
   }
 };
 
-export { register, login, verifyEmail, forgotPassword, resetPassword };
+export { register, login, verifyEmail, forgotPassword, resetPassword, refresh, logout };

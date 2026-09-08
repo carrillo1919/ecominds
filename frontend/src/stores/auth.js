@@ -1,30 +1,23 @@
 import { defineStore } from 'pinia';
-import api, { apiMessage } from '@/api/axios';
+import api, { apiMessage, setCsrfToken } from '@/api/axios';
 
-const TOKEN_KEY = 'srcd_token';
 const USER_KEY = 'srcd_user';
 
 export const useAuthStore = defineStore('auth', {
   state: () => ({
     user: null,
-    token: null,
     loading: false,
   }),
 
   getters: {
-    isAuthenticated: (state) => Boolean(state.token),
+    isAuthenticated: (state) => Boolean(state.user),
     rol: (state) => state.user?.rol || null,
     nombreCompleto: (state) => (state.user ? `${state.user.nombre} ${state.user.apellido}` : ''),
   },
 
   actions: {
     restore() {
-      const token = localStorage.getItem(TOKEN_KEY);
       const raw = localStorage.getItem(USER_KEY);
-
-      if (!token) return;
-
-      this.token = token;
       try {
         this.user = raw ? JSON.parse(raw) : null;
       } catch {
@@ -32,16 +25,24 @@ export const useAuthStore = defineStore('auth', {
       }
     },
 
-    persist(token, user) {
-      this.token = token;
+    persist(user) {
       this.user = user;
-      localStorage.setItem(TOKEN_KEY, token);
       localStorage.setItem(USER_KEY, JSON.stringify(user));
+    },
+
+    async fetchCsrfToken() {
+      try {
+        const { data } = await api.get('/csrf-token');
+        setCsrfToken(data.csrfToken);
+      } catch {
+        setCsrfToken('');
+      }
     },
 
     async register(userData) {
       this.loading = true;
       try {
+        await this.fetchCsrfToken();
         const { data } = await api.post('/auth/register', userData);
         return { ok: true, message: data.message };
       } catch (error) {
@@ -54,8 +55,9 @@ export const useAuthStore = defineStore('auth', {
     async login(credentials) {
       this.loading = true;
       try {
+        await this.fetchCsrfToken();
         const { data } = await api.post('/auth/login', credentials);
-        this.persist(data.token, data.user);
+        this.persist(data.user);
         return { ok: true, user: data.user };
       } catch (error) {
         return { ok: false, message: apiMessage(error, 'No se pudo iniciar sesion') };
@@ -65,8 +67,6 @@ export const useAuthStore = defineStore('auth', {
     },
 
     async fetchUser() {
-      if (!this.token) return null;
-
       try {
         const { data } = await api.get('/users/me');
         this.user = data.user;
@@ -89,6 +89,7 @@ export const useAuthStore = defineStore('auth', {
     async forgotPassword(email) {
       this.loading = true;
       try {
+        await this.fetchCsrfToken();
         const { data } = await api.post('/auth/forgot-password', { email });
         return { ok: true, message: data.message };
       } catch (error) {
@@ -101,6 +102,7 @@ export const useAuthStore = defineStore('auth', {
     async resetPassword(payload) {
       this.loading = true;
       try {
+        await this.fetchCsrfToken();
         const { data } = await api.post('/auth/reset-password', payload);
         return { ok: true, message: data.message };
       } catch (error) {
@@ -110,10 +112,14 @@ export const useAuthStore = defineStore('auth', {
       }
     },
 
-    logout() {
+    async logout() {
+      try {
+        await this.fetchCsrfToken();
+        await api.post('/auth/logout');
+      } catch {
+        // ignorar errores de red en logout
+      }
       this.user = null;
-      this.token = null;
-      localStorage.removeItem(TOKEN_KEY);
       localStorage.removeItem(USER_KEY);
     },
   },

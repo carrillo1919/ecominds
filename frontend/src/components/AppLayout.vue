@@ -1,7 +1,8 @@
 <script setup>
-import { computed, ref, watch } from 'vue';
+import { computed, onMounted, ref, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { useAuthStore } from '@/stores/auth';
+import { setCsrfToken } from '@/api/axios';
 import { useAuthorization } from '@/composables/useAuthorization';
 import { roleLabel } from '@/utils/validators';
 import EcoMindsLogo from '@/components/EcoMindsLogo.vue';
@@ -37,10 +38,29 @@ const hasPermission = (permission) => {
   return !!permissions[permission];
 };
 
-const handleLogout = () => {
-  auth.logout();
+const handleLogout = async () => {
+  await auth.logout();
+  setCsrfToken('');
   router.push({ name: 'login' });
 };
+
+onMounted(async () => {
+  if (!auth.isAuthenticated) {
+    try {
+      const { data } = await auth.fetchCsrfToken();
+      setCsrfToken(data.csrfToken);
+      const user = await auth.fetchUser();
+      if (!user) {
+        await auth.logout();
+        router.push({ name: 'login' });
+      }
+    } catch {
+      await auth.logout();
+      setCsrfToken('');
+      router.push({ name: 'login' });
+    }
+  }
+});
 </script>
 
 <template>

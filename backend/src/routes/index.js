@@ -11,6 +11,7 @@ import enteReguladorRoutes from './enteReguladorRoutes.js';
 import requisitoLegalRoutes from './requisitoLegalRoutes.js';
 import empresaRequisitoRoutes from './empresaRequisitoRoutes.js';
 import calendarioRoutes from './calendarioRoutes.js';
+import { generateToken } from '../middlewares/csrf.js';
 
 const router = express.Router();
 
@@ -18,6 +19,11 @@ router.get('/health', (req, res) => res.json({
   status: 'ok',
   timestamp: new Date().toISOString(),
 }));
+
+router.get('/csrf-token', (req, res) => {
+  const token = generateToken(req, res);
+  res.json({ csrfToken: token });
+});
 
 router.use('/auth', authRoutes);
 router.use('/users', userRoutes);

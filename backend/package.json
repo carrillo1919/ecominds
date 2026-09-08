@@ -13,7 +13,6 @@
     "test:email": "node test/email.test.js"
   },
   "dependencies": {
-    "bcrypt": "^6.0.0",
     "bcryptjs": "^2.4.3",
     "cookie-parser": "^1.4.7",
     "cors": "^2.8.5",
@@ -34,10 +33,12 @@
     "pg-hstore": "^2.3.4",
     "resend": "^6.21.0",
     "sequelize": "^6.37.3",
+    "uuid": "^11.1.1",
     "winston": "^3.19.0"
   },
   "overrides": {
-    "qs": "^6.16.0"
+    "qs": "^6.16.0",
+    "uuid": "^11.1.1"
   },
   "devDependencies": {
     "nodemon": "^3.1.4",

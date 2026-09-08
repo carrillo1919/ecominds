@@ -33,7 +33,7 @@ export const sendEmail = async ({ to, subject, html, attachments = [] }) => {
     });
     return { success: true, messageId: info.messageId };
   } catch (error) {
-    logger.error({ event: 'email_send_failed', message: 'Error enviando correo', error: error.message, to, subject });
+    logger.error({ event: 'email_send_failed', message: 'Error enviando correo', error: error.message, subject });
     return { success: false, error: error.message };
   }
 };
