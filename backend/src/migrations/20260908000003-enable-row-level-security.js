@@ -1,16 +1,25 @@
+const ensurePolicy = async (queryInterface, table, policy, definition) => {
+  const [policies] = await queryInterface.sequelize.query(
+    'SELECT 1 FROM pg_policies WHERE schemaname = current_schema() AND tablename = :table AND policyname = :policy',
+    { replacements: { table, policy } }
+  );
+  if (policies.length === 0) {
+    await queryInterface.sequelize.query(`CREATE POLICY ${policy} ON "${table}" ${definition}`);
+  }
+};
+
 export const up = async (queryInterface) => {
   await queryInterface.sequelize.query('ALTER TABLE "Empresas" ENABLE ROW LEVEL SECURITY;');
   await queryInterface.sequelize.query('ALTER TABLE "Documentos" ENABLE ROW LEVEL SECURITY;');
   await queryInterface.sequelize.query('ALTER TABLE "Auditorias" ENABLE ROW LEVEL SECURITY;');
   await queryInterface.sequelize.query('ALTER TABLE "AuditoriaItems" ENABLE ROW LEVEL SECURITY;');
   await queryInterface.sequelize.query('ALTER TABLE "Empleados" ENABLE ROW LEVEL SECURITY;');
-  await queryInterface.sequelize.query('ALTER TABLE "EmpresaAsignaciones" ENABLE ROW LEVEL SECURITY;');
+  await queryInterface.sequelize.query('ALTER TABLE "empresa_asignaciones" ENABLE ROW LEVEL SECURITY;');
   await queryInterface.sequelize.query('ALTER TABLE "CalendarioEventos" ENABLE ROW LEVEL SECURITY;');
-  await queryInterface.sequelize.query('ALTER TABLE "ArchivoAdjuntos" ENABLE ROW LEVEL SECURITY;');
+  await queryInterface.sequelize.query('ALTER TABLE "ArchivosAdjuntos" ENABLE ROW LEVEL SECURITY;');
 
-  await queryInterface.sequelize.query(`
-    CREATE POLICY IF NOT EXISTS empresas_tenant_isolation ON "Empresas"
-      FOR ALL TO app_user
+  await ensurePolicy(queryInterface, 'Empresas', 'empresas_tenant_isolation', `
+      FOR ALL TO CURRENT_USER
       USING (
         id = current_setting('app.current_empresa_id', true)::UUID
         OR current_setting('app.current_is_admin', true)::BOOLEAN
@@ -18,74 +27,67 @@ export const up = async (queryInterface) => {
       WITH CHECK (current_setting('app.current_is_admin', true)::BOOLEAN)
   `);
 
-  await queryInterface.sequelize.query(`
-    CREATE POLICY IF NOT EXISTS documentos_tenant_isolation ON "Documentos"
-      FOR ALL TO app_user
+  await ensurePolicy(queryInterface, 'Documentos', 'documentos_tenant_isolation', `
+      FOR ALL TO CURRENT_USER
       USING (
         empresa_id = current_setting('app.current_empresa_id', true)::UUID
         OR current_setting('app.current_is_admin', true)::BOOLEAN
       )
   `);
 
-  await queryInterface.sequelize.query(`
-    CREATE POLICY IF NOT EXISTS auditorias_tenant_isolation ON "Auditorias"
-      FOR ALL TO app_user
+  await ensurePolicy(queryInterface, 'Auditorias', 'auditorias_tenant_isolation', `
+      FOR ALL TO CURRENT_USER
       USING (
-        empresa_id = current_setting('app.current_empresa_id', true)::UUID
+        "empresaId" = current_setting('app.current_empresa_id', true)::UUID
         OR current_setting('app.current_is_admin', true)::BOOLEAN
       )
   `);
 
-  await queryInterface.sequelize.query(`
-    CREATE POLICY IF NOT EXISTS auditoria_items_tenant_isolation ON "AuditoriaItems"
-      FOR ALL TO app_user
+  await ensurePolicy(queryInterface, 'AuditoriaItems', 'auditoria_items_tenant_isolation', `
+      FOR ALL TO CURRENT_USER
       USING (
         EXISTS (
           SELECT 1 FROM "Auditorias" a
-          WHERE a.id = "AuditoriaItems".auditoria_id
+          WHERE a.id = "AuditoriaItems"."auditoriaId"
             AND (
-              a.empresa_id = current_setting('app.current_empresa_id', true)::UUID
+              a."empresaId" = current_setting('app.current_empresa_id', true)::UUID
               OR current_setting('app.current_is_admin', true)::BOOLEAN
             )
         )
       )
   `);
 
-  await queryInterface.sequelize.query(`
-    CREATE POLICY IF NOT EXISTS empleados_tenant_isolation ON "Empleados"
-      FOR ALL TO app_user
+  await ensurePolicy(queryInterface, 'Empleados', 'empleados_tenant_isolation', `
+      FOR ALL TO CURRENT_USER
       USING (
         empresa_id = current_setting('app.current_empresa_id', true)::UUID
         OR current_setting('app.current_is_admin', true)::BOOLEAN
       )
   `);
 
-  await queryInterface.sequelize.query(`
-    CREATE POLICY IF NOT EXISTS empresa_asignaciones_tenant_isolation ON "EmpresaAsignaciones"
-      FOR ALL TO app_user
+  await ensurePolicy(queryInterface, 'empresa_asignaciones', 'empresa_asignaciones_tenant_isolation', `
+      FOR ALL TO CURRENT_USER
       USING (
         empresa_id = current_setting('app.current_empresa_id', true)::UUID
         OR current_setting('app.current_is_admin', true)::BOOLEAN
       )
   `);
 
-  await queryInterface.sequelize.query(`
-    CREATE POLICY IF NOT EXISTS calendario_eventos_tenant_isolation ON "CalendarioEventos"
-      FOR ALL TO app_user
+  await ensurePolicy(queryInterface, 'CalendarioEventos', 'calendario_eventos_tenant_isolation', `
+      FOR ALL TO CURRENT_USER
       USING (
-        empresa_id = current_setting('app.current_empresa_id', true)::UUID
+        "empresaId" = current_setting('app.current_empresa_id', true)::UUID
         OR current_setting('app.current_is_admin', true)::BOOLEAN
-        OR empresa_id IS NULL
+        OR "empresaId" IS NULL
       )
   `);
 
-  await queryInterface.sequelize.query(`
-    CREATE POLICY IF NOT EXISTS archivo_adjuntos_tenant_isolation ON "ArchivoAdjuntos"
-      FOR ALL TO app_user
+  await ensurePolicy(queryInterface, 'ArchivosAdjuntos', 'archivo_adjuntos_tenant_isolation', `
+      FOR ALL TO CURRENT_USER
       USING (
         EXISTS (
           SELECT 1 FROM "Documentos" d
-          WHERE d.id = "ArchivoAdjuntos".documento_id
+          WHERE d.id = "ArchivosAdjuntos".documento_id
             AND (
               d.empresa_id = current_setting('app.current_empresa_id', true)::UUID
               OR current_setting('app.current_is_admin', true)::BOOLEAN
@@ -102,9 +104,9 @@ export const down = async (queryInterface) => {
     ['Auditorias', 'auditorias_tenant_isolation'],
     ['AuditoriaItems', 'auditoria_items_tenant_isolation'],
     ['Empleados', 'empleados_tenant_isolation'],
-    ['EmpresaAsignaciones', 'empresa_asignaciones_tenant_isolation'],
+    ['empresa_asignaciones', 'empresa_asignaciones_tenant_isolation'],
     ['CalendarioEventos', 'calendario_eventos_tenant_isolation'],
-    ['ArchivoAdjuntos', 'archivo_adjuntos_tenant_isolation'],
+    ['ArchivosAdjuntos', 'archivo_adjuntos_tenant_isolation'],
   ];
   for (const [table, policy] of tables) {
     await queryInterface.sequelize.query(`DROP POLICY IF EXISTS ${policy} ON "${table}";`);
