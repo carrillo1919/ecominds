@@ -6,9 +6,10 @@ const isProduction = process.env.NODE_ENV === 'production';
 const {
   invalidCsrfTokenError,
   doubleCsrfProtection,
-  generateToken,
+  generateCsrfToken,
 } = doubleCsrf({
   getSecret: () => process.env.CSRF_SECRET,
+  getSessionIdentifier: (req) => req.ip || 'anonymous',
   cookieName: 'x-csrf-token',
   cookieOptions: {
     httpOnly: true,
@@ -33,4 +34,4 @@ const csrfErrorHandler = (error, req, res, next) => {
   return next(error);
 };
 
-export { doubleCsrfProtection, generateToken, csrfErrorHandler };
+export { doubleCsrfProtection, generateCsrfToken, csrfErrorHandler };

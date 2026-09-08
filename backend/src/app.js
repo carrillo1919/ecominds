@@ -4,7 +4,7 @@ import helmet from 'helmet';
 import morgan from 'morgan';
 import rateLimit from 'express-rate-limit';
 import cookieParser from 'cookie-parser';
-import { doubleCsrfProtection, csrfErrorHandler, generateToken as generateCsrfToken } from './middlewares/csrf.js';
+import { doubleCsrfProtection, csrfErrorHandler, generateCsrfToken } from './middlewares/csrf.js';
 
 import routes from './routes/index.js';
 import { notFound, errorHandler } from './middlewares/errorHandler.js';
