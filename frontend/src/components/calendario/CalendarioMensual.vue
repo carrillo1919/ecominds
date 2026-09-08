@@ -6,7 +6,7 @@
       <div
         v-for="dia in diasSemana"
         :key="dia"
-        class="py-2 text-center text-sm font-semibold text-[var(--primary)] bg-[var(--surface-alt)] border-r border-[var(--border)] last:border-r-0"
+        class="py-2 text-center text-xs md:text-sm font-semibold text-[var(--primary)] bg-[var(--surface-alt)] border-r border-[var(--border)] last:border-r-0"
       >
         {{ dia }}
       </div>
@@ -19,7 +19,7 @@
       <div
         v-for="celda in celdas"
         :key="celda.key"
-        class="min-h-[110px] p-2 bg-white cursor-pointer hover:bg-[var(--surface-alt)] transition-colors flex flex-col"
+        class="min-h-[80px] md:min-h-[110px] p-1.5 md:p-2 bg-white cursor-pointer hover:bg-[var(--surface-alt)] transition-colors flex flex-col"
         :class="
           [
             esHoy(celda.fecha) ? 'bg-[var(--success-soft)]' : '',
@@ -30,7 +30,7 @@
         <!-- Número del día + botón agregar -->
         <div class="flex justify-between items-start mb-1">
           <span
-            class="text-sm font-medium"
+            class="text-xs md:text-sm font-medium"
             :class="
               [
                 esHoy(celda.fecha) ? 'text-[var(--success)] font-bold' : 'text-[var(--text)]',
@@ -42,7 +42,7 @@
           <button
             v-if="celda.dia"
             type="button"
-            class="w-5 h-5 flex items-center justify-center text-xs rounded hover:bg-[var(--primary)] hover:text-white text-[var(--text-muted)] transition-colors"
+            class="hidden md:flex w-5 h-5 items-center justify-center text-xs rounded hover:bg-[var(--primary)] hover:text-white text-[var(--text-muted)] transition-colors"
             @click.stop="$emit('nuevo-evento', celda.fecha)"
           >
             +

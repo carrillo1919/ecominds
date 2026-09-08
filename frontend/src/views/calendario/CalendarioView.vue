@@ -6,11 +6,11 @@
     />
 
     <div
-      class="mt-4 flex flex-col lg:flex-row min-h-[640px] rounded-[var(--radius)] overflow-hidden shadow border border-[var(--border)]"
+      class="mt-4 flex flex-col lg:flex-row min-h-[auto] lg:min-h-[640px] rounded-[var(--radius)] overflow-hidden shadow border border-[var(--border)]"
     >
-      <!-- Panel izquierdo: detalle del día -->
+      <!-- Panel izquierdo: detalle del día (desktop) -->
       <aside
-        class="w-full lg:w-[40%] p-6 lg:p-8 flex flex-col"
+        class="hidden lg:flex w-full lg:w-[40%] p-6 lg:p-8 flex-col"
         style="background: linear-gradient(180deg, var(--navy-800), var(--primary));"
       >
         <DetalleDia
@@ -23,7 +23,7 @@
       </aside>
 
       <!-- Panel derecho: calendario mensual -->
-      <div class="w-full lg:w-[60%] bg-[var(--surface)] p-6 lg:p-8 flex flex-col">
+      <div class="w-full lg:w-[60%] bg-[var(--surface)] p-4 lg:p-8 flex flex-col">
         <!-- Navegación con selects de mes, año y filtros -->
         <div class="flex flex-wrap items-center justify-center gap-3 mb-4">
           <button
@@ -104,14 +104,38 @@
         </div>
 
         <CalendarioMensual
+          class="hidden lg:block"
           :fecha-actual="fechaActual"
           :selected-date="selectedDate"
           :eventos-por-dia="eventosPorDiaFiltrados"
           @seleccionar-dia="seleccionarDia"
           @nuevo-evento="abrirModalNuevo"
         />
+
+        <CalendarioCompacto
+          class="lg:hidden"
+          :fecha-actual="fechaActual"
+          :selected-date="selectedDate"
+          :eventos-por-dia="eventosPorDiaFiltrados"
+          @seleccionar-dia="abrirBottomSheet"
+          @nuevo-evento="abrirModalNuevo"
+        />
       </div>
     </div>
+
+    <BottomSheet
+      :show="mostrarBottomSheet"
+      :title="selectedDate"
+      @close="cerrarBottomSheet"
+    >
+      <DetalleDia
+        :fecha="selectedDate"
+        :eventos="eventosDelDiaFiltrados"
+        :total-eventos="eventosDelDia.length"
+        @nuevo-evento="abrirModalNuevo(selectedDate); cerrarBottomSheet();"
+        @editar-evento="(evt) => { abrirModalEditar(evt); cerrarBottomSheet(); }"
+      />
+    </BottomSheet>
 
     <ModalEvento
       :visible="modalVisible"
@@ -129,9 +153,11 @@ import { useToast } from 'vue-toastification';
 import api from '@/api/axios';
 import { useCalendarioStore } from '../../stores/calendario';
 import CalendarioMensual from '../../components/calendario/CalendarioMensual.vue';
+import CalendarioCompacto from '../../components/calendario/CalendarioCompacto.vue';
 import DetalleDia from '../../components/calendario/DetalleDia.vue';
 import ModalEvento from '../../components/calendario/ModalEvento.vue';
 import PageHeader from '../../components/ui/PageHeader.vue';
+import BottomSheet from '../../components/ui/BottomSheet.vue';
 
 const toast = useToast();
 const calendarioStore = useCalendarioStore();
@@ -145,6 +171,7 @@ const filtroTipo = ref('todos');
 const filtroEmpresa = ref('todas');
 const empresas = ref([]);
 const cargandoEmpresas = ref(false);
+const mostrarBottomSheet = ref(false);
 
 const meses = [
   { value: 1, label: 'Enero' },
@@ -261,6 +288,15 @@ function irHoy() {
 
 function seleccionarDia(fecha) {
   selectedDate.value = fecha;
+}
+
+function abrirBottomSheet(fecha) {
+  selectedDate.value = fecha;
+  mostrarBottomSheet.value = true;
+}
+
+function cerrarBottomSheet() {
+  mostrarBottomSheet.value = false;
 }
 
 function abrirModalNuevo(fecha) {
