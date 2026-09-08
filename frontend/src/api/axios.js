@@ -31,8 +31,16 @@ const onRefreshed = () => {
   refreshSubscribers = [];
 };
 
-const addRefreshSubscriber = (callback) => {
-  refreshSubscribers.push(callback);
+const onRefreshFailed = (error) => {
+  refreshSubscribers.forEach((callback) => callback(error));
+  refreshSubscribers = [];
+};
+
+const addRefreshSubscriber = (resolve, reject) => {
+  refreshSubscribers.push((error) => {
+    if (error) reject(error);
+    else resolve(api);
+  });
 };
 
 api.interceptors.request.use((config) => {
@@ -59,20 +67,24 @@ api.interceptors.response.use(
       originalRequest._retry = true;
 
       if (isRefreshing) {
-        return new Promise((resolve) => {
-          addRefreshSubscriber(() => {
-            resolve(api(originalRequest));
-          });
+        return new Promise((resolve, reject) => {
+          addRefreshSubscriber(
+            () => resolve(api(originalRequest)),
+            reject,
+          );
         });
       }
 
       isRefreshing = true;
 
       try {
-        await refreshApi.post('/auth/refresh');
+        await refreshApi.post('/auth/refresh', {}, {
+          headers: { 'x-csrf-token': csrfToken },
+        });
         onRefreshed();
         return api(originalRequest);
       } catch (refreshError) {
+        onRefreshFailed(refreshError);
         if (typeof onUnauthorized === 'function') {
           onUnauthorized();
         }

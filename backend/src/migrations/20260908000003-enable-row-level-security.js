@@ -97,17 +97,17 @@ export const up = async (queryInterface) => {
 
 export const down = async (queryInterface) => {
   const tables = [
-    'Empresas',
-    'Documentos',
-    'Auditorias',
-    'AuditoriaItems',
-    'Empleados',
-    'EmpresaAsignaciones',
-    'CalendarioEventos',
-    'ArchivoAdjuntos',
+    ['Empresas', 'empresas_tenant_isolation'],
+    ['Documentos', 'documentos_tenant_isolation'],
+    ['Auditorias', 'auditorias_tenant_isolation'],
+    ['AuditoriaItems', 'auditoria_items_tenant_isolation'],
+    ['Empleados', 'empleados_tenant_isolation'],
+    ['EmpresaAsignaciones', 'empresa_asignaciones_tenant_isolation'],
+    ['CalendarioEventos', 'calendario_eventos_tenant_isolation'],
+    ['ArchivoAdjuntos', 'archivo_adjuntos_tenant_isolation'],
   ];
-  for (const table of tables) {
-    await queryInterface.sequelize.query(`DROP POLICY IF EXISTS ${table.toLowerCase()}_tenant_isolation ON "${table}";`);
+  for (const [table, policy] of tables) {
+    await queryInterface.sequelize.query(`DROP POLICY IF EXISTS ${policy} ON "${table}";`);
     await queryInterface.sequelize.query(`ALTER TABLE "${table}" DISABLE ROW LEVEL SECURITY;`);
   }
 };
