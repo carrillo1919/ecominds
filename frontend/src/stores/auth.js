@@ -34,8 +34,10 @@ export const useAuthStore = defineStore('auth', {
       try {
         const { data } = await api.get('/csrf-token');
         setCsrfToken(data.csrfToken);
+        return true;
       } catch {
         setCsrfToken('');
+        return false;
       }
     },
 
