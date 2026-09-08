@@ -19,17 +19,23 @@
     "date-fns": "^4.4.0",
     "dotenv": "^16.4.5",
     "express": "^4.19.2",
+    "express-rate-limit": "^8.7.0",
     "express-validator": "^7.1.0",
+    "helmet": "^8.3.0",
     "jsonwebtoken": "^9.0.2",
     "morgan": "^1.10.0",
     "multer": "^2.3.0",
     "node-cron": "^4.6.0",
-    "nodemailer": "^6.10.1",
+    "nodemailer": "^10.0.1",
     "pdfkit": "^0.15.0",
     "pg": "^8.12.0",
     "pg-hstore": "^2.3.4",
     "resend": "^6.21.0",
-    "sequelize": "^6.37.3"
+    "sequelize": "^6.37.3",
+    "winston": "^3.19.0"
+  },
+  "overrides": {
+    "qs": "^6.16.0"
   },
   "devDependencies": {
     "nodemon": "^3.1.4",

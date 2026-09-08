@@ -2,13 +2,15 @@ import express from 'express';
 import { body, param, query } from 'express-validator';
 
 import validate from '../middlewares/validate.js';
-import { authenticate, authorize } from '../middlewares/auth.js';
+import { authenticate, authorize, requireEmpresa, resolveScope } from '../middlewares/auth.js';
 import * as controller from '../controllers/auditoriaController.js';
 import * as reportes from '../controllers/reporteController.js';
 
 const router = express.Router();
 
 router.use(authenticate);
+router.use(requireEmpresa);
+router.use(resolveScope);
 
 router.get(
   '/estadisticas',

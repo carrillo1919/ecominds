@@ -1,11 +1,13 @@
 import express from 'express';
 import { body, param } from 'express-validator';
 import validate from '../middlewares/validate.js';
-import { authenticate, authorize } from '../middlewares/auth.js';
+import { authenticate, authorize, requireEmpresa, resolveScope } from '../middlewares/auth.js';
 import * as controller from '../controllers/empresaRequisitoController.js';
 
 const router = express.Router();
 router.use(authenticate);
+router.use(requireEmpresa);
+router.use(resolveScope);
 
 router.get('/empresa/:empresaId', [param('empresaId').isUUID()], validate, controller.getByEmpresa);
 router.post('/', authorize('admin', 'auditor'), [

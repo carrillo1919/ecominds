@@ -3,6 +3,7 @@ import { Op } from 'sequelize';
 import crypto from 'crypto';
 import { User } from '../models/index.js';
 import { sendVerificationEmail, sendResetPasswordEmail } from '../services/emailService.js';
+import logger from '../utils/logger.js';
 
 const signToken = (user) =>
   jwt.sign({ sub: user.id, rol: user.rol }, process.env.JWT_SECRET, {
@@ -50,20 +51,24 @@ const register = async (req, res, next) => {
 const login = async (req, res, next) => {
   try {
     const { email, password } = req.body;
+    const normalizedEmail = String(email).toLowerCase();
 
     const user = await User.scope('withSecrets').findOne({
-      where: { email: String(email).toLowerCase() },
+      where: { email: normalizedEmail },
     });
 
     if (!user || !(await user.comparePassword(password))) {
+      logger.warn({ event: 'login_failed', email: normalizedEmail, ip: req.ip });
       return res.status(401).json({ message: 'Credenciales invalidas' });
     }
 
     if (!user.activo) {
+      logger.warn({ event: 'login_failed_inactive_user', email: normalizedEmail, ip: req.ip, userId: user.id });
       return res.status(403).json({ message: 'Su usuario esta desactivado. Contacte al administrador.' });
     }
 
     if (!user.verified) {
+      logger.warn({ event: 'login_failed_unverified_user', email: normalizedEmail, ip: req.ip, userId: user.id });
       return res.status(403).json({ message: 'Debe verificar su correo antes de iniciar sesion' });
     }
 
@@ -116,6 +121,7 @@ const forgotPassword = async (req, res, next) => {
     await user.save();
 
     await sendResetPasswordEmail(user, token);
+    logger.info({ event: 'password_reset_requested', userId: user.id, email: user.email, ip: req.ip });
 
     return res.json(genericResponse);
   } catch (error) {
@@ -143,6 +149,7 @@ const resetPassword = async (req, res, next) => {
     user.resetPasswordToken = null;
     user.resetPasswordExpires = null;
     await user.save();
+    logger.info({ event: 'password_reset_completed', userId: user.id, email: user.email, ip: req.ip });
 
     return res.json({ message: 'Contrasena actualizada correctamente. Ya puede iniciar sesion.' });
   } catch (error) {

@@ -3,6 +3,7 @@ import { registrarAccion } from '../services/documentoAuditoriaService.js';
 import { sendEmail, buildEmailTemplate, sendEmailWithTemplate } from '../services/emailService.js';
 import path from 'path';
 import { Sequelize } from 'sequelize';
+import { applyEmpresaScope, assertEmpresaInScope } from '../utils/empresaScope.js';
 const { Op } = Sequelize;
 const ESTADOS = ['vigente', 'vencido', 'archivado'];
 
@@ -28,15 +29,13 @@ const proximoAVencer = (doc) => {
   return dias <= 15;
 };
 
-// admin y auditor ven todas las empresas; demás solo la suya
 const resolveWhere = (req) => {
-  if (['admin', 'auditor'].includes(req.user.rol) && req.query.empresaId) {
-    return { empresaId: req.query.empresaId };
+  const where = applyEmpresaScope({}, req);
+  if (req.query.empresaId) {
+    assertEmpresaInScope(req.query.empresaId, req);
+    where.empresaId = req.query.empresaId;
   }
-  if (['admin', 'auditor'].includes(req.user.rol)) {
-    return {};
-  }
-  return { empresaId: req.empresaId };
+  return where;
 };
 
 // GET /api/documentos
@@ -133,13 +132,11 @@ const validarResponsable = async (responsableId, empresaId) => {
 // POST /api/documentos
 const create = async (req, res, next) => {
   try {
-    let empresaId;
-    if (['admin', 'auditor'].includes(req.user.rol)) {
-      empresaId = req.body.empresaId;
-      if (!empresaId) return res.status(400).json({ message: 'empresaId es requerido' });
-    } else {
-      empresaId = req.empresaId;
-    }
+    const empresaId = (req.scope?.all || req.user.rol === 'auditor')
+      ? req.body.empresaId
+      : (req.body.empresaId || req.scope?.empresaIds?.[0]);
+    if (!empresaId) return res.status(400).json({ message: 'empresaId es requerido' });
+    assertEmpresaInScope(empresaId, req);
 
     const { empresaRequisitoId, descripcion, fechaDocumento, fechaVencimiento, responsableId } = req.body;
 

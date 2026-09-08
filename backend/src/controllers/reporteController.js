@@ -1,6 +1,7 @@
 import { Auditoria, AuditoriaItem, Requisito, Empresa, User } from '../models/index.js';
 import { calcularResultado } from '../services/riesgoService.js';
 import { construirInforme } from '../services/pdfService.js';
+import { assertEmpresaInScope } from '../utils/empresaScope.js';
 
 // GET /api/auditorias/:id/informe.pdf  (RF-06.1)
 const informePdf = async (req, res, next) => {
@@ -14,6 +15,7 @@ const informePdf = async (req, res, next) => {
     });
 
     if (!auditoria) return res.status(404).json({ message: 'Auditoria no encontrada' });
+    assertEmpresaInScope(auditoria.empresaId, req);
 
     const plain = auditoria.toJSON();
     plain.items = (plain.items || []).sort((a, b) => (a.requisito?.orden || 0) - (b.requisito?.orden || 0));

@@ -2,12 +2,14 @@ import express from 'express';
 import { body, param } from 'express-validator';
 
 import validate from '../middlewares/validate.js';
-import { authenticate, authorize } from '../middlewares/auth.js';
+import { authenticate, authorize, requireEmpresa, resolveScope } from '../middlewares/auth.js';
 import * as controller from '../controllers/empresaController.js';
 
 const router = express.Router();
 
 router.use(authenticate);
+router.use(requireEmpresa);
+router.use(resolveScope);
 
 router.get('/', controller.getAll);
 router.get(
@@ -19,7 +21,7 @@ router.get(
 
 router.post(
   '/',
-  authorize('admin', 'auditor'),
+  authorize('admin'),
   [
     body('nombre').trim().notEmpty().withMessage('El nombre es obligatorio'),
     body('rif').trim().notEmpty().withMessage('El RIF es obligatorio'),
