@@ -18,6 +18,9 @@ export function useAuthorization() {
     canAuditar: computed(() => ['admin', 'auditor'].includes(auth.rol)),
     canGestionarEmpleados: computed(() => ['admin', 'responsable'].includes(auth.rol)),
     canGestionarDocumentos: computed(() => ['admin', 'auditor', 'responsable'].includes(auth.rol)),
+    canGestionarCatalogos: computed(() => ['admin'].includes(auth.rol)),
+    canGestionarAsignaciones: computed(() => ['admin', 'auditor'].includes(auth.rol)),
+    canVerFacturacion: computed(() => ['admin', 'auditor', 'responsable'].includes(auth.rol)),
   };
 }
 
