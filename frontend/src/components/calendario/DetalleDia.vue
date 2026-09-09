@@ -172,6 +172,8 @@ const etiquetaTipo = (evento) => {
     auditoria: "Auditoría",
     documento: "Documento",
     compromiso: "Compromiso de cumplimiento",
+    servicio: "Servicio",
+    producto: "Producto",
     nota: "Nota",
   };
   return etiquetas[evento.tipo] || evento.tipo;

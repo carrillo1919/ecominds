@@ -44,6 +44,30 @@ const routes = [
         component: () => import('@/views/administracion/NotificacionesConfigView.vue'),
         meta: { requiresAuth: true, roles: ['admin'] },
       },
+      {
+        path: 'productos',
+        name: 'productos',
+        component: () => import('@/views/administracion/ProductosView.vue'),
+        meta: { requiresAuth: true, roles: ['admin'] },
+      },
+      {
+        path: 'servicios',
+        name: 'servicios',
+        component: () => import('@/views/administracion/ServiciosView.vue'),
+        meta: { requiresAuth: true, roles: ['admin'] },
+      },
+      {
+        path: 'asignaciones',
+        name: 'asignaciones',
+        component: () => import('@/views/servicios/AsignacionesView.vue'),
+        meta: { requiresAuth: true, roles: ['admin', 'auditor', 'responsable'] },
+      },
+      {
+        path: 'facturas',
+        name: 'facturas',
+        component: () => import('@/views/servicios/FacturasView.vue'),
+        meta: { requiresAuth: true, roles: ['admin', 'auditor', 'responsable'] },
+      },
     ],
   },
 

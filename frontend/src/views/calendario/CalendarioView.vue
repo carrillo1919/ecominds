@@ -198,6 +198,8 @@ const tiposFiltro = [
   { value: 'auditoria', label: 'Auditorías' },
   { value: 'documento', label: 'Documentos' },
   { value: 'compromiso', label: 'Compromisos' },
+  { value: 'servicio', label: 'Servicios' },
+  { value: 'producto', label: 'Productos' },
   { value: 'nota', label: 'Notas' },
 ];
 
