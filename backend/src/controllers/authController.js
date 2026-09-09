@@ -12,7 +12,7 @@ const REFRESH_TOKEN_MAX_AGE = 7 * 24 * 60 * 60 * 1000; // 7 días
 const cookieOptions = (maxAge) => ({
   httpOnly: true,
   secure: isProduction,
-  sameSite: isProduction ? 'strict' : 'lax',
+  sameSite: isProduction ? 'none' : 'lax',
   maxAge,
   path: '/',
 });

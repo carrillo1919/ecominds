@@ -9,12 +9,12 @@ const {
   generateCsrfToken,
 } = doubleCsrf({
   getSecret: () => process.env.CSRF_SECRET,
-  getSessionIdentifier: (req) => req.ip || 'anonymous',
+  getSessionIdentifier: () => 'anonymous',
   cookieName: 'x-csrf-token',
   cookieOptions: {
     httpOnly: false,
     secure: isProduction,
-    sameSite: isProduction ? 'strict' : 'lax',
+    sameSite: isProduction ? 'none' : 'lax',
     signed: false, 
   },
   size: 64,

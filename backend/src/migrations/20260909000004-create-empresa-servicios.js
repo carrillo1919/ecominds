@@ -93,16 +93,10 @@ export const up = async (queryInterface, Sequelize) => {
     name: 'empresa_servicios_factura_idx',
   });
 
-  await queryInterface.addConstraint('EmpresaServicios', {
-    type: 'check',
-    name: 'empresa_servicios_tipo_check',
-    where: {
-      [Sequelize.Op.or]: [
-        { productoId: { [Sequelize.Op.ne]: null } },
-        { servicioId: { [Sequelize.Op.ne]: null } },
-      ],
-    },
-  });
+    await queryInterface.sequelize.query(
+    `ALTER TABLE "EmpresaServicios" ADD CONSTRAINT "empresa_servicios_tipo_check" CHECK ("productoId" IS NOT NULL OR "servicioId" IS NOT NULL);`,
+    { type: Sequelize.QueryTypes.RAW }
+  );
 };
 
 export const down = async (queryInterface) => {
