@@ -85,7 +85,6 @@ app.use(
 
 app.use(express.json({ limit: '10kb' }));
 app.use(express.urlencoded({ extended: true, limit: '10kb' }));
-app.use(cookieParser());
 app.use(morgan(isProduction ? 'combined' : 'dev'));
 app.use(limiter);
 
@@ -95,6 +94,7 @@ app.get('/api/csrf-token', (req, res) => {
   const token = generateCsrfToken(req, res);
   res.json({ csrfToken: token });
 });
+app.use(cookieParser());
 app.use('/api', doubleCsrfProtection, routes);
 
 app.use(notFound);
