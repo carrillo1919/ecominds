@@ -12,6 +12,10 @@ import requisitoLegalRoutes from './requisitoLegalRoutes.js';
 import empresaRequisitoRoutes from './empresaRequisitoRoutes.js';
 import calendarioRoutes from './calendarioRoutes.js';
 import notificacionConfigRoutes from './notificacionConfigRoutes.js';
+import productoRoutes from './productoRoutes.js';
+import servicioRoutes from './servicioRoutes.js';
+import empresaServicioRoutes from './empresaServicioRoutes.js';
+import facturaRoutes from './facturaRoutes.js';
 
 const router = express.Router();
 
@@ -32,5 +36,9 @@ router.use('/requisitos-legales', requisitoLegalRoutes);
 router.use('/empresa-requisitos', empresaRequisitoRoutes);
 router.use('/calendario', calendarioRoutes);
 router.use('/notificaciones', notificacionConfigRoutes);
+router.use('/productos', productoRoutes);
+router.use('/servicios', servicioRoutes);
+router.use('/empresa-servicios', empresaServicioRoutes);
+router.use('/facturas', facturaRoutes);
 
 export default router;
