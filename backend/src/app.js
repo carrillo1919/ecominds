@@ -23,7 +23,7 @@ if (isProduction && !frontendUrl) {
   throw new Error('FRONTEND_URL debe estar definida en producción');
 }
 
-const allowedOrigins = (frontendUrl || 'http://localhost:5173')
+const allowedOrigins = (frontendUrl )
   .split(',')
   .map((origin) => origin.trim().replace(/\/$/, ''));
 
@@ -88,6 +88,8 @@ app.use(
   })
 );
 
+
+app.use(cookieParser()); 
 app.use(express.json({ limit: '10kb' }));
 app.use(express.urlencoded({ extended: true, limit: '10kb' }));
 app.use(morgan(isProduction ? 'combined' : 'dev'));
@@ -99,7 +101,6 @@ app.get('/api/csrf-token', (req, res) => {
   const token = generateCsrfToken(req, res);
   res.json({ csrfToken: token });
 });
-app.use(cookieParser());
 app.use('/api', doubleCsrfProtection, routes);
 
 app.use(notFound);

@@ -18,6 +18,7 @@ const transporter = nodemailer.createTransport({
   tls: {
     rejectUnauthorized: process.env.NODE_ENV !== 'development',
   },
+  family: 4, 
 });
 
 const frontendUrl = process.env.EMAIL_FRONTEND_URL ||
