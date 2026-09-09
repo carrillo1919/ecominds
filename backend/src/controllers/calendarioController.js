@@ -8,6 +8,8 @@ const COLORES = {
   documentoVencimiento: '#8b5cf6',
   compromiso: '#f59e0b',
   nota: '#10b981',
+  servicio: '#8b5cf6',
+  producto: '#0ea5e9',
 };
 
 const tieneAccesoTotal = (req) => Boolean(req.scope?.all);
@@ -62,7 +64,7 @@ export const getEventos = async (req, res, next) => {
         : [{ empresaId: null }];
     }
 
-    const [auditorias, documentos, auditoriaItems, calendarioEventos] = await Promise.all([
+    const [auditorias, documentos, auditoriaItems, empresaServicios, calendarioEventos] = await Promise.all([
       db.Auditoria.findAll({
         where: applyEmpresaScope({ fecha: rango }, req),
         include: [{ model: db.Empresa, as: 'empresa', attributes: ['id', 'nombre', 'rif'] }],
@@ -82,6 +84,17 @@ export const getEventos = async (req, res, next) => {
             include: [{ model: db.Empresa, as: 'empresa', attributes: ['id', 'nombre', 'rif'] }],
           },
           { model: db.Requisito, as: 'requisito' },
+        ],
+      }),
+      db.EmpresaServicio.findAll({
+        where: applyEmpresaScope({
+          estado: { [Op.not]: 'cancelado' },
+          [Op.or]: [{ fechaEjecucion: rango }, { fechaEntrega: rango }],
+        }, req),
+        include: [
+          { model: db.Producto, as: 'producto' },
+          { model: db.Servicio, as: 'servicio' },
+          { model: db.Empresa, as: 'empresa', attributes: ['id', 'nombre', 'rif'] },
         ],
       }),
       db.CalendarioEvento.findAll({
@@ -166,9 +179,30 @@ export const getEventos = async (req, res, next) => {
       });
     }
 
+    // Asignaciones de productos/servicios
+    for (const asignacion of empresaServicios) {
+      const fecha = asignacion.fechaEntrega || asignacion.fechaEjecucion;
+      const tipo = asignacion.productoId ? 'producto' : 'servicio';
+      const nombre = asignacion.producto?.nombre || asignacion.servicio?.nombre || (tipo === 'producto' ? 'Producto' : 'Servicio');
+      const titulo = tipo === 'producto' ? `Entrega: ${nombre}` : `Ejecución: ${nombre}`;
+
+      eventos.push({
+        id: `empresa-servicio-${asignacion.id}`,
+        titulo,
+        empresa: asignacion.empresa?.nombre || null,
+        fecha,
+        tipo,
+        origen: 'empresaServicio',
+        entidadId: asignacion.id,
+        empresaServicioId: asignacion.id,
+        color: COLORES[tipo],
+        descripcion: `Asignación para ${asignacion.empresa?.nombre || ''}`.trim(),
+      });
+    }
+
     // Notas y auditorías planificadas desde CalendarioEvento
     for (const evento of calendarioEventos) {
-      if (evento.auditoriaId || evento.documentoId || evento.auditoriaItemId) continue;
+      if (evento.auditoriaId || evento.documentoId || evento.auditoriaItemId || evento.empresaServicioId) continue;
 
       eventos.push({
         id: evento.id,
@@ -217,6 +251,10 @@ export const crearEvento = async (req, res, next) => {
       const auditoria = await db.Auditoria.findByPk(auditoriaId);
       if (!auditoria) return res.status(404).json({ message: 'Auditoría no encontrada' });
       assertEmpresaInScope(auditoria.empresaId, req);
+    }
+
+    if (['servicio', 'producto'].includes(tipoEvento)) {
+      return res.status(400).json({ message: 'Las asignaciones de servicios/productos se crean desde el módulo de asignaciones' });
     }
 
     const evento = await db.CalendarioEvento.create({

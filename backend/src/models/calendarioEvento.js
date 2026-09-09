@@ -1,4 +1,4 @@
-const TIPOS_EVENTO = ['auditoria', 'nota', 'documento', 'compromiso'];
+const TIPOS_EVENTO = ['auditoria', 'nota', 'documento', 'compromiso', 'servicio', 'producto'];
 
 const CalendarioEventoModel = (sequelize, DataTypes) => {
   const CalendarioEvento = sequelize.define(
@@ -25,6 +25,11 @@ const CalendarioEventoModel = (sequelize, DataTypes) => {
         allowNull: true,
         field: 'auditoria_item_id',
       },
+      empresaServicioId: {
+        type: DataTypes.UUID,
+        allowNull: true,
+        field: 'empresaServicioId',
+      },
 
       // Privacidad de la nota
       privacidad: {
@@ -50,6 +55,7 @@ const CalendarioEventoModel = (sequelize, DataTypes) => {
     CalendarioEvento.belongsTo(models.Empresa, { as: 'empresa', foreignKey: 'empresaId' });
     CalendarioEvento.belongsTo(models.Documento, { foreignKey: 'documento_id', as: 'documento' });
     CalendarioEvento.belongsTo(models.AuditoriaItem, { foreignKey: 'auditoria_item_id', as: 'auditoriaItem' });
+    CalendarioEvento.belongsTo(models.EmpresaServicio, { foreignKey: 'empresaServicioId', as: 'empresaServicio' });
   };
 
   CalendarioEvento.TIPOS = TIPOS_EVENTO;
