@@ -14,6 +14,13 @@ app.use(createPinia());
 app.use(router);
 app.use(Toast, { position: 'top-right', timeout: 4000 });
 
+window.addEventListener('error', (e) => {
+  if (e.filename?.includes('blob:') || e.filename?.includes('<anonymous>')) {
+    console.warn('Error de script externo ignorado:', e.message);
+    e.preventDefault();
+  }
+});
+
 // La sesion se restaura en AppLayout para intentar refresh si no hay usuario en memoria.
 
 app.mount('#app');

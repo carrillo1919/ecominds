@@ -12,8 +12,9 @@ const REFRESH_TOKEN_MAX_AGE = 7 * 24 * 60 * 60 * 1000; // 7 días
 const cookieOptions = (maxAge) => ({
   httpOnly: true,
   secure: isProduction,
-  sameSite: 'strict',
+  sameSite: isProduction ? 'strict' : 'lax',
   maxAge,
+  path: '/',
 });
 
 const signAccessToken = (user) =>
@@ -38,8 +39,9 @@ const setAuthCookies = (res, user) => {
 };
 
 const clearAuthCookies = (res) => {
-  res.clearCookie('access_token');
-  res.clearCookie('refresh_token');
+  const options = cookieOptions(0);
+  res.clearCookie('access_token', options);
+  res.clearCookie('refresh_token', options);
 };
 
 // POST /api/auth/register
@@ -163,21 +165,32 @@ const refresh = async (req, res, next) => {
   try {
     const token = req.cookies?.refresh_token;
     if (!token) {
+      logger.warn({ event: 'refresh_failed_no_cookie', ip: req.ip, cookies: Object.keys(req.cookies || {}) });
       return res.status(401).json({ message: 'Sesión inválida' });
     }
 
-    const payload = jwt.verify(token, process.env.JWT_REFRESH_SECRET);
+    let payload;
+    try {
+      payload = jwt.verify(token, process.env.JWT_REFRESH_SECRET);
+    } catch (verifyError) {
+      logger.warn({ event: 'refresh_failed_invalid_token', ip: req.ip, reason: verifyError.message });
+      return res.status(401).json({ message: 'Token inválido' });
+    }
+
     if (payload.type !== 'refresh') {
+      logger.warn({ event: 'refresh_failed_wrong_type', ip: req.ip, type: payload.type });
       return res.status(401).json({ message: 'Token inválido' });
     }
 
     const user = await User.findByPk(payload.sub);
     if (!user || !user.activo) {
       clearAuthCookies(res);
+      logger.warn({ event: 'refresh_failed_user_invalid', ip: req.ip, userId: payload.sub });
       return res.status(401).json({ message: 'Sesión inválida' });
     }
 
     setAuthCookies(res, user);
+    logger.info({ event: 'refresh_success', userId: user.id, ip: req.ip });
     return res.json({ user: user.toPublicJSON() });
   } catch (error) {
     return next(error);

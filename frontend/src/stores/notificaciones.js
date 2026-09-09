@@ -8,9 +8,12 @@ export const useNotificacionesStore = defineStore('notificaciones', () => {
 
   const fetchConfigs = async () => {
     loading.value = true;
-    const { data } = await notificacionApi.getNotificacionConfigs();
-    configs.value = data;
-    loading.value = false;
+    try {
+      const { data } = await notificacionApi.getNotificacionConfigs();
+      configs.value = data;
+    } finally {
+      loading.value = false;
+    }
   };
 
   const updateConfig = async (id, payload) => {

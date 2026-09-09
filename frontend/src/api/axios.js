@@ -17,6 +17,8 @@ let onUnauthorized = null;
 let csrfToken = '';
 let isRefreshing = false;
 let refreshSubscribers = [];
+let hasRedirectedToLogin = false;
+let isLoggingOut = false;
 
 export const setUnauthorizedHandler = (handler) => {
   onUnauthorized = handler;
@@ -24,6 +26,10 @@ export const setUnauthorizedHandler = (handler) => {
 
 export const setCsrfToken = (token) => {
   csrfToken = token;
+};
+
+export const setLoggingOut = (value) => {
+  isLoggingOut = value;
 };
 
 const onRefreshed = () => {
@@ -43,9 +49,28 @@ const addRefreshSubscriber = (resolve, reject) => {
   });
 };
 
+const triggerUnauthorized = () => {
+  if (hasRedirectedToLogin) return;
+  hasRedirectedToLogin = true;
+  if (typeof onUnauthorized === 'function') {
+    try {
+      onUnauthorized();
+    } catch {
+      // ignorar errores del handler de redirección
+    }
+  }
+};
+
+const getCsrfCookie = () => {
+  const match = document.cookie.match(/(?:^|;\s*)x-csrf-token=([^;]+)/);
+  return match ? decodeURIComponent(match[1]) : '';
+};
+
 api.interceptors.request.use((config) => {
-  if (csrfToken && !['GET', 'HEAD', 'OPTIONS'].includes(config.method?.toUpperCase())) {
-    config.headers['x-csrf-token'] = csrfToken;
+  const method = config.method?.toUpperCase();
+  const token = csrfToken || getCsrfCookie();
+  if (token && !['GET', 'HEAD', 'OPTIONS'].includes(method)) {
+    config.headers['x-csrf-token'] = token;
   }
   return config;
 });
@@ -60,6 +85,10 @@ api.interceptors.response.use(
     const isRefreshAttempt = url.includes('/auth/refresh');
 
     if (status !== 401 || isAuthAttempt || isRefreshAttempt) {
+      return Promise.reject(error);
+    }
+
+    if (isLoggingOut || hasRedirectedToLogin) {
       return Promise.reject(error);
     }
 
@@ -85,18 +114,14 @@ api.interceptors.response.use(
         return api(originalRequest);
       } catch (refreshError) {
         onRefreshFailed(refreshError);
-        if (typeof onUnauthorized === 'function') {
-          onUnauthorized();
-        }
+        triggerUnauthorized();
         return Promise.reject(refreshError);
       } finally {
         isRefreshing = false;
       }
     }
 
-    if (typeof onUnauthorized === 'function') {
-      onUnauthorized();
-    }
+    triggerUnauthorized();
     return Promise.reject(error);
   }
 );

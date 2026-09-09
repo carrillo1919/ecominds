@@ -39,8 +39,8 @@ const routes = [
         meta: { requiresAuth: true },
       },
       {
-        path: '/admin/notificaciones',
-        name: 'NotificacionesConfig',
+        path: 'notificaciones',
+        name: 'notificaciones',
         component: () => import('@/views/administracion/NotificacionesConfigView.vue'),
         meta: { requiresAuth: true, roles: ['admin'] },
       },
@@ -56,14 +56,28 @@ const router = createRouter({
   scrollBehavior: () => ({ top: 0 }),
 });
 
-router.beforeEach((to) => {
-  const auth = useAuthStore();
+const ensureAuth = async (auth) => {
   auth.restore();
+  if (auth.isAuthenticated) return true;
 
+  try {
+    await auth.fetchUser();
+    return auth.isAuthenticated;
+  } catch {
+    return false;
+  }
+};
+
+router.beforeEach(async (to) => {
+  const auth = useAuthStore();
   const requiresAuth = to.matched.some((r) => r.meta.requiresAuth);
 
-  if (requiresAuth && !auth.isAuthenticated) {
-    return { name: 'login', query: { redirect: to.fullPath } };
+  if (requiresAuth) {
+    const isAuth = await ensureAuth(auth);
+    if (!isAuth) {
+      return { name: 'login', query: { redirect: to.fullPath } };
+    }
+    await auth.fetchCsrfToken();
   }
 
   if (auth.isAuthenticated && ['login', 'register'].includes(to.name)) {

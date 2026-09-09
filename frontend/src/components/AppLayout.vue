@@ -43,22 +43,18 @@ const handleLogout = async () => {
 };
 
 onMounted(async () => {
-  const csrfOk = await auth.fetchCsrfToken();
-
-  if (!csrfOk) {
-    await auth.logout();
-    router.push({ name: 'login' });
-    return;
-  }
-
-  if (!auth.isAuthenticated) {
-    const user = await auth.fetchUser();
-    if (!user) {
-      await auth.logout();
-      router.push({ name: 'login' });
-    }
-  }
+  await auth.fetchCsrfToken();
 });
+
+const MOBILE_BREAKPOINT = 768;
+
+function toggleMenu() {
+  if (window.innerWidth < MOBILE_BREAKPOINT) {
+    mobileOpen.value = !mobileOpen.value;
+  } else {
+    collapsed.value = !collapsed.value;
+  }
+}
 </script>
 
 <template>
@@ -154,7 +150,7 @@ onMounted(async () => {
           class="icon-button menu-toggle"
           type="button"
           aria-label="Alternar menu lateral"
-          @click="collapsed = !collapsed; mobileOpen = !mobileOpen"
+          @click="toggleMenu"
         >
           <svg viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h16" /></svg>
         </button>

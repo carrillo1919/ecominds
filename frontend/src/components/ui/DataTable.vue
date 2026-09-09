@@ -1,5 +1,5 @@
 <script setup>
-import { computed } from 'vue';
+import { computed, useSlots } from 'vue';
 import LoadingState from './LoadingState.vue';
 import EmptyState from './EmptyState.vue';
 
@@ -12,7 +12,8 @@ const props = defineProps({
   keyField: { type: String, default: 'id' },
 });
 
-const hasActions = computed(() => !!props.$slots.actions);
+const slots = useSlots();
+const hasActions = computed(() => !!slots.actions);
 </script>
 
 <template>
@@ -50,7 +51,7 @@ const hasActions = computed(() => !!props.$slots.actions);
       </div>
 
       <!-- Vista mobile card-list -->
-      <div v-if="items.length" class="data-table__mobile" aria-hidden="true">
+      <div v-if="items.length" class="data-table__mobile">
         <article v-for="item in items" :key="`${item[keyField]}-card`" class="data-table__card">
           <div v-for="h in headers" :key="`${h.key}-${item[keyField]}`" class="data-table__row">
             <span class="data-table__label">{{ h.label }}</span>

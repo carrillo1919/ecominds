@@ -106,7 +106,9 @@ onUnmounted(() => window.removeEventListener('keydown', onKeydown));
   transform: translateY(100%);
 }
 
-@media (min-width: 701px) {
+
+@media (min-width: 1024px) {
   .bottom-sheet { display: none; }
 }
+
 </style>

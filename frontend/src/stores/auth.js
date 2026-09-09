@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia';
-import api, { apiMessage, setCsrfToken } from '@/api/axios';
+import api, { apiMessage, setCsrfToken, setLoggingOut } from '@/api/axios';
 
 const USER_KEY = 'srcd_user';
 
@@ -69,14 +69,10 @@ export const useAuthStore = defineStore('auth', {
     },
 
     async fetchUser() {
-      try {
-        const { data } = await api.get('/users/me');
-        this.user = data.user;
-        localStorage.setItem(USER_KEY, JSON.stringify(data.user));
-        return data.user;
-      } catch {
-        return null;
-      }
+      const { data } = await api.get('/users/me');
+      this.user = data.user;
+      localStorage.setItem(USER_KEY, JSON.stringify(data.user));
+      return data.user;
     },
 
     async verifyEmail(token) {
@@ -115,14 +111,16 @@ export const useAuthStore = defineStore('auth', {
     },
 
     async logout() {
+      setLoggingOut(true);
+      this.user = null;
+      localStorage.removeItem(USER_KEY);
       try {
         await this.fetchCsrfToken();
         await api.post('/auth/logout');
       } catch {
         // ignorar errores de red en logout
       }
-      this.user = null;
-      localStorage.removeItem(USER_KEY);
+      setLoggingOut(false);
     },
   },
 });

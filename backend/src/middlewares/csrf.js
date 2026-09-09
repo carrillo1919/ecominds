@@ -12,9 +12,9 @@ const {
   getSessionIdentifier: (req) => req.ip || 'anonymous',
   cookieName: 'x-csrf-token',
   cookieOptions: {
-    httpOnly: true,
+    httpOnly: false,
     secure: isProduction,
-    sameSite: 'strict',
+    sameSite: isProduction ? 'strict' : 'lax',
   },
   size: 64,
   getTokenFromRequest: (req) => {

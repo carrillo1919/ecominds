@@ -128,13 +128,18 @@
       :title="selectedDate"
       @close="cerrarBottomSheet"
     >
-      <DetalleDia
-        :fecha="selectedDate"
-        :eventos="eventosDelDiaFiltrados"
-        :total-eventos="eventosDelDia.length"
-        @nuevo-evento="abrirModalNuevo(selectedDate); cerrarBottomSheet();"
-        @editar-evento="(evt) => { abrirModalEditar(evt); cerrarBottomSheet(); }"
-      />
+      <div
+        class="-mx-5 -mb-5 px-5 py-6 min-h-[50vh] rounded-t-2xl"
+        style="background: linear-gradient(180deg, var(--navy-800), var(--primary));"
+      >
+        <DetalleDia
+          :fecha="selectedDate"
+          :eventos="eventosDelDiaFiltrados"
+          :total-eventos="eventosDelDia.length"
+          @nuevo-evento="abrirModalNuevo(selectedDate); cerrarBottomSheet();"
+          @editar-evento="(evt) => { abrirModalEditar(evt); cerrarBottomSheet(); }"
+        />
+      </div>
     </BottomSheet>
 
     <ModalEvento

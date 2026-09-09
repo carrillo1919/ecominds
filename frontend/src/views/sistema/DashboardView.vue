@@ -1,15 +1,10 @@
 <script setup>
-import { onMounted } from 'vue';
 import { useAuthStore } from '@/stores/auth';
 import { useAuthorization } from '@/composables/useAuthorization';
 import { roleLabel } from '@/utils/validators';
 
 const auth = useAuthStore();
 const { isAdmin, canAuditar } = useAuthorization();
-
-onMounted(() => {
-  auth.fetchUser();
-});
 </script>
 
 <template>

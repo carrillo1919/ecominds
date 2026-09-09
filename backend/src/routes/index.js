@@ -11,6 +11,7 @@ import enteReguladorRoutes from './enteReguladorRoutes.js';
 import requisitoLegalRoutes from './requisitoLegalRoutes.js';
 import empresaRequisitoRoutes from './empresaRequisitoRoutes.js';
 import calendarioRoutes from './calendarioRoutes.js';
+import notificacionConfigRoutes from './notificacionConfigRoutes.js';
 
 const router = express.Router();
 
@@ -30,5 +31,6 @@ router.use('/entes-reguladores', enteReguladorRoutes);
 router.use('/requisitos-legales', requisitoLegalRoutes);
 router.use('/empresa-requisitos', empresaRequisitoRoutes);
 router.use('/calendario', calendarioRoutes);
+router.use('/notificaciones', notificacionConfigRoutes);
 
 export default router;
