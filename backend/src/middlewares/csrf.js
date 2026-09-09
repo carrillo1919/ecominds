@@ -15,6 +15,7 @@ const {
     httpOnly: false,
     secure: isProduction,
     sameSite: isProduction ? 'strict' : 'lax',
+    signed: false, 
   },
   size: 64,
   getTokenFromRequest: (req) => {

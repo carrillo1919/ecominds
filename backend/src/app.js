@@ -14,6 +14,11 @@ const app = express();
 const isProduction = process.env.NODE_ENV === 'production';
 const frontendUrl = process.env.FRONTEND_URL;
 
+// Confía en el proxy reverso de Render para obtener la IP real del cliente
+if (isProduction) {
+  app.set('trust proxy', 1);
+}
+
 if (isProduction && !frontendUrl) {
   throw new Error('FRONTEND_URL debe estar definida en producción');
 }
