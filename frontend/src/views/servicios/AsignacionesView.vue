@@ -251,8 +251,14 @@ onMounted(async () => {
           </select>
         </label>
 
-        <label>{{ tipo === 'producto' ? 'Producto' : 'Servicio' }} *
-          <select v-model="tipo === 'producto' ? form.productoId : form.servicioId" @change="onItemChange">
+        <label v-if="tipo === 'producto'">Producto *
+          <select v-model="form.productoId" @change="onItemChange">
+            <option value="">Seleccione...</option>
+            <option v-for="item in itemsDisponibles" :key="item.id" :value="item.id">{{ item.nombre }} ({{ Number(item.precio).toFixed(2) }})</option>
+          </select>
+        </label>
+        <label v-else>Servicio *
+          <select v-model="form.servicioId" @change="onItemChange">
             <option value="">Seleccione...</option>
             <option v-for="item in itemsDisponibles" :key="item.id" :value="item.id">{{ item.nombre }} ({{ Number(item.precio).toFixed(2) }})</option>
           </select>
