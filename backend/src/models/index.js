@@ -17,6 +17,11 @@ import DocumentoAuditoriaLogModel from './documentoAuditoriaLog.js';
 import CalendarioEventoModel from './calendarioEvento.js';
 import notificacionConfigModel from './notificacionConfig.js';
 import notificacionLogModel from './notificacionLog.js';
+import ProductoModel from './producto.js';
+import ServicioModel from './servicio.js';
+import EmpresaServicioModel from './empresaServicio.js';
+import FacturaModel from './factura.js';
+import FacturaItemModel from './facturaItem.js';
 
 const User = UserModel(sequelize, Sequelize.DataTypes);
 const Empresa = EmpresaModel(sequelize, Sequelize.DataTypes);
@@ -34,6 +39,11 @@ const DocumentoAuditoriaLog = DocumentoAuditoriaLogModel(sequelize, Sequelize.Da
 const CalendarioEvento = CalendarioEventoModel(sequelize, Sequelize.DataTypes);
 const NotificacionConfig = notificacionConfigModel(sequelize, Sequelize.DataTypes);
 const NotificacionLog = notificacionLogModel(sequelize, Sequelize.DataTypes);
+const Producto = ProductoModel(sequelize, Sequelize.DataTypes);
+const Servicio = ServicioModel(sequelize, Sequelize.DataTypes);
+const EmpresaServicio = EmpresaServicioModel(sequelize, Sequelize.DataTypes);
+const Factura = FacturaModel(sequelize, Sequelize.DataTypes);
+const FacturaItem = FacturaItemModel(sequelize, Sequelize.DataTypes);
 
 const db = {
   sequelize,
@@ -54,6 +64,11 @@ const db = {
   CalendarioEvento,
   NotificacionConfig,
   NotificacionLog,
+  Producto,
+  Servicio,
+  EmpresaServicio,
+  Factura,
+  FacturaItem,
 };
 
 Object.values(db).forEach((model) => {
@@ -81,6 +96,11 @@ export {
   CalendarioEvento,
   NotificacionConfig,
   NotificacionLog,
+  Producto,
+  Servicio,
+  EmpresaServicio,
+  Factura,
+  FacturaItem,
 };
 
 export default db;
