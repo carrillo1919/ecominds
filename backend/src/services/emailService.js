@@ -122,12 +122,12 @@ export const buildEmailTemplate = ({ title, message, actionUrl = null, actionTex
   `;
 };
 
-export const sendEmailWithTemplate = async ({ to, subject, title, message, actionUrl, actionText }) => {
+export const sendEmailWithTemplate = async ({ to, subject, title, message, actionUrl, actionText, attachments = [] }) => {
   const html = buildEmailTemplate({ title, message, actionUrl, actionText });
   const attachment = getLogoAttachment();
-  const attachments = attachment ? [attachment] : [];
+  const allAttachments = attachment ? [attachment, ...attachments] : attachments;
 
-  const result = await sendEmail({ to, subject, html, attachments });
+  const result = await sendEmail({ to, subject, html, attachments: allAttachments });
   if (!result.success) throw new Error(result.error);
   return result;
 };

@@ -6,7 +6,7 @@ export default (sequelize, DataTypes) => {
       autoIncrement: true,
     },
     tipo: {
-      type: DataTypes.ENUM('documento_vencimiento', 'auditoria', 'documento_cargado', 'auditoria_finalizada'),
+      type: DataTypes.ENUM('documento_vencimiento', 'auditoria', 'documento_cargado', 'auditoria_finalizada', 'factura_vencimiento'),
       allowNull: false,
     },
     referenciaId: {

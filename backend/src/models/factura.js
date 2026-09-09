@@ -1,4 +1,5 @@
 const ESTADOS = ['borrador', 'emitida', 'pagada', 'anulada'];
+const METODOS_PAGO = ['transferencia', 'pago_movil', 'efectivo', 'usd'];
 
 const FacturaModel = (sequelize, DataTypes) => {
   const Factura = sequelize.define('Factura', {
@@ -16,6 +17,14 @@ const FacturaModel = (sequelize, DataTypes) => {
       defaultValue: 'borrador',
     },
     notas: DataTypes.TEXT,
+    pdfNombreArchivo: { type: DataTypes.STRING(255), allowNull: true },
+    pdfContenido: { type: DataTypes.BLOB('long'), allowNull: true },
+    fechaPago: { type: DataTypes.DATEONLY, allowNull: true },
+    metodoPago: { type: DataTypes.ENUM(...METODOS_PAGO), allowNull: true },
+    referenciaPago: { type: DataTypes.STRING(100), allowNull: true },
+    bancoPago: { type: DataTypes.STRING(150), allowNull: true },
+    telefonoPago: { type: DataTypes.STRING(30), allowNull: true },
+    montoPago: { type: DataTypes.DECIMAL(12, 2), allowNull: true },
   }, {
     tableName: 'Facturas',
     timestamps: true,
@@ -28,6 +37,7 @@ const FacturaModel = (sequelize, DataTypes) => {
   };
 
   Factura.ESTADOS = ESTADOS;
+  Factura.METODOS_PAGO = METODOS_PAGO;
 
   return Factura;
 };

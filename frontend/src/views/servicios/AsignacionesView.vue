@@ -31,8 +31,7 @@ const form = reactive({
   cantidad: 1,
   precioUnitario: '',
   impuesto: '',
-  fechaEjecucion: '',
-  fechaEntrega: '',
+  fechaProgramada: '',
   observaciones: '',
 });
 
@@ -70,8 +69,7 @@ const limpiar = () => {
   form.cantidad = 1;
   form.precioUnitario = '';
   form.impuesto = '';
-  form.fechaEjecucion = '';
-  form.fechaEntrega = '';
+  form.fechaProgramada = '';
   form.observaciones = '';
   tipo.value = 'producto';
 };
@@ -110,8 +108,7 @@ const editar = (item) => {
   form.cantidad = item.cantidad;
   form.precioUnitario = item.precioUnitario;
   form.impuesto = item.impuesto;
-  form.fechaEjecucion = item.fechaEjecucion || '';
-  form.fechaEntrega = item.fechaEntrega || '';
+  form.fechaProgramada = item.fechaEjecucion || item.fechaEntrega || '';
   form.observaciones = item.observaciones || '';
   mostrarModal.value = true;
 };
@@ -137,8 +134,8 @@ const guardar = async () => {
     cantidad: Number(form.cantidad) || 1,
     precioUnitario: form.precioUnitario === '' ? 0 : Number(form.precioUnitario),
     impuesto: form.impuesto === '' ? 0 : Number(form.impuesto),
-    fechaEjecucion: form.fechaEjecucion || null,
-    fechaEntrega: form.fechaEntrega || null,
+    fechaEjecucion: tipo.value === 'servicio' ? form.fechaProgramada || null : null,
+    fechaEntrega: tipo.value === 'producto' ? form.fechaProgramada || null : null,
     observaciones: form.observaciones.trim() || undefined,
   };
 
@@ -267,8 +264,7 @@ onMounted(async () => {
         <label>Cantidad *<input v-model="form.cantidad" type="number" step="0.01" min="0" /></label>
         <label>Precio unitario *<input v-model="form.precioUnitario" type="number" step="0.01" min="0" /></label>
         <label>Impuesto %<input v-model="form.impuesto" type="number" step="0.01" min="0" /></label>
-        <label>Fecha de ejecución<input v-model="form.fechaEjecucion" type="date" /></label>
-        <label>Fecha de entrega<input v-model="form.fechaEntrega" type="date" /></label>
+        <label>{{ tipo === 'producto' ? 'Fecha de entrega' : 'Fecha de ejecución' }}<input v-model="form.fechaProgramada" type="date" /></label>
         <label class="span-2">Observaciones<textarea v-model="form.observaciones" rows="3"></textarea></label>
       </div>
     </CrudModal>

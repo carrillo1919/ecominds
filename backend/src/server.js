@@ -36,6 +36,7 @@ const start = async () => {
       { default: documentosVencimientoJob },
       { default: auditoriaHoyJob },
       { default: serviciosRecordatorioJob },
+      { default: facturasVencimientoJob },
     ] = await Promise.all([
       import('./app.js'),
       import('./models/index.js'),
@@ -43,6 +44,7 @@ const start = async () => {
       import('./jobs/documentosVencimientoJob.js'),
       import('./jobs/auditoriaHoyJob.js'),
       import('./jobs/serviciosRecordatorioJob.js'),
+      import('./jobs/facturasVencimientoJob.js'),
     ]);
 
     await sequelize.authenticate();
@@ -67,6 +69,7 @@ const start = async () => {
     documentosVencimientoJob();
     auditoriaHoyJob();
     serviciosRecordatorioJob();
+    facturasVencimientoJob();
   } catch (error) {
     logger.error({ event: 'server_start_failed', message: '[server] No se pudo iniciar', error: error.message });
     process.exit(1);

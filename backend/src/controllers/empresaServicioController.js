@@ -86,6 +86,7 @@ export const create = async (req, res, next) => {
     const finalPrecio = precioUnitario !== undefined ? precioUnitario : item.precio;
     const finalImpuesto = impuesto !== undefined ? impuesto : item.impuesto;
     const { total } = calcularTotales(cantidad, finalPrecio, finalImpuesto);
+    const esProducto = Boolean(productoId);
 
     const asignacion = await EmpresaServicio.create({
       empresaId,
@@ -95,8 +96,8 @@ export const create = async (req, res, next) => {
       precioUnitario: finalPrecio,
       impuesto: finalImpuesto,
       precioTotal: total,
-      fechaEjecucion: fechaEjecucion || null,
-      fechaEntrega: fechaEntrega || null,
+      fechaEjecucion: esProducto ? null : fechaEjecucion || null,
+      fechaEntrega: esProducto ? fechaEntrega || null : null,
       observaciones,
     }, { transaction });
 
@@ -130,10 +131,18 @@ export const update = async (req, res, next) => {
     if (!asignacion) return res.status(404).json({ message: 'Asignación no encontrada' });
     assertEmpresaInScope(asignacion.empresaId, req);
 
-    const camposPermitidos = ['cantidad', 'precioUnitario', 'impuesto', 'fechaEjecucion', 'fechaEntrega', 'estado', 'observaciones'];
+    const camposPermitidos = ['cantidad', 'precioUnitario', 'impuesto', 'estado', 'observaciones'];
     camposPermitidos.forEach((campo) => {
       if (req.body[campo] !== undefined) asignacion[campo] = req.body[campo];
     });
+
+    if (asignacion.productoId) {
+      if (req.body.fechaEntrega !== undefined) asignacion.fechaEntrega = req.body.fechaEntrega || null;
+      asignacion.fechaEjecucion = null;
+    } else {
+      if (req.body.fechaEjecucion !== undefined) asignacion.fechaEjecucion = req.body.fechaEjecucion || null;
+      asignacion.fechaEntrega = null;
+    }
 
     const { total } = calcularTotales(asignacion.cantidad, asignacion.precioUnitario, asignacion.impuesto);
     asignacion.precioTotal = total;

@@ -1,5 +1,7 @@
 import { format } from 'date-fns';
+import PDFDocument from 'pdfkit';
 import db from '../models/index.js';
+import { sendEmailWithTemplate } from './emailService.js';
 
 const { Factura, FacturaItem, EmpresaServicio } = db;
 
@@ -120,3 +122,112 @@ export const cambiarEstadoFactura = async (facturaId, nuevoEstado) => {
   await factura.update({ estado: nuevoEstado });
   return factura;
 };
+
+const formatoMonto = (monto) => Number(monto || 0).toFixed(2);
+
+const generarPdfFactura = (factura) => new Promise((resolve, reject) => {
+  const documento = new PDFDocument({ margin: 50, size: 'A4' });
+  const partes = [];
+  documento.on('data', (parte) => partes.push(parte));
+  documento.on('end', () => resolve(Buffer.concat(partes)));
+  documento.on('error', reject);
+
+  documento.fontSize(22).fillColor('#14532d').text('EcoMinds', { align: 'right' });
+  documento.fontSize(11).fillColor('#334155').text('Auditoria ambiental', { align: 'right' });
+  documento.moveDown(2);
+  documento.fontSize(20).fillColor('#111827').text(`Factura ${factura.numero}`);
+  documento.moveDown(0.5);
+  documento.fontSize(10).fillColor('#374151');
+  documento.text(`Empresa: ${factura.empresa?.nombre || 'No disponible'}`);
+  if (factura.empresa?.rif) documento.text(`RIF: ${factura.empresa.rif}`);
+  documento.text(`Fecha de emision: ${factura.fechaEmision}`);
+  if (factura.fechaVencimiento) documento.text(`Fecha de vencimiento: ${factura.fechaVencimiento}`);
+  documento.moveDown();
+
+  const columnas = { descripcion: 50, cantidad: 320, unitario: 390, total: 470 };
+  documento.fontSize(10).fillColor('#14532d');
+  documento.text('Descripcion', columnas.descripcion, documento.y);
+  documento.text('Cantidad', columnas.cantidad, documento.y - 12);
+  documento.text('Precio unit.', columnas.unitario, documento.y - 12);
+  documento.text('Total', columnas.total, documento.y - 12);
+  documento.moveTo(50, documento.y + 4).lineTo(545, documento.y + 4).stroke('#94a3b8');
+  documento.moveDown();
+
+  factura.items.forEach((item) => {
+    if (documento.y > 710) documento.addPage();
+    const posicionY = documento.y;
+    documento.fillColor('#111827').text(item.descripcion, columnas.descripcion, posicionY, { width: 255 });
+    documento.text(formatoMonto(item.cantidad), columnas.cantidad, posicionY, { width: 60, align: 'right' });
+    documento.text(formatoMonto(item.precioUnitario), columnas.unitario, posicionY, { width: 70, align: 'right' });
+    documento.text(formatoMonto(item.total), columnas.total, posicionY, { width: 70, align: 'right' });
+    documento.moveDown();
+  });
+
+  documento.moveDown();
+  documento.fontSize(11).fillColor('#111827');
+  documento.text(`Subtotal: ${formatoMonto(factura.subtotal)}`, { align: 'right' });
+  documento.text(`Impuesto: ${formatoMonto(factura.impuesto)}`, { align: 'right' });
+  documento.fontSize(13).fillColor('#14532d').text(`Total: ${formatoMonto(factura.total)}`, { align: 'right' });
+  if (factura.notas) {
+    documento.moveDown(2);
+    documento.fontSize(10).fillColor('#374151').text(`Notas: ${factura.notas}`);
+  }
+  documento.end();
+});
+
+export const emitirFactura = async (facturaId) => {
+  const factura = await Factura.findByPk(facturaId, {
+    include: [
+      { model: db.Empresa, as: 'empresa', include: [{ model: db.Empleado, as: 'responsableEmpleado', attributes: ['id', 'nombre', 'apellido', 'email'] }] },
+      { model: db.FacturaItem, as: 'items' },
+    ],
+  });
+  if (!factura) throw new Error('Factura no encontrada');
+  if (factura.estado !== 'borrador') throw new Error('Solo se pueden emitir facturas en borrador');
+
+  const pdfContenido = await generarPdfFactura(factura);
+  const pdfNombreArchivo = `factura-${factura.numero}.pdf`;
+  await factura.update({ estado: 'emitida', pdfNombreArchivo, pdfContenido });
+  return factura;
+};
+
+const enviarFacturaPorCorreo = async (factura, { subject, title, message }) => {
+  const empresa = factura.empresa || await db.Empresa.findByPk(factura.empresaId, {
+    include: [{ model: db.Empleado, as: 'responsableEmpleado', attributes: ['email'] }],
+  });
+  const destinatarios = [...new Set([
+    empresa?.responsableEmpleado?.email || empresa?.email,
+    process.env.ADMIN_EMAIL,
+  ].filter(Boolean))];
+  const adjunto = factura.pdfContenido && {
+    filename: factura.pdfNombreArchivo || `factura-${factura.numero}.pdf`,
+    content: factura.pdfContenido,
+    contentType: 'application/pdf',
+  };
+
+  return Promise.all(destinatarios.map(async (to) => {
+    try {
+      return await sendEmailWithTemplate({
+        to,
+        subject,
+        title,
+        message: message(empresa),
+        attachments: adjunto ? [adjunto] : [],
+      });
+    } catch (error) {
+      return { success: false, error: error.message };
+    }
+  }));
+};
+
+export const enviarFacturaEmitida = async (factura) => enviarFacturaPorCorreo(factura, {
+  subject: `Factura ${factura.numero} emitida`,
+  title: `Factura ${factura.numero}`,
+  message: (empresa) => `<p>Se ha emitido una factura para <strong>${empresa?.nombre || 'su empresa'}</strong>.</p><p><strong>Total:</strong> ${formatoMonto(factura.total)}</p><p>La factura se encuentra adjunta a este correo.</p>`,
+});
+
+export const enviarFacturaPagada = async (factura) => enviarFacturaPorCorreo(factura, {
+  subject: `Factura ${factura.numero} pagada`,
+  title: `Pago recibido: factura ${factura.numero}`,
+  message: (empresa) => `<p>La factura de <strong>${empresa?.nombre || 'su empresa'}</strong> ha sido marcada como <strong>pagada</strong>.</p><p><strong>Fecha de pago:</strong> ${factura.fechaPago}</p><p><strong>Método de pago:</strong> ${factura.metodoPago?.replace('_', ' ') || 'No especificado'}</p><p><strong>Total pagado:</strong> ${formatoMonto(factura.montoPago || factura.total)}</p><p>La factura se encuentra adjunta a este correo.</p>`,
+});

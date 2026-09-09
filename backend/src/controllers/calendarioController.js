@@ -10,6 +10,7 @@ const COLORES = {
   nota: '#10b981',
   servicio: '#8b5cf6',
   producto: '#0ea5e9',
+  factura: '#dc2626',
 };
 
 const tieneAccesoTotal = (req) => Boolean(req.scope?.all);
@@ -64,7 +65,7 @@ export const getEventos = async (req, res, next) => {
         : [{ empresaId: null }];
     }
 
-    const [auditorias, documentos, auditoriaItems, empresaServicios, calendarioEventos] = await Promise.all([
+    const [auditorias, documentos, auditoriaItems, empresaServicios, facturas, calendarioEventos] = await Promise.all([
       db.Auditoria.findAll({
         where: applyEmpresaScope({ fecha: rango }, req),
         include: [{ model: db.Empresa, as: 'empresa', attributes: ['id', 'nombre', 'rif'] }],
@@ -96,6 +97,10 @@ export const getEventos = async (req, res, next) => {
           { model: db.Servicio, as: 'servicio' },
           { model: db.Empresa, as: 'empresa', attributes: ['id', 'nombre', 'rif'] },
         ],
+      }),
+      db.Factura.findAll({
+        where: applyEmpresaScope({ estado: 'emitida', fechaVencimiento: rango }, req),
+        include: [{ model: db.Empresa, as: 'empresa', attributes: ['id', 'nombre', 'rif'] }],
       }),
       db.CalendarioEvento.findAll({
         where: whereNotas,
@@ -197,6 +202,22 @@ export const getEventos = async (req, res, next) => {
         empresaServicioId: asignacion.id,
         color: COLORES[tipo],
         descripcion: `Asignación para ${asignacion.empresa?.nombre || ''}`.trim(),
+      });
+    }
+
+    // Vencimientos de facturas emitidas pendientes de pago.
+    for (const factura of facturas) {
+      eventos.push({
+        id: `factura-vencimiento-${factura.id}`,
+        titulo: `Vence factura: ${factura.numero}`,
+        empresa: factura.empresa?.nombre || null,
+        fecha: factura.fechaVencimiento,
+        tipo: 'factura',
+        origen: 'factura',
+        entidadId: factura.id,
+        facturaId: factura.id,
+        color: COLORES.factura,
+        descripcion: `Total pendiente: ${Number(factura.total || 0).toFixed(2)}`,
       });
     }
 

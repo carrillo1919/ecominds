@@ -65,9 +65,9 @@ export const useFacturasStore = defineStore('facturas', {
       }
     },
 
-    async changeEstado(id, estado) {
+    async changeEstado(id, estado, datosPago = {}) {
       try {
-        const { data } = await api.changeFacturaEstado(id, estado);
+        const { data } = await api.changeFacturaEstado(id, estado, datosPago);
         const idx = this.facturas.findIndex((f) => f.id === id);
         if (idx !== -1) this.facturas[idx] = data.factura;
         if (this.factura?.id === id) this.factura = data.factura;
@@ -85,6 +85,15 @@ export const useFacturasStore = defineStore('facturas', {
         return { ok: true, message: data.message };
       } catch (e) {
         return { ok: false, message: apiMessage(e, 'No se pudo anular la factura') };
+      }
+    },
+
+    async fetchPdf(id) {
+      try {
+        const { data } = await api.getFacturaPdf(id);
+        return { ok: true, archivo: data };
+      } catch (e) {
+        return { ok: false, message: apiMessage(e, 'No se pudo cargar el PDF de la factura') };
       }
     },
   },

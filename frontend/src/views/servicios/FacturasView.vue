@@ -20,13 +20,26 @@ const empresasStore = useEmpresasStore();
 
 const mostrarModal = ref(false);
 const mostrarDetalle = ref(false);
+const mostrarPdf = ref(false);
+const mostrarPago = ref(false);
 const facturaSeleccionada = ref(null);
+const facturaParaPago = ref(null);
+const pdfUrl = ref('');
 
 const form = reactive({
   empresaId: '',
   asignacionIds: [],
   fechaVencimiento: '',
   notas: '',
+});
+
+const pagoForm = reactive({
+  fechaPago: '',
+  metodoPago: '',
+  referenciaPago: '',
+  bancoPago: '',
+  telefonoPago: '',
+  montoPago: '',
 });
 
 const headers = [
@@ -105,10 +118,60 @@ const verDetalle = async (factura) => {
   }
 };
 
+const verPdf = async (factura) => {
+  const resultado = await facturasStore.fetchPdf(factura.id);
+  if (!resultado.ok) {
+    toast.error(resultado.message);
+    return;
+  }
+  if (pdfUrl.value) URL.revokeObjectURL(pdfUrl.value);
+  pdfUrl.value = URL.createObjectURL(resultado.archivo);
+  mostrarPdf.value = true;
+};
+
+const cerrarPdf = () => {
+  mostrarPdf.value = false;
+  if (pdfUrl.value) URL.revokeObjectURL(pdfUrl.value);
+  pdfUrl.value = '';
+};
+
+const fechaActual = () => new Date().toLocaleDateString('en-CA');
+
+const abrirPago = (factura) => {
+  facturaParaPago.value = factura;
+  pagoForm.fechaPago = fechaActual();
+  pagoForm.metodoPago = '';
+  pagoForm.referenciaPago = '';
+  pagoForm.bancoPago = '';
+  pagoForm.telefonoPago = '';
+  pagoForm.montoPago = Number(factura.total).toFixed(2);
+  mostrarPago.value = true;
+};
+
+const cerrarPago = () => {
+  mostrarPago.value = false;
+  facturaParaPago.value = null;
+};
+
+const registrarPago = async () => {
+  if (!facturaParaPago.value || !pagoForm.fechaPago || !pagoForm.metodoPago || !pagoForm.montoPago) {
+    toast.error('Complete la fecha, el método y el monto del pago');
+    return;
+  }
+  const result = await facturasStore.changeEstado(facturaParaPago.value.id, 'pagada', { ...pagoForm, montoPago: Number(pagoForm.montoPago) });
+  if (result.ok) {
+    toast.success(result.message || 'Pago registrado');
+    cerrarPago();
+    await facturasStore.fetchAll();
+  } else {
+    toast.error(result.message);
+  }
+};
+
 const cambiarEstado = async (factura, estado) => {
   const result = await facturasStore.changeEstado(factura.id, estado);
   if (result.ok) {
-    toast.success(`Factura ${estado}`);
+    toast.success(result.message || `Factura ${estado}`);
     await facturasStore.fetchAll();
   } else {
     toast.error(result.message);
@@ -171,8 +234,9 @@ onMounted(async () => {
         </template>
         <template #actions="{ item }">
           <button class="btn-ghost btn-sm" type="button" @click="verDetalle(item)">Ver</button>
+          <button v-if="item.tienePdf" class="btn-ghost btn-sm" type="button" @click="verPdf(item)">PDF</button>
           <button v-if="canGestionarAsignaciones && item.estado === 'borrador'" class="btn-primary btn-sm" type="button" @click="cambiarEstado(item, 'emitida')">Emitir</button>
-          <button v-if="canGestionarAsignaciones && item.estado === 'emitida'" class="btn-primary btn-sm" type="button" @click="cambiarEstado(item, 'pagada')">Marcar pagada</button>
+          <button v-if="canGestionarAsignaciones && item.estado === 'emitida'" class="btn-primary btn-sm" type="button" @click="abrirPago(item)">Registrar pago</button>
           <button v-if="canGestionarAsignaciones && item.estado !== 'anulada'" class="btn-danger btn-sm" type="button" @click="anular(item)">Anular</button>
         </template>
       </DataTable>
@@ -226,6 +290,15 @@ onMounted(async () => {
         <p><strong>Impuesto:</strong> {{ Number(facturaSeleccionada.impuesto).toFixed(2) }}</p>
         <p><strong>Total:</strong> {{ Number(facturaSeleccionada.total).toFixed(2) }}</p>
         <p v-if="facturaSeleccionada.notas"><strong>Notas:</strong> {{ facturaSeleccionada.notas }}</p>
+        <template v-if="facturaSeleccionada.estado === 'pagada'">
+          <h4 class="mt-4">Datos del pago</h4>
+          <p><strong>Fecha:</strong> {{ facturaSeleccionada.fechaPago }}</p>
+          <p><strong>Método:</strong> {{ facturaSeleccionada.metodoPago?.replace('_', ' ') }}</p>
+          <p><strong>Monto pagado:</strong> {{ Number(facturaSeleccionada.montoPago).toFixed(2) }}</p>
+          <p v-if="facturaSeleccionada.referenciaPago"><strong>Referencia:</strong> {{ facturaSeleccionada.referenciaPago }}</p>
+          <p v-if="facturaSeleccionada.bancoPago"><strong>Banco:</strong> {{ facturaSeleccionada.bancoPago }}</p>
+          <p v-if="facturaSeleccionada.telefonoPago"><strong>Teléfono:</strong> {{ facturaSeleccionada.telefonoPago }}</p>
+        </template>
 
         <h4 class="mt-4">Ítems</h4>
         <table class="table">
@@ -242,5 +315,51 @@ onMounted(async () => {
         </table>
       </div>
     </CrudModal>
+
+    <CrudModal
+      :show="mostrarPdf"
+      title="Factura en PDF"
+      save-label="Cerrar"
+      :saving="false"
+      @close="cerrarPdf"
+      @save="cerrarPdf"
+    >
+      <iframe v-if="pdfUrl" :src="pdfUrl" title="Vista previa de factura" class="factura-pdf"></iframe>
+    </CrudModal>
+
+    <CrudModal
+      :show="mostrarPago"
+      title="Registrar pago"
+      save-label="Marcar pagada"
+      :saving="facturasStore.loading"
+      @close="cerrarPago"
+      @save="registrarPago"
+    >
+      <div class="form-grid">
+        <label>Fecha de pago *<input v-model="pagoForm.fechaPago" type="date" required /></label>
+        <label>Método de pago *
+          <select v-model="pagoForm.metodoPago" required>
+            <option value="">Seleccione...</option>
+            <option value="transferencia">Transferencia</option>
+            <option value="pago_movil">Pago móvil</option>
+            <option value="efectivo">Efectivo</option>
+            <option value="usd">USD</option>
+          </select>
+        </label>
+        <label>Monto pagado *<input v-model="pagoForm.montoPago" type="number" step="0.01" min="0.01" required /></label>
+        <label>Referencia<input v-model="pagoForm.referenciaPago" type="text" maxlength="100" /></label>
+        <label>Banco<input v-model="pagoForm.bancoPago" type="text" maxlength="150" /></label>
+        <label>Teléfono<input v-model="pagoForm.telefonoPago" type="tel" maxlength="30" /></label>
+      </div>
+      <p v-if="facturaParaPago" class="mt-4 font-semibold">Total de la factura: {{ Number(facturaParaPago.total).toFixed(2) }}</p>
+    </CrudModal>
   </section>
 </template>
+
+<style scoped>
+.factura-pdf {
+  width: 100%;
+  height: min(70vh, 760px);
+  border: 1px solid #cbd5e1;
+}
+</style>
