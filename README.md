@@ -279,6 +279,11 @@ backend/tools/        # NO se importa desde src/ — el sistema arranca sin esta
 > Si se elimina `backend/tools/`, el servidor arranca y la API funciona con normalidad;
 > solo se pierden los comandos `npm run migrate`, `npm run seed` y `npm run test:email`.
 
+> **Publicacion al repositorio del colaborador:** `backend/tools/` se queda **solo** en el
+> repositorio principal (`carrillo1919/ecominds`). Al publicar `backend/` en
+> `ecominds04-design/ecominds-banckend` se usa `scripts/push-backend.ps1`, que genera el
+> subtree split y elimina `tools/` antes de empujar. Ver [Publicar en los repositorios del colaborador](#publicar-en-los-repositorios-del-colaborador).
+
 Cada módulo usa capas ligeras:
 
 ```
@@ -326,21 +331,47 @@ modules/<dominio>/
 
 
 
+## Publicar en los repositorios del colaborador
+
+El repositorio principal (`carrillo1919/ecominds`) contiene `backend/` y `frontend/`.
+Los repositorios del colaborador reciben **solo** el contenido de cada carpeta, sin el
+prefijo, mediante `git subtree split`.
+
+```powershell
 # 1. Verificar que queden solo origin, backend-origin y frontend-origin
 git remote -v
 
-# 2. Subir solo la carpeta backend
-git subtree split --prefix=backend -b backend-only
-git push backend-origin backend-only:main --force
-git branch -D backend-only
+# 2. Subir solo la carpeta backend (EXCLUYENDO backend/tools/)
+#    El script hace el split, elimina tools/ de la rama y empuja.
+pwsh -File scripts/push-backend.ps1
+
+#    Equivalente manual (si no se usa el script):
+#    git subtree split --prefix=backend -b backend-only
+#    git checkout backend-only
+#    git rm -r --cached tools
+#    git commit -m "chore: excluir tools/ del repositorio de despliegue"
+#    git push backend-origin backend-only:main --force
+#    git checkout main
+#    git branch -D backend-only
 
 # 3. Subir solo la carpeta frontend
-git subtree split --prefix=frontend -b frontend-only
-git push frontend-origin frontend-only:main --force
-git branch -D frontend-only
+pwsh -File scripts/push-frontend.ps1
 
-https://github.com/ecominds04-design/ecominds-banckend.git  
-https://github.com/ecominds04-design/ecominds-frontend.git 
+#    Equivalente manual:
+#    git subtree split --prefix=frontend -b frontend-only
+#    git push frontend-origin frontend-only:main --force
+#    git branch -D frontend-only
+```
+
+Destinos:
+
+- https://github.com/ecominds04-design/ecominds-banckend.git
+- https://github.com/ecominds04-design/ecominds-frontend.git
+
+> **Importante:** `backend/tools/` (migraciones, seeders y pruebas) **nunca** se publica en
+> el repositorio del colaborador. `git subtree split` no soporta exclusiones, por eso los
+> scripts `scripts/push-backend.ps1` y `scripts/push-frontend.ps1` automatizan el split,
+> la eliminacion de `tools/` y el push. Use `-DryRun` para previsualizar sin empujar.
 
 
 cerrar puerto 3000
