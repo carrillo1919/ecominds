@@ -331,6 +331,34 @@ modules/<dominio>/
 
 
 
+## Publicar en el repositorio principal
+
+El repositorio principal es `origin` → https://github.com/carrillo1919/ecominds.git
+
+```powershell
+# Flujo completo: status -> add . -> commit -> push origin
+powershell -ExecutionPolicy Bypass -File scripts/push-main.ps1 -Message "feat: descripcion del cambio"
+
+# Sin -Message, el script pide el mensaje de forma interactiva
+powershell -ExecutionPolicy Bypass -File scripts/push-main.ps1
+
+# Previsualizar sin ejecutar add, commit ni push
+powershell -ExecutionPolicy Bypass -File scripts/push-main.ps1 -DryRun
+
+# Solo status + add + commit, sin empujar
+powershell -ExecutionPolicy Bypass -File scripts/push-main.ps1 -Message "wip" -NoPush
+```
+
+| Parametro | Descripcion | Por defecto |
+|---|---|---|
+| `-Message` | Mensaje del commit. Si se omite, se pide por consola. | (interactivo) |
+| `-Branch` | Rama a empujar. | rama actual |
+| `-Remote` | Remoto destino. | `origin` |
+| `-NoPush` | Hace status, add y commit, pero no empuja. | — |
+| `-DryRun` | Muestra que se haria sin ejecutar nada. | — |
+
+El script omite el commit si no hay cambios y omite el push si la rama ya esta al dia.
+
 ## Publicar en los repositorios del colaborador
 
 El repositorio principal (`carrillo1919/ecominds`) contiene `backend/` y `frontend/`.
