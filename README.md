@@ -343,7 +343,8 @@ git remote -v
 
 # 2. Subir solo la carpeta backend (EXCLUYENDO backend/tools/)
 #    El script hace el split, elimina tools/ de la rama y empuja.
-pwsh -File scripts/push-backend.ps1
+#    Desde la raiz del repositorio:
+powershell -ExecutionPolicy Bypass -File scripts/push-backend.ps1
 
 #    Equivalente manual (si no se usa el script):
 #    git subtree split --prefix=backend -b backend-only
@@ -355,13 +356,16 @@ pwsh -File scripts/push-backend.ps1
 #    git branch -D backend-only
 
 # 3. Subir solo la carpeta frontend
-pwsh -File scripts/push-frontend.ps1
+powershell -ExecutionPolicy Bypass -File scripts/push-frontend.ps1
 
 #    Equivalente manual:
 #    git subtree split --prefix=frontend -b frontend-only
 #    git push frontend-origin frontend-only:main --force
 #    git branch -D frontend-only
 ```
+
+> **Nota:** use `powershell` (Windows PowerShell 5.1, incluido en Windows). `pwsh` solo
+> existe si tiene instalado PowerShell 7. Los scripts funcionan con ambos.
 
 Destinos:
 
