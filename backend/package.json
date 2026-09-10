@@ -3,14 +3,14 @@
   "version": "1.0.0",
   "private": true,
   "description": "SRCD - Auditoria de Cumplimiento (backend)",
-  "main": "src/server.js",
+  "main": "src/bootstrap/server.js",
   "scripts": {
-    "start": "node src/server.js",
-    "dev": "nodemon src/server.js",
-    "migrate": "sequelize-cli db:migrate --config src/config/sequelize-cli.cjs --migrations-path src/migrations --seeders-path src/seeders",
-    "migrate:undo": "sequelize-cli db:migrate:undo --config src/config/sequelize-cli.cjs --migrations-path src/migrations",
-    "seed": "sequelize-cli db:seed:all --config src/config/sequelize-cli.cjs --migrations-path src/migrations --seeders-path src/seeders",
-    "test:email": "node test/email.test.js"
+    "start": "node src/bootstrap/server.js",
+    "dev": "nodemon src/bootstrap/server.js",
+    "migrate": "sequelize-cli db:migrate --config tools/sequelize-cli.cjs --migrations-path tools/migrations --seeders-path tools/seeders",
+    "migrate:undo": "sequelize-cli db:migrate:undo --config tools/sequelize-cli.cjs --migrations-path tools/migrations",
+    "seed": "sequelize-cli db:seed:all --config tools/sequelize-cli.cjs --migrations-path tools/migrations --seeders-path tools/seeders",
+    "test:email": "node tools/tests/email.test.js"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",

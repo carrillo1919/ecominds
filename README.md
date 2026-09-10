@@ -54,7 +54,7 @@ Si no configura SMTP, los correos no se envían: el contenido (incluido el enlac
 
 ### Endpoints
 
-Todas las rutas del API se registran en `backend/src/routes/index.js` y se montan bajo `/api` desde `backend/src/app.js`.
+Todas las rutas del API se registran en `backend/src/bootstrap/routes.js` y se montan bajo `/api` desde `backend/src/bootstrap/app.js`.
 
 | Método | Ruta | Acceso |
 | --- | --- | --- |
@@ -200,7 +200,7 @@ BAJO  < 15%      MEDIO 15% - 29,9%      ALTO >= 30%
 ```
 
 Un incumplimiento en requisito critico sube un nivel la severidad; dos o mas la llevan a ALTO
-(`src/services/riesgoService.js`, replicado en el frontend en `src/utils/riesgo.js`).
+(`src/modules/auditorias/application/risk-calculator.js`, replicado en el frontend en `src/utils/riesgo.js`).
 Criticos por defecto: G-02, G-03 (RACDA), G-14, G-15 (analisis de riesgo y plan de emergencia
 LOPCYMAT/COVENIN 2226), T-01, T-05 y D-05; editables desde la pantalla Requisitos.
 
@@ -226,11 +226,103 @@ LOPCYMAT/COVENIN 2226), T-01, T-05 y D-05; editables desde la pantalla Requisito
 
 ### Cómo agregar un nuevo endpoint
 
-1. Cree o extienda el controller en `backend/src/controllers/`.
-2. Defina las rutas en el archivo de router correspondiente en `backend/src/routes/`.
-3. Importe y monte el router en `backend/src/routes/index.js` bajo el prefijo adecuado.
-4. Aplique los middlewares `authenticate` y `authorize` según el acceso requerido.
-5. Actualice este `README.md` con el nuevo endpoint.
+1. Identifique el módulo de dominio en `backend/src/modules/<dominio>/` (o cree uno nuevo siguiendo la estructura descrita abajo).
+2. Cree o extienda el controller en `backend/src/modules/<dominio>/http/controllers/`.
+3. Defina las rutas en el archivo de router correspondiente en `backend/src/modules/<dominio>/http/routes/`.
+4. Importe y monte el router en `backend/src/bootstrap/routes.js` bajo el prefijo adecuado.
+5. Aplique los middlewares `authenticate` y `authorize` según el acceso requerido.
+6. Actualice este `README.md` con el nuevo endpoint.
+
+## Arquitectura del backend
+
+El backend sigue una arquitectura híbrida **por módulo de dominio + código compartido**:
+
+```
+backend/src/
+  bootstrap/          # composición de la aplicación
+    app.js            # instancia Express, middlewares globales, manejo de errores
+    server.js         # arranque: DB, SMTP, jobs programados
+    routes.js         # montaje central de todos los routers bajo /api
+  shared/             # código transversal y estable (sin lógica de negocio)
+    database/         # conexión Sequelize
+    security/         # auth, CSRF, tokens, scope multiempresa, RLS
+    http/
+      errors/         # HttpError y manejador global de errores
+      validation/     # middleware validate + primitivas de validación
+    observability/    # logger (winston)
+    infrastructure/
+      email/          # proveedor de correo (emailService.js), layout base y assets
+  modules/            # un módulo por dominio del negocio (nombres en español)
+    identidad/        # autenticación y usuarios
+    organizaciones/   # empresas y empleados
+    cumplimiento/     # entes reguladores, requisitos legales y su asignación
+    auditorias/       # auditorías, cálculo de riesgo e informes
+    documentos/       # documentos y archivos adjuntos
+    calendario/       # eventos de calendario
+    notificaciones/   # configuración y envío de notificaciones
+    comercial/        # productos, servicios y facturación
+  models/index.js     # registro agregado de modelos Sequelize
+```
+
+El código de **soporte de base de datos y pruebas** vive fuera de `src/`, en una carpeta
+independiente que **no forma parte del runtime**:
+
+```
+backend/tools/        # NO se importa desde src/ — el sistema arranca sin esta carpeta
+  sequelize-cli.cjs   # configuración del CLI de Sequelize
+  migrations/         # migraciones (sequelize-cli)
+  seeders/            # seeders (sequelize-cli)
+  tests/              # pruebas de integración (node --test / scripts)
+```
+
+> **Independencia del runtime:** nada dentro de `backend/src/` importa desde `backend/tools/`.
+> Si se elimina `backend/tools/`, el servidor arranca y la API funciona con normalidad;
+> solo se pierden los comandos `npm run migrate`, `npm run seed` y `npm run test:email`.
+
+Cada módulo usa capas ligeras:
+
+```
+modules/<dominio>/
+  http/               # adaptador HTTP
+    routes/           # definición de rutas (Express Router)
+    controllers/      # controllers (adaptadores finos)
+    middlewares/      # validadores y middlewares propios del dominio
+  application/        # servicios de aplicación (reglas de negocio)
+  infrastructure/     # modelos Sequelize y plantillas propias del dominio
+    models/           # modelos Sequelize del dominio
+    email/            # plantillas de correo del dominio
+    pdf/              # plantillas PDF del dominio (si aplica)
+  jobs/               # tareas programadas del dominio (si aplica)
+  index.js            # API pública del módulo (solo si otros módulos lo consumen)
+```
+
+### Plantillas de correo y PDF
+
+- `shared/infrastructure/email/` contiene **solo lo transversal**: `emailService.js`
+  (transporte SMTP, `sendEmail`, `sendEmailWithTemplate`, `buildEmailTemplate`),
+  `layout.js` (estructura HTML común) y `assets/` (logo).
+- Cada **plantilla de negocio vive en el módulo dueño del dominio**, en
+  `modules/<dominio>/infrastructure/email/`, y se consume a través de un
+  `modules/<dominio>/application/emailService.js` que arma y envía el correo.
+- Lo mismo aplica a los PDF: `modules/auditorias/infrastructure/pdf/informe-auditoria.js`
+  y `modules/comercial/infrastructure/pdf/factura.js`.
+
+### Reglas de dependencia
+
+- **HTTP es un adaptador fino:** `route -> controller -> application service`.
+- Los **controllers no contienen reglas de negocio ni consultas Sequelize**.
+- Los **jobs llaman a servicios de aplicación**, nunca a controllers.
+- Un módulo **no importa internals de otro módulo**; si necesita colaboración, importa desde el `index.js` público del módulo propietario.
+- `shared/` solo contiene código transversal y estable; nunca lógica de negocio.
+- No se permiten dependencias circulares entre módulos.
+
+### Cómo agregar un nuevo módulo
+
+1. Cree `backend/src/modules/<dominio>/` con las carpetas `http/{routes,controllers,middlewares}/`, `application/` e `infrastructure/{models,email,pdf}/`.
+2. Mueva allí las rutas, controllers, validadores, servicios y modelos del dominio.
+3. Registre los modelos en `backend/src/models/index.js`.
+4. Monte el router en `backend/src/bootstrap/routes.js`.
+5. Si otro módulo necesita consumirlo, exponga una API pública en `modules/<dominio>/index.js`.
 
 
 
@@ -251,8 +343,10 @@ https://github.com/ecominds04-design/ecominds-banckend.git
 https://github.com/ecominds04-design/ecominds-frontend.git 
 
 
+cerrar puerto 3000
+Get-NetTCPConnection -LocalPort 3000 | Select-Object LocalPort, State, OwningProcess
 
-
+Stop-Process -Id 18620 -Force
 
 Ejecuta estos comandos en **PowerShell** desde la carpeta del backend. Primero verificamos la conexión con el pooler, luego el estado de las migraciones.
 
@@ -271,7 +365,7 @@ Si sale `OK`, la conexión funciona.
 ## 2. Ver qué migraciones faltan
 
 ```powershell
-npx sequelize-cli db:migrate:status --config src/config/sequelize-cli.cjs --migrations-path src/migrations
+npx sequelize-cli db:migrate:status --config tools/sequelize-cli.cjs --migrations-path tools/migrations
 ```
 
 Verás una tabla como esta:
@@ -293,13 +387,13 @@ Todo `down` significa que la base de datos está vacía y falta todo.
 ## 3. Aplicar todas las migraciones pendientes
 
 ```powershell
-npx sequelize-cli db:migrate --config src/config/sequelize-cli.cjs --migrations-path src/migrations
+npx sequelize-cli db:migrate --config tools/sequelize-cli.cjs --migrations-path tools/migrations
 ```
 
 Si falla en alguna, el error te dirá cuál. Puedes revisar el archivo correspondiente y corregirlo, o aplicarlas una por una con:
 
 ```powershell
-npx sequelize-cli db:migrate --to 20260830000002-create-documentos.js --config src/config/sequelize-cli.cjs --migrations-path src/migrations
+npx sequelize-cli db:migrate --to 20260830000002-create-documentos.js --config tools/sequelize-cli.cjs --migrations-path tools/migrations
 ```
 
 Esto aplicará solo hasta esa migración.
@@ -309,7 +403,7 @@ Esto aplicará solo hasta esa migración.
 ## 4. Verificar de nuevo el estado
 
 ```powershell
-npx sequelize-cli db:migrate:status --config src/config/sequelize-cli.cjs --migrations-path src/migrations
+npx sequelize-cli db:migrate:status --config tools/sequelize-cli.cjs --migrations-path tools/migrations
 ```
 
 Ahora todo debería estar en `up`.
@@ -325,7 +419,7 @@ SELECT tablename FROM pg_tables WHERE schemaname = 'public' ORDER BY tablename;
 ## 5. Ejecutar los seeders
 
 ```powershell
-npx sequelize-cli db:seed:all --config src/config/sequelize-cli.cjs --seeders-path src/seeders
+npx sequelize-cli db:seed:all --config tools/sequelize-cli.cjs --seeders-path tools/seeders
 ```
 
 Esto ejecutará los seeders en orden alfabético:
