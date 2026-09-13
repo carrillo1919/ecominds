@@ -16,6 +16,7 @@ import productoRoutes from '../modules/comercial/http/routes/productoRoutes.js';
 import servicioRoutes from '../modules/comercial/http/routes/servicioRoutes.js';
 import empresaServicioRoutes from '../modules/comercial/http/routes/empresaServicioRoutes.js';
 import facturaRoutes from '../modules/comercial/http/routes/facturaRoutes.js';
+import reportesRoutes from '../modules/reportes/http/routes/reportesRoutes.js';
 
 const router = express.Router();
 
@@ -40,5 +41,6 @@ router.use('/productos', productoRoutes);
 router.use('/servicios', servicioRoutes);
 router.use('/empresa-servicios', empresaServicioRoutes);
 router.use('/facturas', facturaRoutes);
+router.use('/reportes', reportesRoutes);
 
 export default router;

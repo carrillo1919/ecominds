@@ -10,6 +10,8 @@
     "auditorias": { "titulo": "Auditorias", "desc": "Ejecucion y seguimiento de auditorias" },
     "auditoria-detalle": { "titulo": "Auditoria", "desc": "Evaluacion, matriz de riesgo e informe" },
     "estadisticas": { "titulo": "Tablero", "desc": "Indicadores de cumplimiento por periodo" },
+    "dashboard-avanzado": { "titulo": "Dashboard avanzado", "desc": "Analítica consolidada de facturas, ingresos y empleados" },
+    "reportes": { "titulo": "Reportes", "desc": "Exportación PDF/Excel con filtros y columnas visibles" },
     "empleados": { "titulo": "Empleados", "desc": "Gestion de empleados de la empresa" },
     "empleado-detalle": { "titulo": "Empleado", "desc": "Detalle y acceso al sistema" },
     "documentos": { "titulo": "Documentos", "desc": "Documentos asignados a la empresa" },
@@ -39,6 +41,16 @@
           "name": "estadisticas",
           "label": "Tablero",
           "icon": "<path d=\"M4 20V10M10 20V4M16 20v-7M22 20H2\" />"
+        },
+        {
+          "name": "dashboard-avanzado",
+          "label": "Dashboard avanzado",
+          "icon": "<path d=\"M3 3h8v8H3zM13 3h8v5h-8zM13 10h8v11h-8zM3 13h8v8H3z\" />"
+        },
+        {
+          "name": "reportes",
+          "label": "Reportes",
+          "icon": "<path d=\"M4 4h16v16H4z\" /><path d=\"M8 9h8M8 13h8M8 17h5\" />"
         },
           {
           "name": "auditorias",
