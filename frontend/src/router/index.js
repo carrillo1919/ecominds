@@ -70,6 +70,12 @@ const routes = [
         component: () => import('@/views/servicios/FacturasView.vue'),
         meta: { requiresAuth: true, roles: ['admin', 'auditor', 'responsable'] },
       },
+      {
+        path: 'configuracion-factura',
+        name: 'configuracion-factura',
+        component: () => import('@/views/administracion/ConfiguracionFacturaView.vue'),
+        meta: { requiresAuth: true, roles: ['admin'] },
+      },
     ],
   },
 

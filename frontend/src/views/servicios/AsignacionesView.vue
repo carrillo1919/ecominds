@@ -7,6 +7,7 @@ import { useServiciosStore } from '@/stores/servicios';
 import { useEmpresasStore } from '@/stores/empresas';
 import { useAuthorization } from '@/composables/useAuthorization';
 import { useAuthStore } from '@/stores/auth';
+import { UNIDADES_MEDIDA, normalizarUnidad } from '@/utils/unidades';
 import PageToolbar from '@/components/ui/PageToolbar.vue';
 import DataTable from '@/components/ui/DataTable.vue';
 import CrudModal from '@/components/ui/CrudModal.vue';
@@ -30,7 +31,7 @@ const form = reactive({
   servicioId: '',
   cantidad: 1,
   precioUnitario: '',
-  impuesto: '',
+  unidadMedida: '',
   fechaProgramada: '',
   observaciones: '',
 });
@@ -68,7 +69,7 @@ const limpiar = () => {
   form.servicioId = '';
   form.cantidad = 1;
   form.precioUnitario = '';
-  form.impuesto = '';
+  form.unidadMedida = '';
   form.fechaProgramada = '';
   form.observaciones = '';
   tipo.value = 'producto';
@@ -78,14 +79,14 @@ const onTipoChange = () => {
   form.productoId = '';
   form.servicioId = '';
   form.precioUnitario = '';
-  form.impuesto = '';
+  form.unidadMedida = '';
 };
 
 const onItemChange = () => {
   const item = itemSeleccionado.value;
   if (item) {
     form.precioUnitario = item.precio;
-    form.impuesto = item.impuesto;
+    form.unidadMedida = item.unidadMedida || '';
   }
 };
 
@@ -107,7 +108,7 @@ const editar = (item) => {
   form.servicioId = item.servicioId || '';
   form.cantidad = item.cantidad;
   form.precioUnitario = item.precioUnitario;
-  form.impuesto = item.impuesto;
+  form.unidadMedida = item.unidadMedida || item.producto?.unidadMedida || item.servicio?.unidadMedida || '';
   form.fechaProgramada = item.fechaEjecucion || item.fechaEntrega || '';
   form.observaciones = item.observaciones || '';
   mostrarModal.value = true;
@@ -133,7 +134,7 @@ const guardar = async () => {
     servicioId: tipo.value === 'servicio' ? form.servicioId : null,
     cantidad: Number(form.cantidad) || 1,
     precioUnitario: form.precioUnitario === '' ? 0 : Number(form.precioUnitario),
-    impuesto: form.impuesto === '' ? 0 : Number(form.impuesto),
+    unidadMedida: normalizarUnidad(form.unidadMedida, null),
     fechaEjecucion: tipo.value === 'servicio' ? form.fechaProgramada || null : null,
     fechaEntrega: tipo.value === 'producto' ? form.fechaProgramada || null : null,
     observaciones: form.observaciones.trim() || undefined,
@@ -209,6 +210,9 @@ onMounted(async () => {
         <template #cell-item="{ item }">
           {{ getItemLabel(item) }}
         </template>
+        <template #cell-cantidad="{ item }">
+          {{ Number(item.cantidad).toFixed(2) }} {{ item.unidadMedida || '' }}
+        </template>
         <template #cell-precioTotal="{ item }">
           {{ Number(item.precioTotal).toFixed(2) }}
         </template>
@@ -263,10 +267,15 @@ onMounted(async () => {
 
         <label>Cantidad *<input v-model="form.cantidad" type="number" step="0.01" min="0" /></label>
         <label>Precio unitario *<input v-model="form.precioUnitario" type="number" step="0.01" min="0" /></label>
-        <label>Impuesto %<input v-model="form.impuesto" type="number" step="0.01" min="0" /></label>
+        <label>Unidad de medida
+          <input v-model="form.unidadMedida" type="text" list="unidades-medida" maxlength="20" placeholder="unidad, lts, mts, kg..." />
+        </label>
         <label>{{ tipo === 'producto' ? 'Fecha de entrega' : 'Fecha de ejecución' }}<input v-model="form.fechaProgramada" type="date" /></label>
         <label class="span-2">Observaciones<textarea v-model="form.observaciones" rows="3"></textarea></label>
       </div>
+      <datalist id="unidades-medida">
+        <option v-for="unidad in UNIDADES_MEDIDA" :key="unidad" :value="unidad" />
+      </datalist>
     </CrudModal>
   </section>
 </template>

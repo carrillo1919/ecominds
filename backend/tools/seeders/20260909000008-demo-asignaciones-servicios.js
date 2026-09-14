@@ -8,17 +8,14 @@ export const up = async (queryInterface) => {
   const empresas = await queryInterface.sequelize.query('SELECT id FROM "Empresas" LIMIT 2', { type: QueryTypes.SELECT });
   if (empresas.length === 0) return;
 
-  const productos = await queryInterface.sequelize.query('SELECT id, precio, impuesto FROM "Productos" LIMIT 2', { type: QueryTypes.SELECT });
-  const servicios = await queryInterface.sequelize.query('SELECT id, precio, impuesto FROM "Servicios" LIMIT 2', { type: QueryTypes.SELECT });
+  const productos = await queryInterface.sequelize.query('SELECT id, precio, "unidadMedida" FROM "Productos" LIMIT 2', { type: QueryTypes.SELECT });
+  const servicios = await queryInterface.sequelize.query('SELECT id, precio, "unidadMedida" FROM "Servicios" LIMIT 2', { type: QueryTypes.SELECT });
 
   const hoy = new Date();
   const fechaCercana = format(addDays(hoy, 3), 'yyyy-MM-dd');
   const fechaProxima = format(addDays(hoy, 7), 'yyyy-MM-dd');
 
-  const calcularTotal = (cantidad, precio, impuesto) => {
-    const subtotal = cantidad * Number(precio);
-    return Number((subtotal + subtotal * (Number(impuesto) / 100)).toFixed(2));
-  };
+  const calcularTotal = (cantidad, precio) => Number((cantidad * Number(precio)).toFixed(2));
 
   const asignaciones = [];
 
@@ -30,8 +27,8 @@ export const up = async (queryInterface) => {
       servicioId: null,
       cantidad: 2,
       precioUnitario: productos[0].precio,
-      impuesto: productos[0].impuesto,
-      precioTotal: calcularTotal(2, productos[0].precio, productos[0].impuesto),
+      unidadMedida: productos[0].unidadMedida,
+      precioTotal: calcularTotal(2, productos[0].precio),
       fechaEjecucion: null,
       fechaEntrega: fechaCercana,
       estado: 'pendiente',
@@ -50,8 +47,8 @@ export const up = async (queryInterface) => {
       servicioId: null,
       cantidad: 1,
       precioUnitario: productos[1].precio,
-      impuesto: productos[1].impuesto,
-      precioTotal: calcularTotal(1, productos[1].precio, productos[1].impuesto),
+      unidadMedida: productos[1].unidadMedida,
+      precioTotal: calcularTotal(1, productos[1].precio),
       fechaEjecucion: null,
       fechaEntrega: fechaProxima,
       estado: 'pendiente',
@@ -70,8 +67,8 @@ export const up = async (queryInterface) => {
       servicioId: servicios[0].id,
       cantidad: 1,
       precioUnitario: servicios[0].precio,
-      impuesto: servicios[0].impuesto,
-      precioTotal: calcularTotal(1, servicios[0].precio, servicios[0].impuesto),
+      unidadMedida: servicios[0].unidadMedida,
+      precioTotal: calcularTotal(1, servicios[0].precio),
       fechaEjecucion: fechaCercana,
       fechaEntrega: null,
       estado: 'pendiente',
@@ -90,8 +87,8 @@ export const up = async (queryInterface) => {
       servicioId: servicios[1].id,
       cantidad: 1,
       precioUnitario: servicios[1].precio,
-      impuesto: servicios[1].impuesto,
-      precioTotal: calcularTotal(1, servicios[1].precio, servicios[1].impuesto),
+      unidadMedida: servicios[1].unidadMedida,
+      precioTotal: calcularTotal(1, servicios[1].precio),
       fechaEjecucion: fechaProxima,
       fechaEntrega: null,
       estado: 'pendiente',

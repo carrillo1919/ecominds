@@ -9,6 +9,7 @@ const FacturaModel = (sequelize, DataTypes) => {
     fechaEmision: { type: DataTypes.DATEONLY, allowNull: false },
     fechaVencimiento: { type: DataTypes.DATEONLY, allowNull: true },
     subtotal: { type: DataTypes.DECIMAL(12, 2), allowNull: false, defaultValue: 0.0 },
+    descuento: { type: DataTypes.DECIMAL(12, 2), allowNull: false, defaultValue: 0.0 },
     impuesto: { type: DataTypes.DECIMAL(12, 2), allowNull: false, defaultValue: 0.0 },
     total: { type: DataTypes.DECIMAL(12, 2), allowNull: false, defaultValue: 0.0 },
     estado: {
@@ -33,6 +34,7 @@ const FacturaModel = (sequelize, DataTypes) => {
   Factura.associate = (db) => {
     Factura.belongsTo(db.Empresa, { foreignKey: 'empresaId', as: 'empresa' });
     Factura.hasMany(db.FacturaItem, { foreignKey: 'facturaId', as: 'items' });
+    Factura.hasMany(db.FacturaConcepto, { foreignKey: 'facturaId', as: 'conceptos' });
     Factura.hasMany(db.EmpresaServicio, { foreignKey: 'facturaId', as: 'asignaciones' });
   };
 

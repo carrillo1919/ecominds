@@ -8,7 +8,7 @@ const EmpresaServicioModel = (sequelize, DataTypes) => {
     servicioId: { type: DataTypes.UUID, allowNull: true },
     cantidad: { type: DataTypes.DECIMAL(10, 2), allowNull: false, defaultValue: 1.0 },
     precioUnitario: { type: DataTypes.DECIMAL(12, 2), allowNull: false },
-    impuesto: { type: DataTypes.DECIMAL(5, 2), allowNull: false, defaultValue: 0.0 },
+    unidadMedida: { type: DataTypes.STRING(20), allowNull: true },
     precioTotal: { type: DataTypes.DECIMAL(12, 2), allowNull: false },
     fechaEjecucion: { type: DataTypes.DATEONLY, allowNull: true },
     fechaEntrega: { type: DataTypes.DATEONLY, allowNull: true },

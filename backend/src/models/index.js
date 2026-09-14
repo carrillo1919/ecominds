@@ -22,6 +22,8 @@ import ServicioModel from '../modules/comercial/infrastructure/models/servicio.j
 import EmpresaServicioModel from '../modules/comercial/infrastructure/models/empresaServicio.js';
 import FacturaModel from '../modules/comercial/infrastructure/models/factura.js';
 import FacturaItemModel from '../modules/comercial/infrastructure/models/facturaItem.js';
+import FacturaConceptoModel from '../modules/comercial/infrastructure/models/facturaConcepto.js';
+import ConfiguracionFacturaModel from '../modules/comercial/infrastructure/models/configuracionFactura.js';
 
 const User = UserModel(sequelize, Sequelize.DataTypes);
 const Empresa = EmpresaModel(sequelize, Sequelize.DataTypes);
@@ -44,6 +46,8 @@ const Servicio = ServicioModel(sequelize, Sequelize.DataTypes);
 const EmpresaServicio = EmpresaServicioModel(sequelize, Sequelize.DataTypes);
 const Factura = FacturaModel(sequelize, Sequelize.DataTypes);
 const FacturaItem = FacturaItemModel(sequelize, Sequelize.DataTypes);
+const FacturaConcepto = FacturaConceptoModel(sequelize, Sequelize.DataTypes);
+const ConfiguracionFactura = ConfiguracionFacturaModel(sequelize, Sequelize.DataTypes);
 
 const db = {
   sequelize,
@@ -69,6 +73,8 @@ const db = {
   EmpresaServicio,
   Factura,
   FacturaItem,
+  FacturaConcepto,
+  ConfiguracionFactura,
 };
 
 Object.values(db).forEach((model) => {
@@ -101,6 +107,8 @@ export {
   EmpresaServicio,
   Factura,
   FacturaItem,
+  FacturaConcepto,
+  ConfiguracionFactura,
 };
 
 export default db;

@@ -10,7 +10,7 @@ import menuConfig from '@/config/menu.json';
 const auth = useAuthStore();
 const route = useRoute();
 const router = useRouter();
-const { canGestionarUsuarios } = useAuthorization();
+const { canGestionarUsuarios, canGestionarCatalogos } = useAuthorization();
 
 const collapsed = ref(false);
 const mobileOpen = ref(false);
@@ -33,7 +33,7 @@ watch(() => route.fullPath, () => {
 
 const hasPermission = (permission) => {
   if (!permission) return true;
-  const permissions = { canGestionarUsuarios };
+  const permissions = { canGestionarUsuarios, canGestionarCatalogos };
   return !!permissions[permission];
 };
 

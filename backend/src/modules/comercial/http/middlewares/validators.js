@@ -8,6 +8,7 @@ import {
   decimalRequired,
   enumOptional,
   enumRequired,
+  floatRequired,
   paramId,
   requiredText,
   uuidOptional,
@@ -16,12 +17,27 @@ import {
 
 export { paramId };
 
+const unidadMedidaRule = (field = 'unidadMedida') =>
+  body(field)
+    .optional({ values: 'falsy' })
+    .trim()
+    .isLength({ max: 20 })
+    .withMessage('La unidad de medida no puede superar los 20 caracteres');
+
+const arregloOpcionalUUID = (field) => [
+  body(field)
+    .optional({ values: 'falsy' })
+    .isArray()
+    .withMessage(`${field} debe ser un arreglo`),
+  body(`${field}.*`).isUUID().withMessage(`${field} contiene un valor inválido`),
+];
+
 // --- Productos ---
 export const productoCreateRules = [
   requiredText('codigo', 'El código es obligatorio'),
   requiredText('nombre', 'El nombre es obligatorio'),
   decimalRequired('precio'),
-  body('impuesto').optional().isDecimal(),
+  unidadMedidaRule(),
   booleanOptional('activo'),
 ];
 
@@ -30,7 +46,7 @@ export const servicioCreateRules = [
   requiredText('codigo', 'El código es obligatorio'),
   requiredText('nombre', 'El nombre es obligatorio'),
   decimalRequired('precio'),
-  body('impuesto').optional().isDecimal(),
+  unidadMedidaRule(),
   booleanOptional('activo'),
 ];
 
@@ -41,7 +57,7 @@ export const empresaServicioCreateRules = [
   uuidOptional('servicioId'),
   decimalRequired('cantidad'),
   decimalOptional('precioUnitario'),
-  decimalOptional('impuesto'),
+  unidadMedidaRule(),
   body('productoId')
     .custom((value, { req }) => Boolean(value) || Boolean(req.body.servicioId))
     .withMessage('Debe indicar productoId o servicioId'),
@@ -54,7 +70,7 @@ export const empresaServicioUpdateRules = [
   paramId(),
   decimalOptional('cantidad'),
   decimalOptional('precioUnitario'),
-  decimalOptional('impuesto'),
+  unidadMedidaRule(),
   enumOptional('estado', ['pendiente', 'facturado', 'cancelado'], 'Estado inválido'),
   dateOptional('fechaEntrega', 'Fecha de entrega inválida'),
   dateOptional('fechaEjecucion', 'Fecha de ejecución inválida'),
@@ -66,6 +82,54 @@ export const facturaCreateRules = [
   arrayRequired('asignacionIds', { min: 1 }),
   body('asignacionIds.*').isUUID().withMessage('asignacionId inválido'),
   dateOptional('fechaVencimiento', 'Fecha de vencimiento inválida'),
+  ...arregloOpcionalUUID('impuestoIds'),
+  ...arregloOpcionalUUID('descuentoIds'),
+  body('notas')
+    .optional({ values: 'falsy' })
+    .isString()
+    .withMessage('Las notas deben ser texto')
+    .isLength({ max: 2000 })
+    .withMessage('Las notas no pueden superar los 2000 caracteres'),
+];
+
+// --- Configuración de factura (impuestos y descuentos) ---
+export const configuracionFacturaCreateRules = [
+  enumRequired('tipo', ['impuesto', 'descuento'], 'El tipo debe ser impuesto o descuento'),
+  body('nombre')
+    .trim()
+    .notEmpty()
+    .withMessage('El nombre es obligatorio')
+    .isLength({ max: 150 })
+    .withMessage('El nombre no puede superar los 150 caracteres'),
+  floatRequired('porcentaje', { min: 0, max: 100 }, 'El porcentaje debe estar entre 0 y 100'),
+  body('descripcion')
+    .optional({ values: 'falsy' })
+    .trim()
+    .isLength({ max: 255 })
+    .withMessage('La descripción no puede superar los 255 caracteres'),
+  booleanOptional('activo'),
+];
+
+export const configuracionFacturaUpdateRules = [
+  paramId(),
+  enumOptional('tipo', ['impuesto', 'descuento'], 'El tipo debe ser impuesto o descuento'),
+  body('nombre')
+    .optional()
+    .trim()
+    .notEmpty()
+    .withMessage('El nombre es obligatorio')
+    .isLength({ max: 150 })
+    .withMessage('El nombre no puede superar los 150 caracteres'),
+  body('porcentaje')
+    .optional({ values: 'falsy' })
+    .isFloat({ min: 0, max: 100 })
+    .withMessage('El porcentaje debe estar entre 0 y 100'),
+  body('descripcion')
+    .optional({ values: 'falsy' })
+    .trim()
+    .isLength({ max: 255 })
+    .withMessage('La descripción no puede superar los 255 caracteres'),
+  booleanOptional('activo'),
 ];
 
 export const facturaUpdateRules = [

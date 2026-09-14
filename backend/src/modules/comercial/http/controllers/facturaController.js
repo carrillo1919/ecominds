@@ -24,12 +24,16 @@ export const getById = async (req, res, next) => {
 
 export const create = async (req, res, next) => {
   try {
-    const { empresaId, asignacionIds, fechaVencimiento, notas } = req.body;
+    const {
+      empresaId, asignacionIds, fechaVencimiento, notas, impuestoIds, descuentoIds,
+    } = req.body;
     const factura = await generarFacturaDesdeAsignaciones({
       empresaId,
       asignacionIds,
       fechaVencimiento,
       notas,
+      impuestoIds,
+      descuentoIds,
     });
     return res.status(201).json({ message: 'Factura generada', factura });
   } catch (error) { return next(error); }

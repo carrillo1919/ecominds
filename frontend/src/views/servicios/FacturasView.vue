@@ -4,6 +4,7 @@ import { useToast } from 'vue-toastification';
 import { useFacturasStore } from '@/stores/facturas';
 import { useEmpresaServiciosStore } from '@/stores/empresaServicios';
 import { useEmpresasStore } from '@/stores/empresas';
+import { useConfiguracionFacturaStore } from '@/stores/configuracionFactura';
 import { useAuthorization } from '@/composables/useAuthorization';
 import { useAuthStore } from '@/stores/auth';
 import PageToolbar from '@/components/ui/PageToolbar.vue';
@@ -17,6 +18,7 @@ const { canGestionarAsignaciones, canVerFacturacion, isResponsable } = useAuthor
 const facturasStore = useFacturasStore();
 const asignacionesStore = useEmpresaServiciosStore();
 const empresasStore = useEmpresasStore();
+const configuracionStore = useConfiguracionFacturaStore();
 
 const mostrarModal = ref(false);
 const mostrarDetalle = ref(false);
@@ -31,6 +33,8 @@ const form = reactive({
   asignacionIds: [],
   fechaVencimiento: '',
   notas: '',
+  impuestoIds: [],
+  descuentoIds: [],
 });
 
 const pagoForm = reactive({
@@ -72,12 +76,32 @@ const totalSeleccionado = computed(() => {
     .toFixed(2);
 });
 
-const abrirGenerar = () => {
+const conceptosSeleccionados = computed(() => ([
+  ...configuracionStore.descuentosActivos.filter((c) => form.descuentoIds.includes(c.id)),
+  ...configuracionStore.impuestosActivos.filter((c) => form.impuestoIds.includes(c.id)),
+]));
+
+const conceptosDeFactura = (factura, tipo) =>
+  (factura?.conceptos || []).filter((c) => c.tipo === tipo);
+
+const baseImponible = (factura) =>
+  Number(factura.subtotal) - Number(factura.descuento || 0);
+
+const impuestoItem = (item) =>
+  Number(item.total) - Number(item.subtotal) + Number(item.descuento || 0);
+
+const abrirGenerar = async () => {
   form.empresaId = empresasFiltradas.value.length === 1 ? empresasFiltradas.value[0].id : '';
   form.asignacionIds = [];
   form.fechaVencimiento = '';
   form.notas = '';
+  form.impuestoIds = [];
+  form.descuentoIds = [];
   mostrarModal.value = true;
+
+  if (!configuracionStore.configuraciones.length) {
+    await configuracionStore.fetchAll();
+  }
 };
 
 const cerrarModal = () => {
@@ -99,6 +123,8 @@ const generar = async () => {
     asignacionIds: form.asignacionIds,
     fechaVencimiento: form.fechaVencimiento || null,
     notas: form.notas.trim() || undefined,
+    impuestoIds: form.impuestoIds,
+    descuentoIds: form.descuentoIds,
   });
 
   if (result.ok) {
@@ -201,6 +227,7 @@ onMounted(async () => {
     facturasStore.fetchAll(),
     asignacionesStore.fetchAll(),
     empresasStore.fetchAll({ activo: true }),
+    configuracionStore.fetchAll({ activo: true }),
   ]);
 });
 </script>
@@ -272,6 +299,43 @@ onMounted(async () => {
         </div>
         <p class="mt-2 font-semibold">Total seleccionado: {{ totalSeleccionado }}</p>
       </div>
+
+      <div class="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div>
+          <h4>Impuestos</h4>
+          <p v-if="!configuracionStore.impuestosActivos.length" class="muted text-sm">
+            No hay impuestos activos. Configúralos en Configuración de factura.
+          </p>
+          <div v-else class="space-y-2">
+            <label v-for="impuesto in configuracionStore.impuestosActivos" :key="impuesto.id" class="flex items-center gap-2 p-2 border rounded">
+              <input v-model="form.impuestoIds" type="checkbox" :value="impuesto.id" />
+              <span class="flex-1">{{ impuesto.nombre }} — {{ Number(impuesto.porcentaje).toFixed(2) }}%</span>
+            </label>
+          </div>
+        </div>
+
+        <div>
+          <h4>Descuentos (opcionales)</h4>
+          <p v-if="!configuracionStore.descuentosActivos.length" class="muted text-sm">
+            No hay descuentos activos. Configúralos en Configuración de factura.
+          </p>
+          <div v-else class="space-y-2">
+            <label v-for="descuento in configuracionStore.descuentosActivos" :key="descuento.id" class="flex items-center gap-2 p-2 border rounded">
+              <input v-model="form.descuentoIds" type="checkbox" :value="descuento.id" />
+              <span class="flex-1">{{ descuento.nombre }} — {{ Number(descuento.porcentaje).toFixed(2) }}%</span>
+            </label>
+          </div>
+        </div>
+      </div>
+
+      <div v-if="conceptosSeleccionados.length" class="mt-4">
+        <h4>Aplicar a la factura</h4>
+        <ul class="list-disc pl-5 text-sm">
+          <li v-for="concepto in conceptosSeleccionados" :key="concepto.id">
+            {{ concepto.tipo === 'impuesto' ? 'Impuesto' : 'Descuento' }} {{ concepto.nombre }} ({{ Number(concepto.porcentaje).toFixed(2) }}%)
+          </li>
+        </ul>
+      </div>
     </CrudModal>
 
     <CrudModal
@@ -287,7 +351,25 @@ onMounted(async () => {
         <p><strong>Empresa:</strong> {{ facturaSeleccionada.empresa?.nombre }}</p>
         <p><strong>Estado:</strong> {{ labelEstado(facturaSeleccionada.estado) }}</p>
         <p><strong>Subtotal:</strong> {{ Number(facturaSeleccionada.subtotal).toFixed(2) }}</p>
-        <p><strong>Impuesto:</strong> {{ Number(facturaSeleccionada.impuesto).toFixed(2) }}</p>
+        <template v-if="conceptosDeFactura(facturaSeleccionada, 'descuento').length">
+          <p v-for="concepto in conceptosDeFactura(facturaSeleccionada, 'descuento')" :key="concepto.id">
+            <strong>Descuento {{ concepto.nombre }} ({{ Number(concepto.porcentaje).toFixed(2) }}%):</strong>
+            -{{ Number(concepto.monto).toFixed(2) }}
+          </p>
+        </template>
+        <p v-else-if="Number(facturaSeleccionada.descuento) > 0">
+          <strong>Descuento:</strong> -{{ Number(facturaSeleccionada.descuento).toFixed(2) }}
+        </p>
+        <p v-if="Number(facturaSeleccionada.descuento) > 0">
+          <strong>Base imponible:</strong> {{ baseImponible(facturaSeleccionada).toFixed(2) }}
+        </p>
+        <template v-if="conceptosDeFactura(facturaSeleccionada, 'impuesto').length">
+          <p v-for="concepto in conceptosDeFactura(facturaSeleccionada, 'impuesto')" :key="concepto.id">
+            <strong>{{ concepto.nombre }} ({{ Number(concepto.porcentaje).toFixed(2) }}%):</strong>
+            {{ Number(concepto.monto).toFixed(2) }}
+          </p>
+        </template>
+        <p v-else><strong>Impuesto:</strong> {{ Number(facturaSeleccionada.impuesto).toFixed(2) }}</p>
         <p><strong>Total:</strong> {{ Number(facturaSeleccionada.total).toFixed(2) }}</p>
         <p v-if="facturaSeleccionada.notas"><strong>Notas:</strong> {{ facturaSeleccionada.notas }}</p>
         <template v-if="facturaSeleccionada.estado === 'pagada'">
@@ -303,12 +385,17 @@ onMounted(async () => {
         <h4 class="mt-4">Ítems</h4>
         <table class="table">
           <thead>
-            <tr><th>Descripción</th><th>Cantidad</th><th>Total</th></tr>
+            <tr><th>Descripción</th><th>Cantidad</th><th>Unidad</th><th>Precio unit.</th><th>Subtotal</th><th>Descuento</th><th>Impuesto</th><th>Total</th></tr>
           </thead>
           <tbody>
             <tr v-for="item in facturaSeleccionada.items" :key="item.id">
               <td>{{ item.descripcion }}</td>
               <td>{{ Number(item.cantidad).toFixed(2) }}</td>
+              <td>{{ item.unidadMedida || '—' }}</td>
+              <td>{{ Number(item.precioUnitario).toFixed(2) }}</td>
+              <td>{{ Number(item.subtotal).toFixed(2) }}</td>
+              <td>{{ Number(item.descuento || 0).toFixed(2) }}</td>
+              <td>{{ impuestoItem(item).toFixed(2) }}</td>
               <td>{{ Number(item.total).toFixed(2) }}</td>
             </tr>
           </tbody>

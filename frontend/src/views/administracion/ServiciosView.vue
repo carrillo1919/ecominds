@@ -3,6 +3,7 @@ import { computed, onMounted, reactive, ref } from 'vue';
 import { useToast } from 'vue-toastification';
 import { useServiciosStore } from '@/stores/servicios';
 import { useAuthorization } from '@/composables/useAuthorization';
+import { UNIDADES_MEDIDA, normalizarUnidad } from '@/utils/unidades';
 import PageToolbar from '@/components/ui/PageToolbar.vue';
 import DataTable from '@/components/ui/DataTable.vue';
 import CrudModal from '@/components/ui/CrudModal.vue';
@@ -19,7 +20,7 @@ const form = reactive({
   nombre: '',
   descripcion: '',
   precio: '',
-  impuesto: '',
+  unidadMedida: 'servicio',
   activo: true,
 });
 
@@ -28,7 +29,7 @@ const headers = [
   { key: 'nombre', label: 'Nombre' },
   { key: 'descripcion', label: 'Descripción' },
   { key: 'precio', label: 'Precio base' },
-  { key: 'impuesto', label: 'Impuesto %' },
+  { key: 'unidadMedida', label: 'Unidad de medida' },
   { key: 'activo', label: 'Activo' },
 ];
 
@@ -41,7 +42,7 @@ const limpiar = () => {
   form.nombre = '';
   form.descripcion = '';
   form.precio = '';
-  form.impuesto = '';
+  form.unidadMedida = 'servicio';
   form.activo = true;
 };
 
@@ -61,7 +62,7 @@ const editar = (item) => {
   form.nombre = item.nombre || '';
   form.descripcion = item.descripcion || '';
   form.precio = item.precio ?? '';
-  form.impuesto = item.impuesto ?? '';
+  form.unidadMedida = normalizarUnidad(item.unidadMedida, 'servicio');
   form.activo = item.activo ?? true;
   mostrarModal.value = true;
 };
@@ -77,7 +78,7 @@ const guardar = async () => {
     nombre: form.nombre.trim(),
     descripcion: form.descripcion.trim() || undefined,
     precio: Number(form.precio),
-    impuesto: form.impuesto === '' ? 0 : Number(form.impuesto),
+    unidadMedida: normalizarUnidad(form.unidadMedida, 'servicio'),
     activo: form.activo,
   };
 
@@ -138,8 +139,8 @@ onMounted(() => {
         <template #cell-precio="{ item }">
           {{ Number(item.precio).toFixed(2) }}
         </template>
-        <template #cell-impuesto="{ item }">
-          {{ Number(item.impuesto).toFixed(2) }}%
+        <template #cell-unidadMedida="{ item }">
+          {{ item.unidadMedida || '—' }}
         </template>
         <template #cell-activo="{ item }">
           <span :class="item.activo ? 'badge-success' : 'badge-muted'">
@@ -165,12 +166,17 @@ onMounted(() => {
         <label>Código *<input v-model="form.codigo" type="text" /></label>
         <label>Nombre *<input v-model="form.nombre" type="text" /></label>
         <label>Precio base *<input v-model="form.precio" type="number" step="0.01" min="0" /></label>
-        <label>Impuesto %<input v-model="form.impuesto" type="number" step="0.01" min="0" /></label>
+        <label>Unidad de medida
+          <input v-model="form.unidadMedida" type="text" list="unidades-medida" maxlength="20" placeholder="servicio, unidad, hora..." />
+        </label>
         <label class="span-2">Descripción<textarea v-model="form.descripcion" rows="3"></textarea></label>
         <label class="flex items-center gap-2">
           <input v-model="form.activo" type="checkbox" /> Activo
         </label>
       </div>
+      <datalist id="unidades-medida">
+        <option v-for="unidad in UNIDADES_MEDIDA" :key="unidad" :value="unidad" />
+      </datalist>
     </CrudModal>
   </section>
 </template>

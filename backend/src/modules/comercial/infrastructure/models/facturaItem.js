@@ -5,9 +5,11 @@ const FacturaItemModel = (sequelize, DataTypes) => {
     empresaServicioId: { type: DataTypes.UUID, allowNull: true },
     descripcion: { type: DataTypes.STRING(500), allowNull: false },
     cantidad: { type: DataTypes.DECIMAL(10, 2), allowNull: false },
+    unidadMedida: { type: DataTypes.STRING(20), allowNull: true },
     precioUnitario: { type: DataTypes.DECIMAL(12, 2), allowNull: false },
     impuesto: { type: DataTypes.DECIMAL(5, 2), allowNull: false, defaultValue: 0.0 },
     subtotal: { type: DataTypes.DECIMAL(12, 2), allowNull: false },
+    descuento: { type: DataTypes.DECIMAL(12, 2), allowNull: false, defaultValue: 0.0 },
     total: { type: DataTypes.DECIMAL(12, 2), allowNull: false },
   }, {
     tableName: 'FacturaItems',

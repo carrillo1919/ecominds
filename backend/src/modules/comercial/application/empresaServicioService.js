@@ -14,14 +14,13 @@ const INCLUDES = [
 
 const INCLUDES_FULL = [...INCLUDES, { model: Factura, as: 'factura', attributes: ['id', 'numero', 'estado'] }];
 
-export const calcularTotales = (cantidad, precioUnitario, impuesto) => {
+// Los impuestos no dependen del producto/servicio: se configuran en el módulo
+// de configuración de factura y se aplican al generar la factura.
+export const calcularTotales = (cantidad, precioUnitario) => {
   const qty = Number(cantidad) || 0;
   const unit = Number(precioUnitario) || 0;
-  const taxRate = Number(impuesto) || 0;
   const subtotal = qty * unit;
-  const tax = subtotal * (taxRate / 100);
-  const total = subtotal + tax;
-  return { subtotal, tax, total };
+  return { subtotal, total: subtotal };
 };
 
 export const buildCalendarioEvento = (asignacion, itemNombre, empresaNombre) => {
@@ -62,7 +61,7 @@ export const crearAsignacion = async (req) => {
   const transaction = await db.sequelize.transaction();
   try {
     const {
-      empresaId, productoId, servicioId, cantidad, precioUnitario, impuesto,
+      empresaId, productoId, servicioId, cantidad, precioUnitario, unidadMedida,
       fechaEjecucion, fechaEntrega, observaciones,
     } = req.body;
 
@@ -85,8 +84,8 @@ export const crearAsignacion = async (req) => {
     }
 
     const finalPrecio = precioUnitario !== undefined ? precioUnitario : item.precio;
-    const finalImpuesto = impuesto !== undefined ? impuesto : item.impuesto;
-    const { total } = calcularTotales(cantidad, finalPrecio, finalImpuesto);
+    const finalUnidad = unidadMedida || item.unidadMedida || null;
+    const { total } = calcularTotales(cantidad, finalPrecio);
     const esProducto = Boolean(productoId);
 
     const asignacion = await EmpresaServicio.create({
@@ -95,7 +94,7 @@ export const crearAsignacion = async (req) => {
       servicioId: servicioId || null,
       cantidad,
       precioUnitario: finalPrecio,
-      impuesto: finalImpuesto,
+      unidadMedida: finalUnidad,
       precioTotal: total,
       fechaEjecucion: esProducto ? null : fechaEjecucion || null,
       fechaEntrega: esProducto ? fechaEntrega || null : null,
@@ -134,7 +133,7 @@ export const actualizarAsignacion = async (id, req) => {
     }
     assertEmpresaInScope(asignacion.empresaId, req);
 
-    const camposPermitidos = ['cantidad', 'precioUnitario', 'impuesto', 'estado', 'observaciones'];
+    const camposPermitidos = ['cantidad', 'precioUnitario', 'unidadMedida', 'estado', 'observaciones'];
     camposPermitidos.forEach((campo) => {
       if (req.body[campo] !== undefined) asignacion[campo] = req.body[campo];
     });
@@ -147,7 +146,7 @@ export const actualizarAsignacion = async (id, req) => {
       asignacion.fechaEntrega = null;
     }
 
-    const { total } = calcularTotales(asignacion.cantidad, asignacion.precioUnitario, asignacion.impuesto);
+    const { total } = calcularTotales(asignacion.cantidad, asignacion.precioUnitario);
     asignacion.precioTotal = total;
     await asignacion.save({ transaction });
 

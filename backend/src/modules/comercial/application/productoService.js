@@ -2,7 +2,7 @@ import { Op } from 'sequelize';
 import { Producto } from '../../../models/index.js';
 import HttpError from '../../../shared/http/errors/http-error.js';
 
-const CAMPOS_ACTUALIZABLES = ['codigo', 'nombre', 'descripcion', 'precio', 'impuesto', 'activo'];
+const CAMPOS_ACTUALIZABLES = ['codigo', 'nombre', 'descripcion', 'precio', 'unidadMedida', 'activo'];
 
 const buscarProducto = async (id) => {
   const producto = await Producto.findByPk(id);
