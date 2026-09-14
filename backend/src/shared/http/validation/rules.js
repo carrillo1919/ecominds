@@ -80,11 +80,12 @@ export const arrayOfUUID = (field, msg = `${field} contiene un valor inválido`)
   body(field).isUUID().withMessage(msg);
 
 // --- Query params ---
+// Los filtros de fecha son opcionales: se aceptan cadenas vacias enviadas por el cliente.
 export const queryIsoDateOptional = (field, msg = 'Fecha inválida') =>
-  query(field).optional().isISO8601().withMessage(msg);
+  query(field).optional({ values: 'falsy' }).isISO8601().withMessage(msg);
 
 export const queryIntOptional = (field, opts = {}, msg = `${field} debe ser un entero`) =>
-  query(field).optional().isInt(opts).withMessage(msg);
+  query(field).optional({ values: 'falsy' }).isInt(opts).withMessage(msg);
 
 // --- Contraseña ---
 export const passwordValidation = () =>

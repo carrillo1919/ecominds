@@ -75,4 +75,17 @@ const assertEmpresaInScope = (empresaId, req) => {
   }
 };
 
-export { resolveScope, applyEmpresaScope, assertEmpresaInScope };
+/**
+ * Indica si el usuario esta obligado a enviar `empresaId` en sus consultas.
+ * Aplica a usuarios no admin que operan sobre empresas concretas:
+ * - auditor con empresas asignadas
+ * - responsable (empleado) con empresa activa
+ */
+const scopeRequiereEmpresaId = (req) => {
+  const scope = req.scope;
+  if (!scope || scope.all) return false;
+  if (!['auditor', 'responsable'].includes(req.user?.rol)) return false;
+  return scope.empresaIds.length > 0;
+};
+
+export { resolveScope, applyEmpresaScope, assertEmpresaInScope, scopeRequiereEmpresaId };

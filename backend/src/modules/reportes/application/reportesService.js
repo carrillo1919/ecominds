@@ -1,5 +1,5 @@
 import db from '../../../models/index.js';
-import { applyEmpresaScope, assertEmpresaInScope } from '../../../shared/security/tenant-scope.js';
+import { applyEmpresaScope, assertEmpresaInScope, scopeRequiereEmpresaId } from '../../../shared/security/tenant-scope.js';
 
 const {
   Sequelize,
@@ -14,11 +14,14 @@ const {
 const { Op } = Sequelize;
 
 const ESTADOS_FACTURA = ['borrador', 'emitida', 'pagada', 'anulada'];
+const TIPOS_ITEM = ['producto', 'servicio'];
 const COLUMNAS_FACTURA = [
-  'numero', 'empresa', 'fechaEmision', 'fechaPago', 'estado', 'total', 'deuda', 'tipoItems', 'cantidadItems',
+  'numero', 'empresa', 'fechaEmision', 'fechaPago', 'estado', 'tipoItems', 'descripcionItems',
+  'cantidadItems', 'cantidadTotal', 'subtotal', 'descuento', 'impuesto', 'total', 'deuda',
 ];
 
 const toNumber = (value) => Number(value || 0);
+const redondear = (value) => Math.round(toNumber(value) * 100) / 100;
 
 const normalizarEstados = (estadosRaw) => {
   if (!estadosRaw) return ESTADOS_FACTURA;
@@ -75,12 +78,72 @@ const filtroTipoItems = (items, tipo) => {
   });
 };
 
+// Un item es producto si su empresaServicio apunta a un producto; en caso contrario es servicio.
+const tipoDeItem = (item) => (item.empresaServicio?.productoId ? 'producto' : 'servicio');
+
+// En FacturaItem `impuesto` es la tasa (ej. 16 = 16%), por eso el monto se deriva del total
+// y de la base ya descontada.
+const montoImpuestoItem = (item) => redondear(
+  toNumber(item.total) - toNumber(item.subtotal) + toNumber(item.descuento)
+);
+
+const serializarItemDetalle = (factura, item) => ({
+  id: item.id,
+  facturaId: factura.id,
+  numero: factura.numero,
+  empresa: factura.empresa?.nombre || '—',
+  fechaEmision: factura.fechaEmision,
+  estado: factura.estado,
+  tipo: tipoDeItem(item),
+  descripcion: item.descripcion,
+  cantidad: toNumber(item.cantidad),
+  unidadMedida: item.unidadMedida || '',
+  precioUnitario: toNumber(item.precioUnitario),
+  tasaImpuesto: toNumber(item.impuesto),
+  impuesto: montoImpuestoItem(item),
+  subtotal: toNumber(item.subtotal),
+  descuento: toNumber(item.descuento),
+  total: toNumber(item.total),
+});
+
+const resumenVacio = () => ({ items: 0, cantidad: 0, subtotal: 0, descuento: 0, impuesto: 0, total: 0 });
+
+const acumularResumen = (acc, item) => {
+  acc.items += 1;
+  acc.cantidad += item.cantidad;
+  acc.subtotal += item.subtotal;
+  acc.descuento += item.descuento;
+  acc.impuesto += item.impuesto;
+  acc.total += item.total;
+};
+
+const construirResumenItems = (detalle) => {
+  const resumen = { todos: resumenVacio(), ...Object.fromEntries(TIPOS_ITEM.map((t) => [t, resumenVacio()])) };
+
+  detalle.forEach((item) => {
+    acumularResumen(resumen.todos, item);
+    if (resumen[item.tipo]) acumularResumen(resumen[item.tipo], item);
+  });
+
+  Object.values(resumen).forEach((grupo) => {
+    grupo.cantidad = redondear(grupo.cantidad);
+    grupo.subtotal = redondear(grupo.subtotal);
+    grupo.descuento = redondear(grupo.descuento);
+    grupo.impuesto = redondear(grupo.impuesto);
+    grupo.total = redondear(grupo.total);
+  });
+
+  return resumen;
+};
+
 const serializarFacturaTabla = (factura, tipo = 'todos') => {
   const itemsFiltrados = filtroTipoItems(factura.items || [], tipo);
   if (!itemsFiltrados.length) return null;
 
-  const tipos = new Set(itemsFiltrados.map((item) => (item.empresaServicio?.productoId ? 'producto' : 'servicio')));
+  const tipos = new Set(itemsFiltrados.map(tipoDeItem));
   const deuda = factura.estado === 'pagada' ? 0 : toNumber(factura.total);
+  const descripcionItems = itemsFiltrados.map((item) => item.descripcion).filter(Boolean).join(' | ');
+  const cantidadTotal = redondear(itemsFiltrados.reduce((acc, item) => acc + toNumber(item.cantidad), 0));
 
   return {
     id: factura.id,
@@ -89,10 +152,16 @@ const serializarFacturaTabla = (factura, tipo = 'todos') => {
     fechaEmision: factura.fechaEmision,
     fechaPago: factura.fechaPago,
     estado: factura.estado,
+    subtotal: toNumber(factura.subtotal),
+    descuento: toNumber(factura.descuento),
+    impuesto: toNumber(factura.impuesto),
     total: toNumber(factura.total),
     deuda,
     tipoItems: tipos.size > 1 ? 'mixto' : [...tipos][0],
+    descripcionItems,
     cantidadItems: itemsFiltrados.length,
+    cantidadTotal,
+    itemsDetalle: itemsFiltrados.map((item) => serializarItemDetalle(factura, item)),
   };
 };
 
@@ -121,7 +190,8 @@ const buildComparativo = ({ desde, hasta }, totalFacturado, ingresos) => {
   };
 };
 
-export const obtenerDashboardAvanzado = async (req) => {
+export const obtenerDashboardAvanzado = async (req, options = {}) => {
+  const { paginar = true } = options;
   const whereFacturas = buildWhereFacturas(req);
   const { tipo = 'todos', search = '', page = 1, limit = 20, sortBy = 'fechaEmision', sortDir = 'desc' } = req.query;
 
@@ -161,10 +231,17 @@ export const obtenerDashboardAvanzado = async (req) => {
   const pageNum = Math.max(1, Number(page) || 1);
   const pageSize = Math.min(100, Math.max(1, Number(limit) || 20));
   const inicio = (pageNum - 1) * pageSize;
-  const filas = filasBase.slice(inicio, inicio + pageSize);
+  const filas = paginar ? filasBase.slice(inicio, inicio + pageSize) : filasBase;
 
   const totalFacturado = filasBase.reduce((acc, row) => acc + row.total, 0);
+  const totalDescuentos = filasBase.reduce((acc, row) => acc + row.descuento, 0);
+  // La base sin impuestos es el subtotal ya descontado, de forma que
+  // totalFacturadoSinImpuesto + totalImpuestos === totalFacturado.
+  const totalFacturadoSinImpuesto = filasBase.reduce((acc, row) => acc + row.subtotal - row.descuento, 0);
   const deudaTotal = filasBase.reduce((acc, row) => acc + row.deuda, 0);
+
+  const detalleItems = filasBase.flatMap((row) => row.itemsDetalle);
+  const resumenItems = construirResumenItems(detalleItems);
   const facturasPagadasRangoPago = await Factura.findAll({
     where: buildWhereIngresos(req),
     attributes: ['total'],
@@ -229,6 +306,7 @@ export const obtenerDashboardAvanzado = async (req) => {
   return {
     filtrosAplicados: {
       empresaId: req.query.empresaId || null,
+      empresaIdRequerido: scopeRequiereEmpresaId(req),
       desde: req.query.desde || null,
       hasta: req.query.hasta || null,
       estados: normalizarEstados(req.query.estados),
@@ -241,13 +319,18 @@ export const obtenerDashboardAvanzado = async (req) => {
     },
     kpis: {
       totalFacturas: filasBase.length,
-      totalFacturado,
-      deudaTotal,
-      ingresos,
+      totalFacturado: redondear(totalFacturado),
+      totalFacturadoSinImpuesto: redondear(totalFacturadoSinImpuesto),
+      totalDescuentos: redondear(totalDescuentos),
+      totalImpuestos: redondear(totalFacturado - totalFacturadoSinImpuesto),
+      deudaTotal: redondear(deudaTotal),
+      ingresos: redondear(ingresos),
       totalEmpleados: empleados.length,
       totalAuditoriasFinalizadas: auditorias.length,
       promedioCumplimiento,
     },
+    resumenItems,
+    detalleItems,
     distribucionFacturas,
     distribucionRiesgo,
     comparativo,
@@ -266,31 +349,62 @@ export const obtenerDashboardAvanzado = async (req) => {
 
 const escapeHtml = (value) => String(value ?? '').replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;').replaceAll('"', '&quot;');
 
+const COLUMNAS_NUMERICAS = ['subtotal', 'descuento', 'impuesto', 'total', 'deuda'];
+
 const valorCelda = (row, columna) => {
-  if (columna === 'total' || columna === 'deuda') return toNumber(row[columna]).toFixed(2);
+  if (COLUMNAS_NUMERICAS.includes(columna)) return toNumber(row[columna]).toFixed(2);
   return row[columna] ?? '';
 };
 
 const etiquetaColumna = {
-  numero: 'Número', empresa: 'Empresa', fechaEmision: 'Fecha emisión', fechaPago: 'Fecha pago', estado: 'Estado', total: 'Total', deuda: 'Deuda', tipoItems: 'Tipo', cantidadItems: 'Ítems',
+  numero: 'Número', empresa: 'Empresa', fechaEmision: 'Fecha emisión', fechaPago: 'Fecha pago', estado: 'Estado',
+  subtotal: 'Subtotal', descuento: 'Descuento', impuesto: 'Impuesto', total: 'Total', deuda: 'Deuda', tipoItems: 'Tipo',
+  descripcionItems: 'Descripción ítems', cantidadItems: 'Líneas', cantidadTotal: 'Cantidad',
+};
+
+const ETIQUETAS_ITEM = {
+  numero: 'Factura', empresa: 'Empresa', fechaEmision: 'F. emisión', estado: 'Estado', tipo: 'Tipo', descripcion: 'Descripción', cantidad: 'Cantidad', unidadMedida: 'Unidad', precioUnitario: 'Precio unitario', subtotal: 'Subtotal', descuento: 'Descuento', impuesto: 'Impuesto', total: 'Total',
+};
+
+const COLUMNAS_ITEM = Object.keys(ETIQUETAS_ITEM);
+
+const celdaExcel = (valor, tipo = 'String') => `<Cell><Data ss:Type="${tipo}">${escapeHtml(valor)}</Data></Cell>`;
+
+const hojaExcel = (nombre, columnas, etiquetas, filas) => {
+  const header = columnas.map((c) => celdaExcel(etiquetas[c] || c)).join('');
+  const rows = filas.map((fila) => `<Row>${columnas.map((col) => celdaExcel(fila[col] ?? '')).join('')}</Row>`).join('');
+  return `<Worksheet ss:Name="${nombre}"><Table><Row>${header}</Row>${rows}</Table></Worksheet>`;
+};
+
+const filaResumenExcel = (etiqueta, grupo) => {
+  const valores = [etiqueta, grupo.items, grupo.cantidad, grupo.subtotal, grupo.descuento, grupo.impuesto, grupo.total];
+  return `<Row>${valores.map((valor) => celdaExcel(valor)).join('')}</Row>`;
 };
 
 export const generarExcelDashboard = async (req) => {
-  const data = await obtenerDashboardAvanzado(req);
+  const data = await obtenerDashboardAvanzado(req, { paginar: false });
   const columnas = normalizarColumnas(req.query.columns);
 
-  const header = columnas.map((c) => `<Cell><Data ss:Type=\"String\">${escapeHtml(etiquetaColumna[c])}</Data></Cell>`).join('');
-  const rows = data.tablaFacturas.items
-    .map((row) => `<Row>${columnas.map((col) => `<Cell><Data ss:Type=\"String\">${escapeHtml(valorCelda(row, col))}</Data></Cell>`).join('')}</Row>`)
-    .join('');
+  const hojaFacturas = hojaExcel('Facturas', columnas, etiquetaColumna, data.tablaFacturas.items.map((row) => (
+    Object.fromEntries(columnas.map((col) => [col, valorCelda(row, col)]))
+  )));
 
-  const xml = `<?xml version=\"1.0\"?>\n<Workbook xmlns=\"urn:schemas-microsoft-com:office:spreadsheet\" xmlns:ss=\"urn:schemas-microsoft-com:office:spreadsheet\">\n  <Worksheet ss:Name=\"Dashboard\">\n    <Table>\n      <Row>${header}</Row>\n      ${rows}\n    </Table>\n  </Worksheet>\n</Workbook>`;
+  const hojaResumen = `<Worksheet ss:Name="Resumen"><Table>
+      <Row>${['Grupo', 'Líneas', 'Cantidad', 'Subtotal', 'Descuento', 'Impuesto', 'Total'].map((t) => celdaExcel(t)).join('')}</Row>
+      ${filaResumenExcel('Total', data.resumenItems.todos)}
+      ${filaResumenExcel('Productos', data.resumenItems.producto)}
+      ${filaResumenExcel('Servicios', data.resumenItems.servicio)}
+    </Table></Worksheet>`;
+
+  const hojaItems = hojaExcel('Items', COLUMNAS_ITEM, ETIQUETAS_ITEM, data.detalleItems);
+
+  const xml = `<?xml version="1.0"?>\n<Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet" xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet">\n${hojaResumen}\n${hojaFacturas}\n${hojaItems}\n</Workbook>`;
 
   return { contenido: Buffer.from(xml, 'utf8'), nombreArchivo: 'dashboard-avanzado.xls', contentType: 'application/vnd.ms-excel' };
 };
 
 export const generarPdfDashboard = async (req) => {
-  const data = await obtenerDashboardAvanzado(req);
+  const data = await obtenerDashboardAvanzado(req, { paginar: false });
   const columnas = normalizarColumnas(req.query.columns);
   return { data, columnas };
 };

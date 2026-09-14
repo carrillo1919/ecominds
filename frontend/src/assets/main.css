@@ -631,9 +631,14 @@ textarea:focus {
   transition: background-color 0.15s ease, color 0.15s ease;
 }
 
-.btn-ghost:hover {
+.btn-ghost:hover:not(:disabled) {
   background-color: rgba(255, 255, 255, 0.12);
   color: #fff;
+}
+
+.btn-ghost:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 
 .badge-rol {
