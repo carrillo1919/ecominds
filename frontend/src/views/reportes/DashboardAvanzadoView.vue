@@ -39,11 +39,17 @@ const columnasVisibles = ref([...todasColumnas.map((c) => c.key)]);
 
 const headers = computed(() => todasColumnas.filter((c) => columnasVisibles.value.includes(c.key)));
 
-const paramsActuales = computed(() => ({
-  ...filtros,
-  estados: filtros.estados.join(','),
-  columns: columnasVisibles.value.join(','),
-}));
+const paramsActuales = computed(() => {
+  const params = {
+    ...filtros,
+    estados: filtros.estados.join(','),
+    columns: columnasVisibles.value.join(','),
+  };
+
+  return Object.fromEntries(
+    Object.entries(params).filter(([, value]) => value !== ''),
+  );
+});
 
 const cargar = async () => {
   await reportesStore.fetchDashboard(paramsActuales.value);

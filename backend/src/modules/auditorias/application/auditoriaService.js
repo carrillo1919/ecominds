@@ -154,7 +154,7 @@ export const crearAuditoria = async (req) => {
   const transaction = await sequelize.transaction();
   try {
     await applyRlsContext(transaction, req);
-    const { empresaId, fecha, fechaProximaAuditoria, alcance } = req.body;
+    const { empresaId, fecha, alcance } = req.body;
     assertEmpresaInScope(empresaId, req);
 
     const empresa = await Empresa.findByPk(empresaId, { transaction });
@@ -175,7 +175,6 @@ export const crearAuditoria = async (req) => {
         auditorId: req.user.id,
         codigo: `AUD-${empresa.rif}-${String(consecutivo).padStart(3, '0')}`,
         fecha: fecha || new Date().toISOString().slice(0, 10),
-        fechaProximaAuditoria: fechaProximaAuditoria || null,
         alcance: alcance || null,
         totalRequisitos: requisitos.length,
       },
@@ -207,7 +206,7 @@ export const actualizarAuditoria = async (id, req) => {
     throw new HttpError(409, 'La auditoria esta finalizada y no puede modificarse');
   }
 
-  ['fecha', 'fechaProximaAuditoria', 'alcance', 'conclusiones'].forEach((campo) => {
+  ['fecha', 'alcance', 'conclusiones'].forEach((campo) => {
     if (req.body[campo] !== undefined) auditoria[campo] = req.body[campo] || null;
   });
 
@@ -326,9 +325,6 @@ export const finalizarAuditoria = async (id, req) => {
   }
 
   if (req.body.conclusiones !== undefined) auditoria.conclusiones = req.body.conclusiones || null;
-  if (req.body.fechaProximaAuditoria !== undefined) {
-    auditoria.fechaProximaAuditoria = req.body.fechaProximaAuditoria || null;
-  }
   await auditoria.save();
 
   await recalcular(auditoria.id);
@@ -433,40 +429,5 @@ export const obtenerEstadisticas = async (req) => {
     bloques,
     hallazgosCriticosRecurrentes: [...reincidentesMap.values()].sort((a, b) => b.veces - a.veces),
     tendencia,
-  };
-};
-
-export const obtenerProximasAuditorias = async (req) => {
-  const dias = Number(req.query.dias || 30);
-  const hoy = new Date();
-  const limite = new Date(hoy.getTime() + dias * 24 * 60 * 60 * 1000);
-  const where = buildScopedWhere(req, {
-    fechaProximaAuditoria: { [Op.ne]: null, [Op.lte]: limite.toISOString().slice(0, 10) },
-  });
-
-  const auditorias = await Auditoria.findAll({
-    where,
-    include: INCLUDES_BASE,
-    order: [['fechaProximaAuditoria', 'ASC']],
-  });
-
-  const hoyStr = hoy.toISOString().slice(0, 10);
-
-  return {
-    dias,
-    alertas: auditorias.map((a) => {
-      const dif = Math.ceil(
-        (new Date(a.fechaProximaAuditoria).getTime() - new Date(hoyStr).getTime()) / (24 * 60 * 60 * 1000)
-      );
-      return {
-        auditoriaId: a.id,
-        empresa: a.empresa,
-        ultimaFecha: a.fecha,
-        fechaProximaAuditoria: a.fechaProximaAuditoria,
-        diasRestantes: dif,
-        vencida: dif < 0,
-        nivelRiesgo: a.nivelRiesgo,
-      };
-    }),
   };
 };

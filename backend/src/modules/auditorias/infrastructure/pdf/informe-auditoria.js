@@ -65,7 +65,6 @@ const construirInformeAuditoria = (auditoria, resumen) => {
   parrafoDato(doc, 'Sector / actividad', auditoria.empresa?.sector);
   parrafoDato(doc, 'Código de auditoría', auditoria.codigo);
   parrafoDato(doc, 'Fecha de auditoría', fecha(auditoria.fecha));
-  parrafoDato(doc, 'Próxima auditoría', fecha(auditoria.fechaProximaAuditoria));
   parrafoDato(doc, 'Auditor', auditoria.auditor ? `${auditoria.auditor.nombre} ${auditoria.auditor.apellido}` : '-');
   parrafoDato(doc, 'Estado', auditoria.estado === 'finalizada' ? 'Finalizada' : 'Borrador');
   if (auditoria.alcance) parrafoDato(doc, 'Alcance', auditoria.alcance);

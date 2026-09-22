@@ -208,7 +208,6 @@ const headers = [
   { key: 'sector', label: 'Sector' },
   { key: 'ultimaAuditoria', label: 'Última auditoría' },
   { key: 'riesgo', label: 'Riesgo' },
-  { key: 'proxima', label: 'Próxima' },
 ];
 </script>
 
@@ -245,9 +244,6 @@ const headers = [
             {{ item.ultimaAuditoria.nivelRiesgo }}
           </span>
           <span v-else class="muted">—</span>
-        </template>
-        <template #cell-proxima="{ item }">
-          {{ item.ultimaAuditoria ? fechaCorta(item.ultimaAuditoria.fechaProximaAuditoria) : '—' }}
         </template>
         <template #actions="{ item }">
           <router-link :to="{ name: 'auditorias', query: { empresaId: item.id } }">Auditorías</router-link>

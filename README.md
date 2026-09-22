@@ -190,7 +190,6 @@ npm run seed      # carga el checklist (55 requisitos) y usuarios demo
 | POST | `/api/auditorias/:id/finalizar` | admin/auditor | Cierra la auditoria (requiere todos los items evaluados) |
 | GET | `/api/auditorias/:id/informe.pdf` | todos | Informe Ejecutivo de Auditabilidad (RF-06.1) |
 | GET | `/api/auditorias/estadisticas?desde&hasta&empresaId` | todos | KPIs del periodo (RF-06.2) |
-| GET | `/api/auditorias/proximas?dias=30` | todos | Alertas de proxima auditoria |
 
 ### Calculo de riesgo (RF-03.2)
 

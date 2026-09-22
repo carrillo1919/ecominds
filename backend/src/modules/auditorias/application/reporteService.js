@@ -1,4 +1,11 @@
-import { Auditoria, AuditoriaItem, Requisito, Empresa, User } from '../../../models/index.js';
+import {
+  Auditoria,
+  AuditoriaItem,
+  Requisito,
+  Empresa,
+  Empleado,
+  User,
+} from '../../../models/index.js';
 import { assertEmpresaInScope } from '../../../shared/security/tenant-scope.js';
 import { calcularResultado } from './risk-calculator.js';
 
@@ -7,7 +14,14 @@ export const obtenerInformeAuditoria = async (id, req) => {
     include: [
       { model: Empresa, as: 'empresa' },
       { model: User, as: 'auditor', attributes: ['id', 'nombre', 'apellido', 'email'] },
-      { model: AuditoriaItem, as: 'items', include: [{ model: Requisito, as: 'requisito' }] },
+      {
+        model: AuditoriaItem,
+        as: 'items',
+        include: [
+          { model: Requisito, as: 'requisito' },
+          { model: Empleado, as: 'responsableEmpleado', attributes: ['nombre', 'apellido'] },
+        ],
+      },
     ],
   });
 

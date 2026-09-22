@@ -22,7 +22,7 @@ const { canAuditar } = useAuthorization();
 const auditoriasStore = useAuditoriasStore();
 const empresasStore = useEmpresasStore();
 
-const { auditorias, proximas, loading } = storeToRefs(auditoriasStore);
+const { auditorias, loading } = storeToRefs(auditoriasStore);
 const { empresas } = storeToRefs(empresasStore);
 
 const filtros = reactive({
@@ -35,7 +35,6 @@ const filtros = reactive({
 const nueva = reactive({
   empresaId: route.query.empresaId || '',
   fecha: new Date().toISOString().slice(0, 10),
-  fechaProximaAuditoria: '',
   alcance: '',
 });
 
@@ -44,8 +43,6 @@ const guardandoNueva = ref(false);
 
 const empresasOptions = computed(() => empresas.value.map((e) => ({ value: e.id, label: `${e.nombre} (${e.rif})` })));
 const empresasFilterOptions = computed(() => empresas.value.map((e) => ({ value: e.id, label: e.nombre })));
-const alertasOrdenadas = computed(() => proximas.value.slice(0, 6));
-
 const cargar = async () => {
   const params = {};
   Object.entries(filtros).forEach(([k, v]) => {
@@ -54,7 +51,6 @@ const cargar = async () => {
   await Promise.all([
     auditoriasStore.fetchAll(params),
     empresasStore.fetchAll(),
-    auditoriasStore.fetchProximas({ dias: 45 }),
   ]);
 };
 
@@ -67,7 +63,6 @@ const crear = async () => {
   const result = await auditoriasStore.create({
     empresaId: nueva.empresaId,
     fecha: nueva.fecha,
-    fechaProximaAuditoria: nueva.fechaProximaAuditoria || undefined,
     alcance: nueva.alcance || undefined,
   });
   guardandoNueva.value = false;
@@ -83,7 +78,6 @@ const crear = async () => {
 const abrirModalNueva = () => {
   nueva.empresaId = route.query.empresaId || '';
   nueva.fecha = new Date().toISOString().slice(0, 10);
-  nueva.fechaProximaAuditoria = '';
   nueva.alcance = '';
   mostrarModal.value = true;
 };
@@ -121,18 +115,6 @@ onMounted(cargar);
         </button>
       </template>
     </PageToolbar>
-
-    <BaseCard v-if="alertasOrdenadas.length" title="Próximas auditorías" subtitle="Recordatorios generados a partir de la fecha de próxima auditoría registrada.">
-      <ul class="alert-list">
-        <li v-for="a in alertasOrdenadas" :key="a.auditoriaId">
-          <span :class="a.vencida ? 'pill pill--danger' : 'pill pill--warn'">
-            {{ a.vencida ? `Vencida hace ${Math.abs(a.diasRestantes)} día(s)` : `En ${a.diasRestantes} día(s)` }}
-          </span>
-          <strong>{{ a.empresa?.nombre }}</strong>
-          <span class="muted">Programada: {{ fechaCorta(a.fechaProximaAuditoria) }}</span>
-        </li>
-      </ul>
-    </BaseCard>
 
     <BaseCard title="Historial de auditorías">
       <div class="form-grid">
@@ -219,7 +201,6 @@ onMounted(cargar);
           </select>
         </label>
         <label>Fecha de auditoría<input v-model="nueva.fecha" type="date" /></label>
-        <label>Fecha de próxima auditoría<input v-model="nueva.fechaProximaAuditoria" type="date" /></label>
         <label>Alcance<input v-model="nueva.alcance" type="text" placeholder="Áreas o procesos evaluados" /></label>
       </div>
     </CrudModal>

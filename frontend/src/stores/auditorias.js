@@ -6,7 +6,6 @@ export const useAuditoriasStore = defineStore('auditorias', {
   state: () => ({
     auditorias: [],
     auditoria: null,
-    proximas: [],
     estadisticas: null,
     loading: false,
     saving: false,
@@ -44,15 +43,6 @@ export const useAuditoriasStore = defineStore('auditorias', {
         return null;
       } finally {
         this.loading = false;
-      }
-    },
-
-    async fetchProximas(params = {}) {
-      try {
-        const { data } = await api.getProximasAuditorias(params);
-        this.proximas = data.alertas || [];
-      } catch (e) {
-        this.error = apiMessage(e, 'No se pudieron cargar las próximas auditorías');
       }
     },
 

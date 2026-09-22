@@ -10,7 +10,6 @@ const AuditoriaModel = (sequelize, DataTypes) => {
       auditorId: { type: DataTypes.UUID, allowNull: false },
       codigo: { type: DataTypes.STRING, allowNull: true },
       fecha: { type: DataTypes.DATEONLY, allowNull: false },
-      fechaProximaAuditoria: { type: DataTypes.DATEONLY, allowNull: true },
       alcance: { type: DataTypes.TEXT, allowNull: true },
       conclusiones: { type: DataTypes.TEXT, allowNull: true },
       estado: { type: DataTypes.ENUM(...ESTADOS_AUDITORIA), allowNull: false, defaultValue: 'borrador' },

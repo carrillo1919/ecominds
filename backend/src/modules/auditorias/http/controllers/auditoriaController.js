@@ -7,7 +7,6 @@ import {
   finalizarAuditoria,
   eliminarAuditoria,
   obtenerEstadisticas,
-  obtenerProximasAuditorias,
 } from '../../application/auditoriaService.js';
 
 // GET /api/auditorias
@@ -90,16 +89,6 @@ const estadisticas = async (req, res, next) => {
   }
 };
 
-// GET /api/auditorias/proximas?dias=30 (notificaciones de proxima auditoria)
-const proximas = async (req, res, next) => {
-  try {
-    const data = await obtenerProximasAuditorias(req);
-    return res.json(data);
-  } catch (error) {
-    return next(error);
-  }
-};
-
 export {
   getAll,
   getOne,
@@ -109,5 +98,4 @@ export {
   finalizar,
   remove,
   estadisticas,
-  proximas,
 };

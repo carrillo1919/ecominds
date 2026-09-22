@@ -4,7 +4,6 @@ import validate from '../../../../shared/http/validation/validate.js';
 import {
   paramId,
   auditoriaEstadisticasRules,
-  auditoriaProximasRules,
   auditoriaCreateRules,
   auditoriaUpdateRules,
   auditoriaSaveItemsRules,
@@ -20,10 +19,10 @@ router.use(requireEmpresa);
 router.use(resolveScope);
 
 router.get('/estadisticas', auditoriaEstadisticasRules, validate, controller.estadisticas);
-router.get('/proximas', auditoriaProximasRules, validate, controller.proximas);
 router.get('/', controller.getAll);
 
 router.get('/:id/informe.pdf', [paramId()], validate, reportes.informePdf);
+router.get('/:id/formato-campo.pdf', [paramId()], validate, reportes.formatoCampoPdf);
 router.get('/:id', [paramId()], validate, controller.getOne);
 
 router.post('/', authorize('admin', 'auditor'), auditoriaCreateRules, validate, controller.create);

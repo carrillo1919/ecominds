@@ -14,6 +14,7 @@ import LoadingState from '@/components/ui/LoadingState.vue';
 import AuditRiskMatrix from '@/components/auditoria/AuditRiskMatrix.vue';
 import AuditItemRow from '@/components/auditoria/AuditItemRow.vue';
 import api from '@/api/axios';
+import { getFormatoCampoPdf } from '@/api/auditorias';
 
 const route = useRoute();
 const toast = useToast();
@@ -33,6 +34,17 @@ const itemsVisibles = computed(() =>
   filtroBloque.value ? items.value.filter((i) => i.requisito?.bloque === filtroBloque.value) : items.value
 );
 const resultado = computed(() => calcularResultado(items.value));
+
+const marcaFechaHora = () => {
+  const fecha = new Date();
+  return [
+    String(fecha.getHours()).padStart(2, '0'),
+    String(fecha.getMinutes()).padStart(2, '0'),
+    String(fecha.getDate()).padStart(2, '0'),
+    String(fecha.getMonth() + 1).padStart(2, '0'),
+    fecha.getFullYear(),
+  ].join('');
+};
 
 const cargar = async () => {
   const data = await auditoriasStore.fetchOne(route.params.id);
@@ -66,7 +78,6 @@ const guardar = async () => {
 
   const result = await auditoriasStore.update(auditoria.value.id, {
     fecha: auditoria.value.fecha,
-    fechaProximaAuditoria: auditoria.value.fechaProximaAuditoria,
     alcance: auditoria.value.alcance,
     conclusiones: auditoria.value.conclusiones,
   });
@@ -107,11 +118,25 @@ const descargarPdf = async () => {
     const url = URL.createObjectURL(new Blob([data], { type: 'application/pdf' }));
     const enlace = document.createElement('a');
     enlace.href = url;
-    enlace.download = `informe-${auditoria.value.codigo || auditoria.value.id}.pdf`;
+    enlace.download = `informe-${auditoria.value.codigo || auditoria.value.id}-${marcaFechaHora()}.pdf`;
     enlace.click();
     URL.revokeObjectURL(url);
   } catch (e) {
     toast.error('No se pudo generar el informe');
+  }
+};
+
+const descargarFormatoCampo = async () => {
+  try {
+    const { data } = await getFormatoCampoPdf(auditoria.value.id);
+    const url = URL.createObjectURL(new Blob([data], { type: 'application/pdf' }));
+    const enlace = document.createElement('a');
+    enlace.href = url;
+    enlace.download = `formato-auditoria-${auditoria.value.codigo || auditoria.value.id}-${marcaFechaHora()}.pdf`;
+    enlace.click();
+    URL.revokeObjectURL(url);
+  } catch (e) {
+    toast.error('No se pudo generar el formato de auditoría');
   }
 };
 
@@ -138,9 +163,6 @@ onMounted(cargar);
           <label>Fecha de auditoria
             <input v-model="auditoria.fecha" type="date" :disabled="!editable" />
           </label>
-          <label>Fecha de proxima auditoria
-            <input v-model="auditoria.fechaProximaAuditoria" type="date" :disabled="!editable" />
-          </label>
           <label>Alcance
             <input v-model="auditoria.alcance" type="text" :disabled="!editable" />
           </label>
@@ -153,7 +175,10 @@ onMounted(cargar);
           <BaseButton v-if="editable" variant="ghost" :disabled="saving" @click="finalizar">
             Finalizar auditoria
           </BaseButton>
-          <BaseButton variant="ghost" @click="descargarPdf">Descargar informe PDF</BaseButton>
+          <BaseButton variant="ghost" @click="descargarFormatoCampo">Descargar formato de auditoría</BaseButton>
+          <BaseButton v-if="auditoria.estado === 'finalizada'" variant="ghost" @click="descargarPdf">
+            Descargar informe PDF
+          </BaseButton>
         </template>
       </BaseCard>
 

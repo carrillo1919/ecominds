@@ -16,7 +16,7 @@ export const listarEmpresas = async (req) => {
       {
         model: Auditoria,
         as: 'auditorias',
-        attributes: ['id', 'fecha', 'fechaProximaAuditoria', 'nivelRiesgo', 'porcentajeCumplimiento', 'estado'],
+        attributes: ['id', 'fecha', 'nivelRiesgo', 'porcentajeCumplimiento', 'estado'],
         separate: true,
         order: [['fecha', 'DESC']],
         limit: 1,
