@@ -176,6 +176,7 @@ onMounted(cargar);
             v-if="canAuditar && item.estado === 'borrador'"
             class="btn-ghost btn-sm"
             type="button"
+            :disabled="loading"
             @click="eliminar(item)"
           >
             Eliminar

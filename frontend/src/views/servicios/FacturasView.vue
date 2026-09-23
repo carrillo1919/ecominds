@@ -235,9 +235,9 @@ onMounted(async () => {
         <template #actions="{ item }">
           <button class="btn-ghost btn-sm" type="button" @click="verDetalle(item)">Ver</button>
           <button v-if="item.tienePdf" class="btn-ghost btn-sm" type="button" @click="verPdf(item)">PDF</button>
-          <button v-if="canGestionarAsignaciones && item.estado === 'borrador'" class="btn-primary btn-sm" type="button" @click="cambiarEstado(item, 'emitida')">Emitir</button>
+          <button v-if="canGestionarAsignaciones && item.estado === 'borrador'" class="btn-primary btn-sm" type="button" :disabled="facturasStore.loading" @click="cambiarEstado(item, 'emitida')">Emitir</button>
           <button v-if="canGestionarAsignaciones && item.estado === 'emitida'" class="btn-primary btn-sm" type="button" @click="abrirPago(item)">Registrar pago</button>
-          <button v-if="canGestionarAsignaciones && item.estado !== 'anulada'" class="btn-danger btn-sm" type="button" @click="anular(item)">Anular</button>
+          <button v-if="canGestionarAsignaciones && item.estado !== 'anulada'" class="btn-danger btn-sm" type="button" :disabled="facturasStore.loading" @click="anular(item)">Anular</button>
         </template>
       </DataTable>
     </div>

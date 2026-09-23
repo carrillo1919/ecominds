@@ -164,8 +164,8 @@ const headers = [
         </template>
         <template v-if="canEdit" #actions="{ item }">
           <button class="btn-ghost btn-sm" type="button" @click="editar(item)">Editar</button>
-          <button v-if="item.activo" class="btn-ghost btn-sm" type="button" @click="darDeBaja(item)">Dar de baja</button>
-          <button v-else class="btn-ghost btn-sm" type="button" @click="reactivar(item)">Reactivar</button>
+          <button v-if="item.activo" class="btn-ghost btn-sm" type="button" :disabled="store.loading" @click="darDeBaja(item)">Dar de baja</button>
+          <button v-else class="btn-ghost btn-sm" type="button" :disabled="store.loading" @click="reactivar(item)">Reactivar</button>
           <router-link
             v-if="isAdmin && !item.usuario"
             class="btn-ghost btn-sm"

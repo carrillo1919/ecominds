@@ -220,7 +220,7 @@ onMounted(async () => {
         </template>
         <template #actions="{ item }">
           <button v-if="canGestionarAsignaciones && item.estado !== 'cancelado' && item.estado !== 'facturado'" class="btn-ghost btn-sm" type="button" @click="editar(item)">Editar</button>
-          <button v-if="canGestionarAsignaciones && item.estado !== 'cancelado' && item.estado !== 'facturado'" class="btn-danger btn-sm" type="button" @click="cancelar(item)">Cancelar</button>
+          <button v-if="canGestionarAsignaciones && item.estado !== 'cancelado' && item.estado !== 'facturado'" class="btn-danger btn-sm" type="button" :disabled="asignacionesStore.loading" @click="cancelar(item)">Cancelar</button>
         </template>
       </DataTable>
     </div>

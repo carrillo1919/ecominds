@@ -148,7 +148,7 @@ onMounted(() => {
         </template>
         <template #actions="{ item }">
           <button v-if="canGestionarCatalogos" class="btn-ghost btn-sm" type="button" @click="editar(item)">Editar</button>
-          <button v-if="canGestionarCatalogos && item.activo" class="btn-danger btn-sm" type="button" @click="desactivar(item)">Desactivar</button>
+          <button v-if="canGestionarCatalogos && item.activo" class="btn-danger btn-sm" type="button" :disabled="store.loading" @click="desactivar(item)">Desactivar</button>
         </template>
       </DataTable>
     </div>
