@@ -64,11 +64,26 @@ const columnasVisibles = ref([...todasColumnas.map((c) => c.key)]);
 
 const headers = computed(() => todasColumnas.filter((c) => columnasVisibles.value.includes(c.key)));
 
-const paramsActuales = computed(() => ({
-  ...filtros,
-  estados: filtros.estados.join(','),
-  columns: columnasVisibles.value.join(','),
-}));
+// Solo el admin puede consultar sin empresa; el auditor con empresas asignadas y el empleado deben elegirla.
+const empresaRequerida = computed(() => !isAdmin.value
+  && ['auditor', 'responsable'].includes(rol.value)
+  && empresasStore.empresas.length > 0);
+
+const faltaEmpresa = () => empresaRequerida.value && !filtros.empresaId;
+
+const paramsActuales = computed(() => {
+  const params = {
+    ...filtros,
+    estados: filtros.estados.join(','),
+    columns: columnasVisibles.value.join(','),
+  };
+  // Los filtros vacios (empresa, fechas, busqueda) no se envian.
+  return Object.fromEntries(
+    Object.entries(params).filter(([, valor]) => valor !== '' && valor !== null && valor !== undefined),
+  );
+});
+
+const numero = (valor) => Number(valor || 0).toFixed(2);
 
 const cargar = async ({ avisar = false } = {}) => {
   if (faltaEmpresa()) {
