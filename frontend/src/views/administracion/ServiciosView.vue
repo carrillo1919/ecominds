@@ -3,10 +3,11 @@ import { computed, onMounted, reactive, ref } from 'vue';
 import { useToast } from 'vue-toastification';
 import { useServiciosStore } from '@/stores/servicios';
 import { useAuthorization } from '@/composables/useAuthorization';
-import { UNIDADES_MEDIDA, normalizarUnidad } from '@/utils/unidades';
+import { normalizarUnidad } from '@/utils/unidades';
 import PageToolbar from '@/components/ui/PageToolbar.vue';
 import DataTable from '@/components/ui/DataTable.vue';
 import CrudModal from '@/components/ui/CrudModal.vue';
+import UnidadMedidaSelect from '@/components/ui/UnidadMedidaSelect.vue';
 
 const toast = useToast();
 const store = useServiciosStore();
@@ -167,16 +168,13 @@ onMounted(() => {
         <label>Nombre *<input v-model="form.nombre" type="text" /></label>
         <label>Precio base *<input v-model="form.precio" type="number" step="0.01" min="0" /></label>
         <label>Unidad de medida
-          <input v-model="form.unidadMedida" type="text" list="unidades-medida" maxlength="20" placeholder="servicio, unidad, hora..." />
+          <UnidadMedidaSelect v-model="form.unidadMedida" por-defecto="servicio" />
         </label>
         <label class="span-2">Descripción<textarea v-model="form.descripcion" rows="3"></textarea></label>
         <label class="flex items-center gap-2">
           <input v-model="form.activo" type="checkbox" /> Activo
         </label>
       </div>
-      <datalist id="unidades-medida">
-        <option v-for="unidad in UNIDADES_MEDIDA" :key="unidad" :value="unidad" />
-      </datalist>
     </CrudModal>
   </section>
 </template>

@@ -7,10 +7,11 @@ import { useServiciosStore } from '@/stores/servicios';
 import { useEmpresasStore } from '@/stores/empresas';
 import { useAuthorization } from '@/composables/useAuthorization';
 import { useAuthStore } from '@/stores/auth';
-import { UNIDADES_MEDIDA, normalizarUnidad } from '@/utils/unidades';
+import { normalizarUnidad } from '@/utils/unidades';
 import PageToolbar from '@/components/ui/PageToolbar.vue';
 import DataTable from '@/components/ui/DataTable.vue';
 import CrudModal from '@/components/ui/CrudModal.vue';
+import UnidadMedidaSelect from '@/components/ui/UnidadMedidaSelect.vue';
 
 const toast = useToast();
 const auth = useAuthStore();
@@ -268,14 +269,14 @@ onMounted(async () => {
         <label>Cantidad *<input v-model="form.cantidad" type="number" step="0.01" min="0" /></label>
         <label>Precio unitario *<input v-model="form.precioUnitario" type="number" step="0.01" min="0" /></label>
         <label>Unidad de medida
-          <input v-model="form.unidadMedida" type="text" list="unidades-medida" maxlength="20" placeholder="unidad, lts, mts, kg..." />
+          <UnidadMedidaSelect
+            v-model="form.unidadMedida"
+            placeholder="Sin especificar (usa la del ítem)"
+          />
         </label>
         <label>{{ tipo === 'producto' ? 'Fecha de entrega' : 'Fecha de ejecución' }}<input v-model="form.fechaProgramada" type="date" /></label>
         <label class="span-2">Observaciones<textarea v-model="form.observaciones" rows="3"></textarea></label>
       </div>
-      <datalist id="unidades-medida">
-        <option v-for="unidad in UNIDADES_MEDIDA" :key="unidad" :value="unidad" />
-      </datalist>
     </CrudModal>
   </section>
 </template>
